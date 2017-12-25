@@ -49,9 +49,9 @@ type Client interface {
 	RefreshMetadata(topics ...string) error
 
 	// GetOffset queries the cluster to get the most recent available offset at the
-	// given time on the topic/partition combination. Time should be OffsetOldest for
-	// the earliest available offset, OffsetNewest for the offset of the message that
-	// will be produced next, or a time.
+	// given time (in milliseconds) on the topic/partition combination.
+	// Time should be OffsetOldest for the earliest available offset,
+	// OffsetNewest for the offset of the message that will be produced next, or a time.
 	GetOffset(topic string, partitionID int32, time int64) (int64, error)
 
 	// Coordinator returns the coordinating broker for a consumer group. It will
@@ -72,11 +72,6 @@ type Client interface {
 
 	// Closed returns true if the client has already had Close called on it
 	Closed() bool
-
-	// Create a topic
-	CreateTopic(topic string, numPartitions int32, replicationFactor int16, configs map[string]string, timeout int32) error
-	DeleteTopic(topic string, timeout int32) error
-	AlterConfig(entity int8, name string, config map[string]string, validate bool) error
 }
 
 const (
@@ -146,18 +141,20 @@ func NewClient(addrs []string, conf *Config) (Client, error) {
 		client.seedBrokers = append(client.seedBrokers, NewBroker(addrs[index]))
 	}
 
-	// do an initial fetch of all cluster metadata by specifying an empty list of topics
-	err := client.RefreshMetadata()
-	switch err {
-	case nil:
-		break
-	case ErrLeaderNotAvailable, ErrReplicaNotAvailable, ErrTopicAuthorizationFailed, ErrClusterAuthorizationFailed:
-		// indicates that maybe part of the cluster is down, but is not fatal to creating the client
-		Logger.Println(err)
-	default:
-		close(client.closed) // we haven't started the background updater yet, so we have to do this manually
-		_ = client.Close()
-		return nil, err
+	if conf.Metadata.Full {
+		// do an initial fetch of all cluster metadata by specifying an empty list of topics
+		err := client.RefreshMetadata()
+		switch err {
+		case nil:
+			break
+		case ErrLeaderNotAvailable, ErrReplicaNotAvailable, ErrTopicAuthorizationFailed, ErrClusterAuthorizationFailed:
+			// indicates that maybe part of the cluster is down, but is not fatal to creating the client
+			Logger.Println(err)
+		default:
+			close(client.closed) // we haven't started the background updater yet, so we have to do this manually
+			_ = client.Close()
+			return nil, err
+		}
 	}
 	go withRecover(client.backgroundMetadataUpdater)
 
@@ -300,9 +297,9 @@ func (client *client) Replicas(topic string, partitionID int32) ([]int32, error)
 	}
 
 	if metadata.Err == ErrReplicaNotAvailable {
-		return nil, metadata.Err
+		return dupInt32Slice(metadata.Replicas), metadata.Err
 	}
-	return dupeAndSort(metadata.Replicas), nil
+	return dupInt32Slice(metadata.Replicas), nil
 }
 
 func (client *client) InSyncReplicas(topic string, partitionID int32) ([]int32, error) {
@@ -325,9 +322,9 @@ func (client *client) InSyncReplicas(topic string, partitionID int32) ([]int32, 
 	}
 
 	if metadata.Err == ErrReplicaNotAvailable {
-		return nil, metadata.Err
+		return dupInt32Slice(metadata.Isr), metadata.Err
 	}
-	return dupeAndSort(metadata.Isr), nil
+	return dupInt32Slice(metadata.Isr), nil
 }
 
 func (client *client) Leader(topic string, partitionID int32) (*Broker, error) {
@@ -483,20 +480,6 @@ func (client *client) any() *Broker {
 	return nil
 }
 
-func (client *client) controller() *Broker {
-	client.lock.RLock()
-	defer client.lock.RUnlock()
-
-	for _, broker := range client.brokers {
-		if broker.isController {
-			_ = broker.Open(client.conf)
-			return broker
-		}
-	}
-
-	return nil
-}
-
 // private caching/lazy metadata helpers
 
 type partitionType int
@@ -624,7 +607,20 @@ func (client *client) backgroundMetadataUpdater() {
 	for {
 		select {
 		case <-ticker.C:
-			if err := client.RefreshMetadata(); err != nil {
+			topics := []string{}
+			if !client.conf.Metadata.Full {
+				if specificTopics, err := client.Topics(); err != nil {
+					Logger.Println("Client background metadata topic load:", err)
+					break
+				} else if len(specificTopics) == 0 {
+					Logger.Println("Client background metadata update: no specific topics to update")
+					break
+				} else {
+					topics = specificTopics
+				}
+			}
+
+			if err := client.RefreshMetadata(topics...); err != nil {
 				Logger.Println("Client background metadata update:", err)
 			}
 		case <-client.closer:
@@ -649,7 +645,7 @@ func (client *client) tryRefreshMetadata(topics []string, attemptsRemaining int)
 		} else {
 			Logger.Printf("client/metadata fetching metadata for all topics from broker %s\n", broker.addr)
 		}
-		response, err := broker.GetMetadata(NewMetadataRequest(client.conf.Version, topics))
+		response, err := broker.GetMetadata(&MetadataRequest{Topics: topics})
 
 		switch err.(type) {
 		case nil:
@@ -687,7 +683,6 @@ func (client *client) updateMetadata(data *MetadataResponse) (retry bool, err er
 	// - if it is an existing ID, but the address we have is stale, discard the old one and save it
 	// - otherwise ignore it, replacing our existing one would just bounce the connection
 	for _, broker := range data.Brokers {
-		broker.isController = (broker.id == data.ControllerId)
 		client.registerBroker(broker)
 	}
 
@@ -796,118 +791,4 @@ func (client *client) getConsumerMetadata(consumerGroup string, attemptsRemainin
 	Logger.Println("client/coordinator no available broker to send consumer metadata request to")
 	client.resurrectDeadBrokers()
 	return retry(ErrOutOfBrokers)
-}
-
-func (client *client) DeleteTopic(topic string, timeout int32) error {
-	if client.Closed() {
-		return ErrClosedClient
-	}
-
-	deleteTopicsRequest := &DeleteTopicsRequest{
-		DeleteTopicRequests: []DTopic{DTopic{Topic: topic}},
-		Timeout:             timeout,
-	}
-
-	broker := client.controller()
-	if broker != nil {
-		Logger.Printf("Deleting topic %v on broker %v\n", topic, broker.addr)
-		deleteTopicsResponse, err := broker.DeleteTopics(deleteTopicsRequest)
-
-		if err != nil {
-			return err
-		}
-
-		kafkaErr := deleteTopicsResponse.DeleteTopicResponses[0].Err
-
-		if kafkaErr != ErrNoError {
-			return kafkaErr
-		}
-		return nil
-	}
-
-	return ErrOutOfBrokers
-}
-
-func (client *client) CreateTopic(topic string, numPartitions int32,
-	replicationFactor int16, configs map[string]string, timeout int32) error {
-	if client.Closed() {
-		return ErrClosedClient
-	}
-
-	createTopicsRequest := new(CreateTopicsRequest)
-	createTopicsRequest.CreateRequests = make([]CreateTopicRequest, 1)
-	createTopicRequest := CreateTopicRequest{}
-	createTopicRequest.Topic = topic
-	createTopicRequest.NumPartitions = numPartitions
-	createTopicRequest.ReplicationFactor = replicationFactor
-	createTopicRequest.ReplicaAssignments = make([]ReplicaAssignment, 0)
-	createTopicRequest.Configs = make([]ConfigKV, len(configs))
-	createTopicsRequest.CreateRequests[0] = createTopicRequest
-	createTopicsRequest.Timeout = timeout
-	i := 0
-	for key, value := range configs {
-		configKV := ConfigKV{}
-		configKV.Key = key
-		configKV.Value = value
-		createTopicRequest.Configs[i] = configKV
-		i = i + 1
-	}
-	broker := client.controller()
-	if broker != nil {
-		Logger.Printf("Creating topic %v on broker %v\n", topic, broker.addr)
-		createTopicsResponse, err := broker.CreateTopics(createTopicsRequest)
-		if err != nil {
-			return err
-		}
-
-		kafkaErr := createTopicsResponse.CreateTopicResponses[0].Err
-
-		if kafkaErr != ErrNoError {
-			return kafkaErr
-		}
-		return nil
-	}
-	return ErrOutOfBrokers
-}
-
-func (client *client) AlterConfig(entity int8, name string, opts map[string]string, validate bool) error {
-	if client.Closed() {
-		return ErrClosedClient
-	}
-
-	entries := mapToConfigEntry(opts)
-	alterConfigRequest := &AlterConfigRequest{
-		Resources: []AlterConfigResource{
-			AlterConfigResource{
-				Type:          entity,
-				Name:          name,
-				ConfigEntries: entries,
-			},
-		},
-		ValidateOnly: validate,
-	}
-	broker := client.controller()
-	if broker != nil {
-		Logger.Printf("Altering Config %v on %v\n", alterConfigRequest, broker.addr)
-
-		_, err := broker.AlterConfigs(alterConfigRequest)
-
-		if err != nil {
-			return err
-		}
-
-		return nil
-	}
-
-	return ErrOutOfBrokers
-}
-
-func mapToConfigEntry(in map[string]string) []ConfigEntry {
-	entries := make([]ConfigEntry, len(in))
-	i := 0
-	for k, v := range in {
-		entries[i] = ConfigEntry{Name: k, Value: v}
-		i += 1
-	}
-	return entries
 }

@@ -3,10 +3,10 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "7Rs2lq+bIDxVmVu+ivjemiihALI=",
+			"checksumSHA1": "9tOp0EbjovNt2gu3ITImL/hZlZw=",
 			"path": "github.com/Shopify/sarama",
-			"revision": "b68fef8afe8a2702dcadaf34c03267285ba6bc31",
-			"revisionTime": "2017-07-13T22:00:14Z"
+			"revision": "b1433c29241f23cec4704daf4d25358b7b3fbf9e",
+			"revisionTime": "2017-12-23T16:30:51Z"
 		},
 		{
 			"checksumSHA1": "FIL83loX9V9APvGQIjJpbxq53F0=",
@@ -514,5 +514,5 @@
 			"revisionTime": "2017-05-04T09:21:05Z"
 		}
 	],
-	"rootPath": "github.com/Mongey/terraform-kafka"
+	"rootPath": "github.com/Mongey/terraform-provider-kafka"
 }

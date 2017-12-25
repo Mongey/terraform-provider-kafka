@@ -1,15 +1,19 @@
 package kafka
 
 import (
+	"errors"
+	"fmt"
 	"log"
+	"time"
 
+	samara "github.com/Shopify/sarama"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func kafkaTopicResource() *schema.Resource {
 	return &schema.Resource{
 		Create: topicCreate,
-		Update: topicUpdate,
+		//Update: topicUpdate,
 		Delete: topicDelete,
 		Read:   topicRead,
 
@@ -17,20 +21,20 @@ func kafkaTopicResource() *schema.Resource {
 			"name": {
 				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    false,
+				ForceNew:    true,
 				Description: "The name of the topic",
 			},
 			"partitions": {
 				Type:        schema.TypeInt,
 				Required:    true,
 				ForceNew:    true,
-				Description: "number or partitions",
+				Description: "number of partitions",
 			},
 			"replication_factor": {
 				Type:        schema.TypeInt,
 				Required:    true,
 				ForceNew:    true,
-				Description: "number or repls",
+				Description: "number of replicas",
 			},
 			"config": {
 				Type:        schema.TypeMap,
@@ -43,106 +47,102 @@ func kafkaTopicResource() *schema.Resource {
 }
 
 func topicCreate(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*KafkaClient)
-	kcClient := client.client
-
-	timeout := int32(2147483647)
 	t := metaToTopicConfig(d, meta)
+	c := meta.(*Client)
+	broker, err := AvailableBrokerFromList(c.config.Brokers)
 
-	err := kcClient.CreateTopic(t.Name, t.Partitions, t.ReplicationFactor, t.Config, timeout)
+	if err != nil {
+		return err
+	}
+
+	req := &samara.CreateTopicsRequest{
+		TopicDetails: map[string]*samara.TopicDetail{
+			t.Name: {
+				NumPartitions:     t.Partitions,
+				ReplicationFactor: t.ReplicationFactor,
+				ConfigEntries:     t.Config,
+			},
+		},
+		Timeout: 1000 * time.Millisecond,
+	}
+	res, err := broker.CreateTopics(req)
+
 	if err == nil {
+		if len(res.TopicErrors) > 0 {
+			for _, e := range res.TopicErrors {
+				if e.Err != 0 {
+					return fmt.Errorf("%s", e.Err)
+				}
+			}
+		}
+		log.Printf("[INFO] Created topic %s in Kafka", t.Name)
 		d.SetId(t.Name)
 	}
 	return err
 }
+
 func topicUpdate(d *schema.ResourceData, meta interface{}) error {
-	return nil
+	return errors.New("Updates NYI")
 }
 
 func topicDelete(d *schema.ResourceData, meta interface{}) error {
-	client := meta.(*KafkaClient)
-	kcClient := client.client
-	timeout := int32(2147483647)
+	c := meta.(*Client)
 	t := metaToTopicConfig(d, meta)
 
-	err := kcClient.DeleteTopic(t.Name, timeout)
+	broker, err := AvailableBrokerFromList(c.config.Brokers)
 
 	if err != nil {
-		log.Printf("[ERROR] Error Reading %s from Kafka", err)
 		return err
 	}
 
-	// delete
+	req := &samara.DeleteTopicsRequest{
+		Topics:  []string{t.Name},
+		Timeout: 1000 * time.Millisecond,
+	}
+	_, err = broker.DeleteTopics(req)
+
+	if err != nil {
+		log.Printf("[ERROR] Error deleting topic %s from Kafka", err)
+		return err
+	}
+
+	log.Printf("[INFO] Deleted topic %s from Kafka", t.Name)
+
+	// delete from state
 	d.SetId("")
 	return err
 }
 
 func topicRead(d *schema.ResourceData, meta interface{}) error {
 	name := d.Id()
-	log.Printf("[DEBUG] HI Reading %s from Kafka", name)
-
-	client := meta.(*KafkaClient)
-	kcClient := client.client
-
-	err := kcClient.RefreshMetadata(name)
-	if err != nil {
-		log.Printf("hm %s", kcClient.Config().Validate())
-		log.Printf("hm %s", kcClient.Brokers())
-		log.Printf("hm %s", kcClient.Config())
-		log.Printf("hm %s", kcClient.Config().Consumer)
-		log.Printf("[ERROR] Error Refreshing from Kafka %s", err)
-		return err
-	}
-	topics, err := kcClient.Topics()
+	c := meta.(*Client).client
+	topics, err := c.Topics()
 
 	if err != nil {
-		log.Printf("[ERROR] Error Reading %s from Kafka", err)
+		log.Printf("[ERROR] Error getting topics %s from Kafka", err)
 		return err
 	}
-	log.Printf("[DEBUG] NO Error Reading %s from Kafka %d", name, len(topics))
 
 	for _, t := range topics {
-		log.Printf("[DEBUG] HI Reading %s from Kafka", t)
+		log.Printf("[DEBUG] Reading Topic %s from Kafka", t)
 		log.Printf("[DEBUG] checking if %s == %s", t, name)
 		if name == t {
-			log.Printf("[INFO] FOUND %s from Kafka", t)
+			log.Printf("[DEBUG] FOUND %s from Kafka", t)
+			p, err := c.Partitions(t)
+			if err == nil {
+				log.Printf("[DEBUG] Partitions %v from Kafka", p)
+				d.Set("partitions", len(p))
+
+				r, err := ReplicaCount(c, name, p)
+				if err == nil {
+					log.Printf("[DEBUG] ReplicationFactor %d from Kafka", r)
+					d.Set("replication_factor", r)
+				}
+			}
 			return nil
 		}
 	}
 
-	// delete
-	//d.SetId("")
-
+	d.SetId("")
 	return nil
-}
-
-type TopicConfig struct {
-	Name              string
-	Partitions        int32
-	ReplicationFactor int16
-	Config            map[string]string
-}
-
-func metaToTopicConfig(d *schema.ResourceData, meta interface{}) TopicConfig {
-	topicName := d.Get("name").(string)
-	partitions := d.Get("partitions").(int)
-	replicationFactor := d.Get("replication_factor").(int)
-	convertedPartitions := int32(partitions)
-	convertedRF := int16(replicationFactor)
-	config := d.Get("config").(map[string]interface{})
-
-	m2 := make(map[string]string)
-	for key, value := range config {
-		switch value := value.(type) {
-		case string:
-			m2[key] = value
-		}
-	}
-
-	return TopicConfig{
-		Name:              topicName,
-		Partitions:        convertedPartitions,
-		ReplicationFactor: convertedRF,
-		Config:            m2,
-	}
 }

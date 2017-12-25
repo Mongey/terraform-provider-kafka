@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/Mongey/terraform-kafka/kafka"
+	"github.com/Mongey/terraform-provider-kafka/kafka"
 	"github.com/hashicorp/terraform/plugin"
 )
 

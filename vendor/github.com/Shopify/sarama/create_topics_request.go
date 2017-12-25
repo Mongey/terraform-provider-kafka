@@ -1,180 +1,54 @@
 package sarama
 
-type ReplicaAssignment struct {
-	PartitionID int32
-	Replicas    []int32
-}
-
-type ConfigKV struct {
-	Key   string
-	Value string
-}
-
-type CreateTopicRequest struct {
-	Topic              string
-	NumPartitions      int32
-	ReplicationFactor  int16
-	ReplicaAssignments []ReplicaAssignment
-	Configs            []ConfigKV
-}
+import (
+	"time"
+)
 
 type CreateTopicsRequest struct {
-	CreateRequests []CreateTopicRequest
-	Timeout        int32
+	Version int16
+
+	TopicDetails map[string]*TopicDetail
+	Timeout      time.Duration
+	ValidateOnly bool
 }
 
-func (cr *CreateTopicRequest) encode(pe packetEncoder) error {
-	if err := pe.putString(cr.Topic); err != nil {
+func (c *CreateTopicsRequest) encode(pe packetEncoder) error {
+	if err := pe.putArrayLength(len(c.TopicDetails)); err != nil {
 		return err
 	}
-
-	pe.putInt32(cr.NumPartitions)
-	pe.putInt16(cr.ReplicationFactor)
-
-	if err := pe.putArrayLength(len(cr.ReplicaAssignments)); err != nil {
-		return err
-	}
-
-	for i := range cr.ReplicaAssignments {
-		replicaAssignment := cr.ReplicaAssignments[i]
-		pe.putInt32(replicaAssignment.PartitionID)
-
-		if err := pe.putArrayLength(len(replicaAssignment.Replicas)); err != nil {
+	for topic, detail := range c.TopicDetails {
+		if err := pe.putString(topic); err != nil {
 			return err
 		}
-
-		for j := range replicaAssignment.Replicas {
-			pe.putInt32(replicaAssignment.Replicas[j])
+		if err := detail.encode(pe); err != nil {
+			return err
 		}
 	}
 
-	if err := pe.putArrayLength(len(cr.Configs)); err != nil {
-		return err
-	}
+	pe.putInt32(int32(c.Timeout / time.Millisecond))
 
-	for i := range cr.Configs {
-		if err := pe.putString(cr.Configs[i].Key); err != nil {
-			return err
-		}
-
-		if err := pe.putString(cr.Configs[i].Value); err != nil {
-			return err
-		}
+	if c.Version >= 1 {
+		pe.putBool(c.ValidateOnly)
 	}
 
 	return nil
 }
 
-func (cr *CreateTopicRequest) decode(pd packetDecoder, version int16) error {
-	topic, err := pd.getString()
-	if err != nil {
-		return err
-	}
-	cr.Topic = topic
-
-	numPartitions, err := pd.getInt32()
-	if err != nil {
-		return err
-	}
-	cr.NumPartitions = numPartitions
-
-	replicationFactor, err := pd.getInt16()
-	if err != nil {
-		return err
-	}
-	cr.ReplicationFactor = replicationFactor
-
-	partitionCount, err := pd.getArrayLength()
+func (c *CreateTopicsRequest) decode(pd packetDecoder, version int16) (err error) {
+	n, err := pd.getArrayLength()
 	if err != nil {
 		return err
 	}
 
-	if partitionCount > 0 {
-		cr.ReplicaAssignments = make([]ReplicaAssignment, partitionCount)
+	c.TopicDetails = make(map[string]*TopicDetail, n)
 
-		for i := range cr.ReplicaAssignments {
-			replicaAssignment := ReplicaAssignment{}
-
-			partitionID, err := pd.getInt32()
-			if err != nil {
-				return err
-			}
-			replicaAssignment.PartitionID = partitionID
-
-			replicaCount, err := pd.getArrayLength()
-			if err != nil {
-				return err
-			}
-
-			replicaAssignment.Replicas = make([]int32, replicaCount)
-
-			for j := range replicaAssignment.Replicas {
-				replica, err := pd.getInt32()
-				if err != nil {
-					return err
-				}
-				replicaAssignment.Replicas[j] = replica
-			}
-			cr.ReplicaAssignments[i] = replicaAssignment
-		}
-	}
-
-	configCount, err := pd.getArrayLength()
-	if err != nil {
-		return err
-	}
-
-	if configCount > 0 {
-		cr.Configs = make([]ConfigKV, configCount)
-
-		for i := range cr.Configs {
-			key, err := pd.getString()
-			if err != nil {
-				return err
-			}
-
-			value, err := pd.getString()
-			if err != nil {
-				return err
-			}
-
-			cr.Configs[i] = ConfigKV{Key: key, Value: value}
-		}
-	}
-
-	return nil
-}
-
-func (ct *CreateTopicsRequest) encode(pe packetEncoder) error {
-	if err := pe.putArrayLength(len(ct.CreateRequests)); err != nil {
-		return err
-	}
-
-	for i := range ct.CreateRequests {
-		if err := ct.CreateRequests[i].encode(pe); err != nil {
-			return err
-		}
-	}
-
-	pe.putInt32(ct.Timeout)
-
-	return nil
-}
-
-func (ct *CreateTopicsRequest) decode(pd packetDecoder, version int16) error {
-	createTopicRequestCount, err := pd.getArrayLength()
-	if err != nil {
-		return err
-	}
-	if createTopicRequestCount == 0 {
-		return nil
-	}
-
-	ct.CreateRequests = make([]CreateTopicRequest, createTopicRequestCount)
-	for i := range ct.CreateRequests {
-		ct.CreateRequests[i] = CreateTopicRequest{}
-		err = ct.CreateRequests[i].decode(pd, version)
+	for i := 0; i < n; i++ {
+		topic, err := pd.getString()
 		if err != nil {
+			return err
+		}
+		c.TopicDetails[topic] = new(TopicDetail)
+		if err = c.TopicDetails[topic].decode(pd, version); err != nil {
 			return err
 		}
 	}
@@ -183,20 +57,118 @@ func (ct *CreateTopicsRequest) decode(pd packetDecoder, version int16) error {
 	if err != nil {
 		return err
 	}
+	c.Timeout = time.Duration(timeout) * time.Millisecond
 
-	ct.Timeout = timeout
+	if version >= 1 {
+		c.ValidateOnly, err = pd.getBool()
+		if err != nil {
+			return err
+		}
+
+		c.Version = version
+	}
 
 	return nil
 }
 
-func (ct *CreateTopicsRequest) key() int16 {
+func (c *CreateTopicsRequest) key() int16 {
 	return 19
 }
 
-func (ct *CreateTopicsRequest) version() int16 {
-	return 0
+func (c *CreateTopicsRequest) version() int16 {
+	return c.Version
 }
 
-func (ct *CreateTopicsRequest) requiredVersion() KafkaVersion {
-	return V0_10_0_0
+func (c *CreateTopicsRequest) requiredVersion() KafkaVersion {
+	switch c.Version {
+	case 2:
+		return V1_0_0_0
+	case 1:
+		return V0_11_0_0
+	default:
+		return V0_10_1_0
+	}
+}
+
+type TopicDetail struct {
+	NumPartitions     int32
+	ReplicationFactor int16
+	ReplicaAssignment map[int32][]int32
+	ConfigEntries     map[string]*string
+}
+
+func (t *TopicDetail) encode(pe packetEncoder) error {
+	pe.putInt32(t.NumPartitions)
+	pe.putInt16(t.ReplicationFactor)
+
+	if err := pe.putArrayLength(len(t.ReplicaAssignment)); err != nil {
+		return err
+	}
+	for partition, assignment := range t.ReplicaAssignment {
+		pe.putInt32(partition)
+		if err := pe.putInt32Array(assignment); err != nil {
+			return err
+		}
+	}
+
+	if err := pe.putArrayLength(len(t.ConfigEntries)); err != nil {
+		return err
+	}
+	for configKey, configValue := range t.ConfigEntries {
+		if err := pe.putString(configKey); err != nil {
+			return err
+		}
+		if err := pe.putNullableString(configValue); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (t *TopicDetail) decode(pd packetDecoder, version int16) (err error) {
+	if t.NumPartitions, err = pd.getInt32(); err != nil {
+		return err
+	}
+	if t.ReplicationFactor, err = pd.getInt16(); err != nil {
+		return err
+	}
+
+	n, err := pd.getArrayLength()
+	if err != nil {
+		return err
+	}
+
+	if n > 0 {
+		t.ReplicaAssignment = make(map[int32][]int32, n)
+		for i := 0; i < n; i++ {
+			replica, err := pd.getInt32()
+			if err != nil {
+				return err
+			}
+			if t.ReplicaAssignment[replica], err = pd.getInt32Array(); err != nil {
+				return err
+			}
+		}
+	}
+
+	n, err = pd.getArrayLength()
+	if err != nil {
+		return err
+	}
+
+	if n > 0 {
+		t.ConfigEntries = make(map[string]*string, n)
+		for i := 0; i < n; i++ {
+			configKey, err := pd.getString()
+			if err != nil {
+				return err
+			}
+			if t.ConfigEntries[configKey], err = pd.getNullableString(); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

@@ -18,9 +18,7 @@ import (
 type Broker struct {
 	id   int32
 	addr string
-	rack string
 
-	isController  bool
 	conf          *Config
 	correlationID int32
 	conn          net.Conn
@@ -179,6 +177,13 @@ func (b *Broker) Close() error {
 	b.connErr = nil
 	b.done = nil
 	b.responses = nil
+
+	if b.id >= 0 {
+		b.conf.MetricRegistry.Unregister(getMetricNameForBroker("incoming-byte-rate", b))
+		b.conf.MetricRegistry.Unregister(getMetricNameForBroker("request-rate", b))
+		b.conf.MetricRegistry.Unregister(getMetricNameForBroker("outgoing-byte-rate", b))
+		b.conf.MetricRegistry.Unregister(getMetricNameForBroker("response-rate", b))
+	}
 
 	if err == nil {
 		Logger.Printf("Closed connection to broker %s\n", b.addr)
@@ -368,6 +373,28 @@ func (b *Broker) ApiVersions(request *ApiVersionsRequest) (*ApiVersionsResponse,
 	return response, nil
 }
 
+func (b *Broker) CreateTopics(request *CreateTopicsRequest) (*CreateTopicsResponse, error) {
+	response := new(CreateTopicsResponse)
+
+	err := b.sendAndReceive(request, response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (b *Broker) DeleteTopics(request *DeleteTopicsRequest) (*DeleteTopicsResponse, error) {
+	response := new(DeleteTopicsResponse)
+
+	err := b.sendAndReceive(request, response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
 func (b *Broker) send(rb protocolBody, promiseResponse bool) (*responsePromise, error) {
 	b.lock.Lock()
 	defer b.lock.Unlock()
@@ -433,7 +460,7 @@ func (b *Broker) sendAndReceive(req protocolBody, res versionedDecoder) error {
 	}
 }
 
-func (b *Broker) decode(pd packetDecoder, version int16) (err error) {
+func (b *Broker) decode(pd packetDecoder) (err error) {
 	b.id, err = pd.getInt32()
 	if err != nil {
 		return err
@@ -449,13 +476,6 @@ func (b *Broker) decode(pd packetDecoder, version int16) (err error) {
 		return err
 	}
 
-	if version == 1 {
-		// v1 metadata response adds a rack to the broker metadata
-		if b.rack, err = pd.getString(); err != nil {
-			return err
-		}
-	}
-
 	b.addr = net.JoinHostPort(host, fmt.Sprint(port))
 	if _, _, err := net.SplitHostPort(b.addr); err != nil {
 		return err
@@ -464,7 +484,7 @@ func (b *Broker) decode(pd packetDecoder, version int16) (err error) {
 	return nil
 }
 
-func (b *Broker) encode(pe packetEncoder, version int16) (err error) {
+func (b *Broker) encode(pe packetEncoder) (err error) {
 
 	host, portstr, err := net.SplitHostPort(b.addr)
 	if err != nil {
@@ -483,13 +503,6 @@ func (b *Broker) encode(pe packetEncoder, version int16) (err error) {
 	}
 
 	pe.putInt32(int32(port))
-
-	if version == 1 {
-		// v1 metadata response adds a rack to the broker metadata
-		if err = pe.putString(b.rack); err != nil {
-			return err
-		}
-	}
 
 	return nil
 }
@@ -698,40 +711,4 @@ func (b *Broker) updateOutgoingCommunicationMetrics(bytes int) {
 	if b.brokerRequestSize != nil {
 		b.brokerRequestSize.Update(requestSize)
 	}
-}
-
-func (b *Broker) CreateTopics(request *CreateTopicsRequest) (*CreateTopicsResponse, error) {
-	response := new(CreateTopicsResponse)
-
-	err := b.sendAndReceive(request, response)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
-}
-
-func (b *Broker) DeleteTopics(request *DeleteTopicsRequest) (*DeleteTopicsResponse, error) {
-	response := new(DeleteTopicsResponse)
-
-	err := b.sendAndReceive(request, response)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
-}
-
-func (b *Broker) AlterConfigs(request *AlterConfigRequest) (*AlterConfigResponse, error) {
-	response := new(AlterConfigResponse)
-
-	err := b.sendAndReceive(request, response)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
 }

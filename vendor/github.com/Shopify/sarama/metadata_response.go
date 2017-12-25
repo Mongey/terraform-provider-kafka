@@ -114,10 +114,8 @@ func (tm *TopicMetadata) encode(pe packetEncoder) (err error) {
 }
 
 type MetadataResponse struct {
-	Brokers      []*Broker
-	ControllerId int32
-	Topics       []*TopicMetadata
-	Version      int16 // v1 requires 0.9+, v2 requires 0.10+
+	Brokers []*Broker
+	Topics  []*TopicMetadata
 }
 
 func (r *MetadataResponse) decode(pd packetDecoder, version int16) (err error) {
@@ -129,15 +127,8 @@ func (r *MetadataResponse) decode(pd packetDecoder, version int16) (err error) {
 	r.Brokers = make([]*Broker, n)
 	for i := 0; i < n; i++ {
 		r.Brokers[i] = new(Broker)
-		err = r.Brokers[i].decode(pd, version)
+		err = r.Brokers[i].decode(pd)
 		if err != nil {
-			return err
-		}
-	}
-
-	if version == 1 {
-		// v1 introduced a controller id
-		if r.ControllerId, err = pd.getInt32(); err != nil {
 			return err
 		}
 	}
@@ -165,15 +156,10 @@ func (r *MetadataResponse) encode(pe packetEncoder) error {
 		return err
 	}
 	for _, broker := range r.Brokers {
-		err = broker.encode(pe, r.Version)
+		err = broker.encode(pe)
 		if err != nil {
 			return err
 		}
-	}
-
-	if r.Version == 1 {
-		// v1 introduced a controller id
-		pe.putInt32(r.ControllerId)
 	}
 
 	err = pe.putArrayLength(len(r.Topics))
@@ -195,16 +181,11 @@ func (r *MetadataResponse) key() int16 {
 }
 
 func (r *MetadataResponse) version() int16 {
-	return r.Version
+	return 0
 }
 
 func (r *MetadataResponse) requiredVersion() KafkaVersion {
-	switch r.Version {
-	case 1:
-		return V0_10_0_0
-	default:
-		return minVersion
-	}
+	return minVersion
 }
 
 // testing API
