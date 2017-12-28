@@ -3,6 +3,7 @@
 set -xe
 go build
 mv terraform-provider-kafka $HOME/.terraform.d/plugins/terraform-provider-kafka
+cd examples
 terraform init
 terraform refresh
 terraform plan -out plan

@@ -69,11 +69,9 @@ func topicCreate(d *schema.ResourceData, meta interface{}) error {
 	res, err := broker.CreateTopics(req)
 
 	if err == nil {
-		if len(res.TopicErrors) > 0 {
-			for _, e := range res.TopicErrors {
-				if e.Err != 0 {
-					return fmt.Errorf("%s", e.Err)
-				}
+		for _, e := range res.TopicErrors {
+			if e.Err != samara.ErrNoError {
+				return fmt.Errorf("%s", e.Err)
 			}
 		}
 		log.Printf("[INFO] Created topic %s in Kafka", t.Name)
@@ -100,9 +98,15 @@ func topicDelete(d *schema.ResourceData, meta interface{}) error {
 		Topics:  []string{t.Name},
 		Timeout: 1000 * time.Millisecond,
 	}
-	_, err = broker.DeleteTopics(req)
+	res, err := broker.DeleteTopics(req)
 
-	if err != nil {
+	if err == nil {
+		for k, e := range res.TopicErrorCodes {
+			if e != samara.ErrNoError {
+				return fmt.Errorf("%s : %s", k, e)
+			}
+		}
+	} else {
 		log.Printf("[ERROR] Error deleting topic %s from Kafka", err)
 		return err
 	}
@@ -116,7 +120,8 @@ func topicDelete(d *schema.ResourceData, meta interface{}) error {
 
 func topicRead(d *schema.ResourceData, meta interface{}) error {
 	name := d.Id()
-	c := meta.(*Client).client
+	client := meta.(*Client)
+	c := client.client
 	topics, err := c.Topics()
 
 	if err != nil {
@@ -139,7 +144,15 @@ func topicRead(d *schema.ResourceData, meta interface{}) error {
 					log.Printf("[DEBUG] ReplicationFactor %d from Kafka", r)
 					d.Set("replication_factor", r)
 				}
+				configToSave, err := ConfigForTopic(t, client.config.Brokers)
+				if err != nil {
+					log.Printf("[ERROR] Could not get config for topic %s: %s", t, err)
+					return err
+				}
+
+				d.Set("config", configToSave)
 			}
+
 			return nil
 		}
 	}

@@ -14,6 +14,6 @@ resource "kafka_topic" "foo2" {
   partitions         = 1
 
   config = {
-    "segment.ms" = "10000"
+    "segment.ms" = "20000"
   }
 }
