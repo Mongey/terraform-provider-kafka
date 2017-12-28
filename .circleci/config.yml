@@ -9,4 +9,4 @@ jobs:
       - run: go build
       - store_artifacts:
           path: /go/src/github.com/Mongey/terraform-provider-kafka/terraform-provider-kafka
-          destination: plugin
+          destination: terraform-provider-kafka 
