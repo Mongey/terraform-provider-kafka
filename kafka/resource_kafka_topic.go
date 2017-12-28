@@ -69,11 +69,9 @@ func topicCreate(d *schema.ResourceData, meta interface{}) error {
 	res, err := broker.CreateTopics(req)
 
 	if err == nil {
-		if len(res.TopicErrors) > 0 {
-			for _, e := range res.TopicErrors {
-				if e.Err != 0 {
-					return fmt.Errorf("%s", e.Err)
-				}
+		for _, e := range res.TopicErrors {
+			if e.Err != samara.ErrNoError {
+				return fmt.Errorf("%s", e.Err)
 			}
 		}
 		log.Printf("[INFO] Created topic %s in Kafka", t.Name)
@@ -100,9 +98,15 @@ func topicDelete(d *schema.ResourceData, meta interface{}) error {
 		Topics:  []string{t.Name},
 		Timeout: 1000 * time.Millisecond,
 	}
-	_, err = broker.DeleteTopics(req)
+	res, err := broker.DeleteTopics(req)
 
-	if err != nil {
+	if err == nil {
+		for k, e := range res.TopicErrorCodes {
+			if e != samara.ErrNoError {
+				return fmt.Errorf("%s : %s", k, e)
+			}
+		}
+	} else {
 		log.Printf("[ERROR] Error deleting topic %s from Kafka", err)
 		return err
 	}
