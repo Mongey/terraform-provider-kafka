@@ -13,10 +13,11 @@ import (
 func kafkaTopicResource() *schema.Resource {
 	return &schema.Resource{
 		Create: topicCreate,
-		//Update: topicUpdate,
 		Delete: topicDelete,
 		Read:   topicRead,
-
+		Importer: &schema.ResourceImporter{
+			State: schema.ImportStatePassthrough,
+		},
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
@@ -125,9 +126,9 @@ func topicRead(d *schema.ResourceData, meta interface{}) error {
 
 	for _, t := range topics {
 		log.Printf("[DEBUG] Reading Topic %s from Kafka", t)
-		log.Printf("[DEBUG] checking if %s == %s", t, name)
 		if name == t {
 			log.Printf("[DEBUG] FOUND %s from Kafka", t)
+			d.Set("name", t)
 			p, err := c.Partitions(t)
 			if err == nil {
 				log.Printf("[DEBUG] Partitions %v from Kafka", p)
