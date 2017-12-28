@@ -120,7 +120,8 @@ func topicDelete(d *schema.ResourceData, meta interface{}) error {
 
 func topicRead(d *schema.ResourceData, meta interface{}) error {
 	name := d.Id()
-	c := meta.(*Client).client
+	client := meta.(*Client)
+	c := client.client
 	topics, err := c.Topics()
 
 	if err != nil {
@@ -143,7 +144,15 @@ func topicRead(d *schema.ResourceData, meta interface{}) error {
 					log.Printf("[DEBUG] ReplicationFactor %d from Kafka", r)
 					d.Set("replication_factor", r)
 				}
+				configToSave, err := ConfigForTopic(t, client.config.Brokers)
+				if err != nil {
+					log.Printf("[ERROR] Could not get config for topic %s: %s", t, err)
+					return err
+				}
+
+				d.Set("config", configToSave)
 			}
+
 			return nil
 		}
 	}

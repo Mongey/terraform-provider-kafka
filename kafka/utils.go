@@ -57,6 +57,39 @@ type topicConfig struct {
 	Config            map[string]*string
 }
 
+func ConfigForTopic(topic string, brokers []string) (map[string]string, error) {
+	confToSave := map[string]string{}
+	request := &samara.DescribeConfigsRequest{
+		Resources: []*samara.Resource{
+			&samara.Resource{
+				T:           samara.TopicResource,
+				Name:        topic,
+				ConfigNames: []string{"segment.ms"},
+			},
+		},
+	}
+
+	broker, err := AvailableBrokerFromList(brokers)
+	if err != nil {
+		return confToSave, err
+	}
+	cr, err := broker.DescribeConfigs(request)
+	if err != nil {
+		return confToSave, err
+	}
+
+	if len(cr.Resources) > 0 && len(cr.Resources[0].Configs) > 0 {
+		for _, conf := range cr.Resources[0].Configs {
+			if conf.Default {
+				continue
+			}
+			log.Printf("[DEBUG] configs %s", conf.Name)
+			log.Printf("[DEBUG] configs %s", conf.Value)
+			confToSave[conf.Name] = conf.Value
+		}
+	}
+	return confToSave, nil
+}
 func metaToTopicConfig(d *schema.ResourceData, meta interface{}) topicConfig {
 	topicName := d.Get("name").(string)
 	partitions := d.Get("partitions").(int)
