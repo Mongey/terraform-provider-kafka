@@ -1,5 +1,7 @@
 A [Terraform][1] plugin for managing [Apache Kafka][2].
 
+[![CircleCI](https://circleci.com/gh/Mongey/terraform-provider-kafka.svg?style=svg)](https://circleci.com/gh/Mongey/terraform-provider-kafka)
+
 # Requirements
 * [Kafka 0.11][3]
 
