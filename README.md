@@ -7,7 +7,7 @@ A [Terraform][1] plugin for managing [Apache Kafka][2].
 
 # Example
 
-```terraform
+```hcl
 provider "kafka" {
   brokers = ["localhost:9092"]
 }
