@@ -3,7 +3,7 @@ package kafka
 import (
 	"fmt"
 
-	samara "github.com/Shopify/sarama"
+	sarama "github.com/Shopify/sarama"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
@@ -57,15 +57,15 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 // Client is ok
 type Client struct {
-	client samara.Client
+	client sarama.Client
 	config *Config
 }
 
 // NewClient is
 func NewClient(config *Config) (*Client, error) {
-	kafkaConfig := samara.NewConfig()
-	kafkaConfig.Version = samara.V0_11_0_0
-	c, err := samara.NewClient(config.Brokers, kafkaConfig)
+	kafkaConfig := sarama.NewConfig()
+	kafkaConfig.Version = sarama.V0_11_0_0
+	c, err := sarama.NewClient(config.Brokers, kafkaConfig)
 
 	if err != nil {
 		fmt.Println("Error connecting to kafka")

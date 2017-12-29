@@ -6,15 +6,16 @@ import (
 	"log"
 	"time"
 
-	samara "github.com/Shopify/sarama"
+	sarama "github.com/Shopify/sarama"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
 func kafkaTopicResource() *schema.Resource {
 	return &schema.Resource{
 		Create: topicCreate,
-		Delete: topicDelete,
 		Read:   topicRead,
+		Update: topicUpdate,
+		Delete: topicDelete,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -40,7 +41,7 @@ func kafkaTopicResource() *schema.Resource {
 			"config": {
 				Type:        schema.TypeMap,
 				Optional:    true,
-				ForceNew:    true,
+				ForceNew:    false,
 				Description: "the config",
 			},
 		},
@@ -56,8 +57,8 @@ func topicCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	req := &samara.CreateTopicsRequest{
-		TopicDetails: map[string]*samara.TopicDetail{
+	req := &sarama.CreateTopicsRequest{
+		TopicDetails: map[string]*sarama.TopicDetail{
 			t.Name: {
 				NumPartitions:     t.Partitions,
 				ReplicationFactor: t.ReplicationFactor,
@@ -70,7 +71,7 @@ func topicCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if err == nil {
 		for _, e := range res.TopicErrors {
-			if e.Err != samara.ErrNoError {
+			if e.Err != sarama.ErrNoError {
 				return fmt.Errorf("%s", e.Err)
 			}
 		}
@@ -81,7 +82,29 @@ func topicCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func topicUpdate(d *schema.ResourceData, meta interface{}) error {
-	return errors.New("Updates NYI")
+	c := meta.(*Client)
+	t := metaToTopicConfig(d, meta)
+	broker, err := AvailableBrokerFromList(c.config.Brokers)
+
+	if err != nil {
+		return err
+	}
+
+	r := &sarama.AlterConfigsRequest{
+		Resources:    configToResources(t.Name, t.Config),
+		ValidateOnly: false,
+	}
+	res, err := broker.AlterConfigs(r)
+
+	if err == nil {
+		for _, e := range res.Resources {
+			if e.ErrorCode != int16(sarama.ErrNoError) {
+				return errors.New(e.ErrorMsg)
+			}
+		}
+	}
+
+	return nil
 }
 
 func topicDelete(d *schema.ResourceData, meta interface{}) error {
@@ -94,7 +117,7 @@ func topicDelete(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	req := &samara.DeleteTopicsRequest{
+	req := &sarama.DeleteTopicsRequest{
 		Topics:  []string{t.Name},
 		Timeout: 1000 * time.Millisecond,
 	}
@@ -102,7 +125,7 @@ func topicDelete(d *schema.ResourceData, meta interface{}) error {
 
 	if err == nil {
 		for k, e := range res.TopicErrorCodes {
-			if e != samara.ErrNoError {
+			if e != sarama.ErrNoError {
 				return fmt.Errorf("%s : %s", k, e)
 			}
 		}
