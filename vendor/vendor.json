@@ -3,10 +3,10 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "ICwyCpqH/E7E2FleZHDiArT5kTA=",
+			"checksumSHA1": "II1yTb8ll5/Lzh2VxDxAFwTD1/Y=",
 			"path": "github.com/Shopify/sarama",
-			"revision": "2994a2ce971b0e5302cad993217bcb697175b717",
-			"revisionTime": "2017-12-28T20:55:45Z"
+			"revision": "971d162d049ac02a33bd541d89e19ef44046918b",
+			"revisionTime": "2017-12-29T03:14:40Z"
 		},
 		{
 			"checksumSHA1": "FIL83loX9V9APvGQIjJpbxq53F0=",

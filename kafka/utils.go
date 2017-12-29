@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"log"
 
-	samara "github.com/Shopify/sarama"
+	sarama "github.com/Shopify/sarama"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // ReplicaCount returns the replication_factor for a partition
 // Returns an error if it cannot determine the count, or if the number of
 // replicas is different accross partitions
-func ReplicaCount(c samara.Client, topic string, partitions []int32) (int, error) {
+func ReplicaCount(c sarama.Client, topic string, partitions []int32) (int, error) {
 	count := -1
 
 	for _, p := range partitions {
@@ -33,13 +33,13 @@ func ReplicaCount(c samara.Client, topic string, partitions []int32) (int, error
 
 // AvailableBrokerFromList finds a broker that we can talk to
 // Returns the last know error
-func AvailableBrokerFromList(brokers []string) (*samara.Broker, error) {
+func AvailableBrokerFromList(brokers []string) (*sarama.Broker, error) {
 	var err error
-	kafkaConfig := samara.NewConfig()
-	kafkaConfig.Version = samara.V0_11_0_0
+	kafkaConfig := sarama.NewConfig()
+	kafkaConfig.Version = sarama.V0_11_0_0
 	fmt.Printf("Looking at %v", brokers)
 	for _, b := range brokers {
-		broker := samara.NewBroker(b)
+		broker := sarama.NewBroker(b)
 		err = broker.Open(kafkaConfig)
 		if err == nil {
 			return broker, nil
@@ -59,10 +59,10 @@ type topicConfig struct {
 
 func ConfigForTopic(topic string, brokers []string) (map[string]string, error) {
 	confToSave := map[string]string{}
-	request := &samara.DescribeConfigsRequest{
-		Resources: []*samara.Resource{
-			&samara.Resource{
-				T:           samara.TopicResource,
+	request := &sarama.DescribeConfigsRequest{
+		Resources: []*sarama.Resource{
+			&sarama.Resource{
+				T:           sarama.TopicResource,
 				Name:        topic,
 				ConfigNames: []string{"segment.ms"},
 			},
@@ -90,6 +90,7 @@ func ConfigForTopic(topic string, brokers []string) (map[string]string, error) {
 	}
 	return confToSave, nil
 }
+
 func metaToTopicConfig(d *schema.ResourceData, meta interface{}) topicConfig {
 	topicName := d.Get("name").(string)
 	partitions := d.Get("partitions").(int)
@@ -112,4 +113,25 @@ func metaToTopicConfig(d *schema.ResourceData, meta interface{}) topicConfig {
 		ReplicationFactor: convertedRF,
 		Config:            m2,
 	}
+}
+
+func configToResources(topic string, config map[string]*string) []*sarama.AlterConfigsResource {
+	res := make([]*sarama.AlterConfigsResource, len(config))
+	i := 0
+
+	for k, v := range config {
+		res[i] = &sarama.AlterConfigsResource{
+			T:    sarama.TopicResource,
+			Name: topic,
+			ConfigEntries: []*sarama.ConfigEntryKV{
+				&sarama.ConfigEntryKV{
+					Name:  k,
+					Value: *v,
+				},
+			},
+		}
+		i++
+	}
+
+	return res
 }
