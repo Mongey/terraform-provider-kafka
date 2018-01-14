@@ -62,7 +62,7 @@ func ConfigForTopic(topic string, brokers []string) (map[string]string, error) {
 	request := &sarama.DescribeConfigsRequest{
 		Resources: []*sarama.Resource{
 			&sarama.Resource{
-				T:           sarama.TopicResource,
+				Type:        sarama.TopicResource,
 				Name:        topic,
 				ConfigNames: []string{"segment.ms"},
 			},
@@ -121,13 +121,10 @@ func configToResources(topic string, config map[string]*string) []*sarama.AlterC
 
 	for k, v := range config {
 		res[i] = &sarama.AlterConfigsResource{
-			T:    sarama.TopicResource,
+			Type: sarama.TopicResource,
 			Name: topic,
-			ConfigEntries: []*sarama.ConfigEntryKV{
-				&sarama.ConfigEntryKV{
-					Name:  k,
-					Value: *v,
-				},
+			ConfigEntries: map[string]*string{
+				k: v,
 			},
 		}
 		i++
