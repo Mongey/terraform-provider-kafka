@@ -1,0 +1,11 @@
+# Refer to https://github.com/golang/dep/blob/master/docs/Gopkg.toml.md
+# for detailed Gopkg.toml documentation.
+
+[[constraint]]
+  name = "github.com/Shopify/sarama"
+  branch = "cm-describe-configs"
+  source = "github.com/Mongey/sarama"
+
+[[constraint]]
+  name = "github.com/hashicorp/terraform"
+  version = "0.11.1"
