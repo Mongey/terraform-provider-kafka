@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform/config"
+	"github.com/hashicorp/terraform/dag"
 )
 
 // NodeApplyableOutput represents an output that is "applyable":
@@ -35,6 +36,14 @@ func (n *NodeApplyableOutput) RemoveIfNotTargeted() bool {
 	return true
 }
 
+// GraphNodeTargetDownstream
+func (n *NodeApplyableOutput) TargetDownstream(targetedDeps, untargetedDeps *dag.Set) bool {
+	// If any of the direct dependencies of an output are targeted then
+	// the output must always be targeted as well, so its value will always
+	// be up-to-date at the completion of an apply walk.
+	return true
+}
+
 // GraphNodeReferenceable
 func (n *NodeApplyableOutput) ReferenceableName() []string {
 	name := fmt.Sprintf("output.%s", n.Config.Name)
@@ -60,15 +69,31 @@ func (n *NodeApplyableOutput) References() []string {
 
 // GraphNodeEvalable
 func (n *NodeApplyableOutput) EvalTree() EvalNode {
-	return &EvalOpFilter{
-		Ops: []walkOperation{walkRefresh, walkPlan, walkApply,
-			walkDestroy, walkInput, walkValidate},
-		Node: &EvalSequence{
-			Nodes: []EvalNode{
-				&EvalWriteOutput{
+	return &EvalSequence{
+		Nodes: []EvalNode{
+			&EvalOpFilter{
+				// Don't let interpolation errors stop Input, since it happens
+				// before Refresh.
+				Ops: []walkOperation{walkInput},
+				Node: &EvalWriteOutput{
+					Name:          n.Config.Name,
+					Sensitive:     n.Config.Sensitive,
+					Value:         n.Config.RawConfig,
+					ContinueOnErr: true,
+				},
+			},
+			&EvalOpFilter{
+				Ops: []walkOperation{walkRefresh, walkPlan, walkApply, walkValidate},
+				Node: &EvalWriteOutput{
 					Name:      n.Config.Name,
 					Sensitive: n.Config.Sensitive,
 					Value:     n.Config.RawConfig,
+				},
+			},
+			&EvalOpFilter{
+				Ops: []walkOperation{walkDestroy, walkPlanDestroy},
+				Node: &EvalDeleteOutput{
+					Name: n.Config.Name,
 				},
 			},
 		},
