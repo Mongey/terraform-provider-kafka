@@ -236,6 +236,7 @@
     "moduledeps",
     "plugin",
     "plugin/discovery",
+    "registry",
     "registry/regsrc",
     "registry/response",
     "svchost",
@@ -245,8 +246,8 @@
     "tfdiags",
     "version"
   ]
-  revision = "a42fdb08a43c7fabb8898fe8c286b793bbaa4835"
-  version = "v0.11.1"
+  revision = "a6008b8a48a749c7c167453b9cf55ffd572b9a5d"
+  version = "v0.11.2"
 
 [[projects]]
   branch = "master"
@@ -472,6 +473,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b6552a3c83989fe1859d0d19ed99d92e299768f79269d7f5157b0db27996e17b"
+  inputs-digest = "dcfc8f489c5394ec548dd7ab320bec8e84beda42e5c17bd4c7652c1249a492b2"
   solver-name = "gps-cdcl"
   solver-version = 1

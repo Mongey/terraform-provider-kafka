@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	hcl2 "github.com/hashicorp/hcl2/hcl"
 	"github.com/hashicorp/hil/ast"
 	"github.com/hashicorp/terraform/helper/hilmapstructure"
 	"github.com/hashicorp/terraform/plugin/discovery"
@@ -415,10 +416,17 @@ func (c *Config) Validate() tfdiags.Diagnostics {
 		if p.Version != "" {
 			_, err := discovery.ConstraintStr(p.Version).Parse()
 			if err != nil {
-				diags = diags.Append(fmt.Errorf(
-					"provider.%s: invalid version constraint %q: %s",
-					name, p.Version, err,
-				))
+				diags = diags.Append(&hcl2.Diagnostic{
+					Severity: hcl2.DiagError,
+					Summary:  "Invalid provider version constraint",
+					Detail: fmt.Sprintf(
+						"The value %q given for provider.%s is not a valid version constraint.",
+						p.Version, name,
+					),
+					// TODO: include a "Subject" source reference in here,
+					// once the config loader is able to retain source
+					// location information.
+				})
 			}
 		}
 
@@ -849,7 +857,7 @@ func (c *Config) Validate() tfdiags.Diagnostics {
 					// a count might dynamically be set to something
 					// other than 1 and thus splat syntax is still needed
 					// to be safe.
-					if r.RawCount != nil && r.RawCount.Raw != nil && r.RawCount.Raw["count"] != "1" {
+					if r.RawCount != nil && r.RawCount.Raw != nil && r.RawCount.Raw["count"] != "1" && rv.Field != "count" {
 						diags = diags.Append(tfdiags.SimpleWarning(fmt.Sprintf(
 							"output %q: must use splat syntax to access %s attribute %q, because it has \"count\" set; use %s.*.%s to obtain a list of the attributes across all instances",
 							o.Name,
