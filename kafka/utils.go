@@ -1,134 +1,36 @@
 package kafka
 
 import (
-	"errors"
 	"fmt"
-	"log"
-
-	sarama "github.com/Shopify/sarama"
-	"github.com/hashicorp/terraform/helper/schema"
 )
 
-// ReplicaCount returns the replication_factor for a partition
-// Returns an error if it cannot determine the count, or if the number of
-// replicas is different accross partitions
-func ReplicaCount(c sarama.Client, topic string, partitions []int32) (int, error) {
-	count := -1
-
-	for _, p := range partitions {
-		replicas, err := c.Replicas(topic, p)
-		if err != nil {
-			return -1, errors.New("Could not get replicas for partition")
-		}
-		if count == -1 {
-			count = len(replicas)
-		}
-		if count != len(replicas) {
-			return count, fmt.Errorf("The replica count isn't the same across partitions %d != %d", count, len(replicas))
-		}
-	}
-	return count, nil
-
-}
-
-// AvailableBrokerFromList finds a broker that we can talk to
-// Returns the last know error
-func AvailableBrokerFromList(brokers []string) (*sarama.Broker, error) {
-	var err error
-	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V0_11_0_0
-	fmt.Printf("Looking at %v", brokers)
-	for _, b := range brokers {
-		broker := sarama.NewBroker(b)
-		err = broker.Open(kafkaConfig)
-		if err == nil {
-			return broker, nil
-		}
-		log.Printf("[WARN] Broker @ %s cannot be reached", b)
+// MapEq compares two maps, and checks that the keys and values are the same
+func MapEq(result, expected map[string]*string) error {
+	if len(result) != len(expected) {
+		return fmt.Errorf("%v != %v", result, expected)
 	}
 
-	return nil, err
-}
-
-type topicConfig struct {
-	Name              string
-	Partitions        int32
-	ReplicationFactor int16
-	Config            map[string]*string
-}
-
-func ConfigForTopic(topic string, brokers []string) (map[string]string, error) {
-	confToSave := map[string]string{}
-	request := &sarama.DescribeConfigsRequest{
-		Resources: []*sarama.Resource{
-			&sarama.Resource{
-				Type:        sarama.TopicResource,
-				Name:        topic,
-				ConfigNames: []string{"segment.ms"},
-			},
-		},
-	}
-
-	broker, err := AvailableBrokerFromList(brokers)
-	if err != nil {
-		return confToSave, err
-	}
-	cr, err := broker.DescribeConfigs(request)
-	if err != nil {
-		return confToSave, err
-	}
-
-	if len(cr.Resources) > 0 && len(cr.Resources[0].Configs) > 0 {
-		for _, conf := range cr.Resources[0].Configs {
-			if conf.Default {
+	for expectedK, expectedV := range expected {
+		if resultV, ok := result[expectedK]; ok {
+			if resultV == nil && expectedV == nil {
 				continue
 			}
-			log.Printf("[DEBUG] configs %s", conf.Name)
-			log.Printf("[DEBUG] configs %s", conf.Value)
-			confToSave[conf.Name] = conf.Value
+			if *resultV != *expectedV {
+				return fmt.Errorf("result[%s]: %s != expected[%s]: %s", expectedK, *resultV, expectedK, *expectedV)
+			}
+
+		} else {
+			return fmt.Errorf("result[%s] should exist", expectedK)
 		}
 	}
-	return confToSave, nil
+	return nil
 }
 
-func metaToTopicConfig(d *schema.ResourceData, meta interface{}) topicConfig {
-	topicName := d.Get("name").(string)
-	partitions := d.Get("partitions").(int)
-	replicationFactor := d.Get("replication_factor").(int)
-	convertedPartitions := int32(partitions)
-	convertedRF := int16(replicationFactor)
-	config := d.Get("config").(map[string]interface{})
-
-	m2 := make(map[string]*string)
-	for key, value := range config {
-		switch value := value.(type) {
-		case string:
-			m2[key] = &value
-		}
+// TODO: can I just get rid of this?
+func strPtrMapToStrMap(c map[string]*string) map[string]string {
+	foo := map[string]string{}
+	for k, v := range c {
+		foo[k] = *v
 	}
-
-	return topicConfig{
-		Name:              topicName,
-		Partitions:        convertedPartitions,
-		ReplicationFactor: convertedRF,
-		Config:            m2,
-	}
-}
-
-func configToResources(topic string, config map[string]*string) []*sarama.AlterConfigsResource {
-	res := make([]*sarama.AlterConfigsResource, len(config))
-	i := 0
-
-	for k, v := range config {
-		res[i] = &sarama.AlterConfigsResource{
-			Type: sarama.TopicResource,
-			Name: topic,
-			ConfigEntries: map[string]*string{
-				k: v,
-			},
-		}
-		i++
-	}
-
-	return res
+	return foo
 }

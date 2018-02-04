@@ -1,12 +1,11 @@
 package kafka
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"time"
 
-	sarama "github.com/Shopify/sarama"
+	"github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/helper/schema"
 )
 
@@ -42,144 +41,142 @@ func kafkaTopicResource() *schema.Resource {
 				Type:        schema.TypeMap,
 				Optional:    true,
 				ForceNew:    false,
-				Description: "the config",
+				Description: "A map of string k/v attributes",
 			},
 		},
 	}
 }
 
 func topicCreate(d *schema.ResourceData, meta interface{}) error {
-	t := metaToTopicConfig(d, meta)
 	c := meta.(*Client)
-	broker, err := AvailableBrokerFromList(c.config.Brokers)
+	t := metaToTopic(d, meta)
+
+	for i, b := range *c.config.Brokers {
+		log.Printf("[DEBUG] Brokers %d , %s", i, b)
+	}
+	err := c.CreateTopic(t)
 
 	if err != nil {
 		return err
 	}
 
-	req := &sarama.CreateTopicsRequest{
-		TopicDetails: map[string]*sarama.TopicDetail{
-			t.Name: {
-				NumPartitions:     t.Partitions,
-				ReplicationFactor: t.ReplicationFactor,
-				ConfigEntries:     t.Config,
-			},
-		},
-		Timeout: 1000 * time.Millisecond,
-	}
-	res, err := broker.CreateTopics(req)
+	d.SetId(t.Name)
+	return nil
+}
 
-	if err == nil {
-		for _, e := range res.TopicErrors {
-			if e.Err != sarama.ErrNoError {
-				return fmt.Errorf("%s", e.Err)
-			}
+func topicRefreshFunc(client *Client, topic string, expected Topic) resource.StateRefreshFunc {
+	return func() (result interface{}, s string, err error) {
+		log.Printf("[DEBUG] waiting for topic to update %s", topic)
+		actual, err := client.ReadTopic(topic)
+		if err != nil {
+			log.Printf("[ERROR] could not read topic %s, %s", topic, err)
+			return actual, "Error", err
 		}
-		log.Printf("[INFO] Created topic %s in Kafka", t.Name)
-		d.SetId(t.Name)
+
+		if expected.Equal(actual) {
+			return actual, "Ready", nil
+		}
+
+		return nil, fmt.Sprintf("%v != %v", strPtrMapToStrMap(actual.Config), strPtrMapToStrMap(expected.Config)), nil
 	}
-	return err
 }
 
 func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*Client)
-	t := metaToTopicConfig(d, meta)
-	broker, err := AvailableBrokerFromList(c.config.Brokers)
+	t := metaToTopic(d, meta)
+
+	err := c.UpdateTopic(t)
 
 	if err != nil {
 		return err
 	}
 
-	r := &sarama.AlterConfigsRequest{
-		Resources:    configToResources(t.Name, t.Config),
-		ValidateOnly: false,
-	}
-	res, err := broker.AlterConfigs(r)
-
-	if err == nil {
-		for _, e := range res.Resources {
-			if e.ErrorCode != int16(sarama.ErrNoError) {
-				return errors.New(e.ErrorMsg)
-			}
-		}
+	stateConf := &resource.StateChangeConf{
+		Pending:      []string{"Updating"},
+		Target:       []string{"Ready"},
+		Refresh:      topicRefreshFunc(c, d.Id(), t),
+		Timeout:      10 * time.Second,
+		Delay:        1 * time.Second,
+		PollInterval: 1 * time.Second,
+		MinTimeout:   2 * time.Second,
 	}
 
-	return nil
+	_, err = stateConf.WaitForState()
+
+	if err != nil {
+		return fmt.Errorf(
+			"Error waiting for topic (%s) to become ready: %s",
+			d.Id(), err)
+	}
+
+	return err
 }
 
 func topicDelete(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*Client)
-	t := metaToTopicConfig(d, meta)
+	t := metaToTopic(d, meta)
 
-	broker, err := AvailableBrokerFromList(c.config.Brokers)
-
+	err := c.DeleteTopcic(t.Name)
 	if err != nil {
 		return err
 	}
 
-	req := &sarama.DeleteTopicsRequest{
-		Topics:  []string{t.Name},
-		Timeout: 1000 * time.Millisecond,
+	stateConf := &resource.StateChangeConf{
+		Pending:      []string{"Pending"},
+		Target:       []string{"Deleted"},
+		Refresh:      topicDeleteFunc(c, d.Id(), t),
+		Timeout:      300 * time.Second,
+		Delay:        3 * time.Second,
+		PollInterval: 2 * time.Second,
+		MinTimeout:   20 * time.Second,
 	}
-	res, err := broker.DeleteTopics(req)
+	_, err = stateConf.WaitForState()
 
-	if err == nil {
-		for k, e := range res.TopicErrorCodes {
-			if e != sarama.ErrNoError {
-				return fmt.Errorf("%s : %s", k, e)
-			}
-		}
-	} else {
-		log.Printf("[ERROR] Error deleting topic %s from Kafka", err)
-		return err
+	if err != nil {
+		return fmt.Errorf("Error waiting for topic (%s) to delete: %s", d.Id(), err)
 	}
 
-	log.Printf("[INFO] Deleted topic %s from Kafka", t.Name)
-
-	// delete from state
 	d.SetId("")
 	return err
+}
+
+func topicDeleteFunc(client *Client, id string, t Topic) resource.StateRefreshFunc {
+	return func() (result interface{}, s string, err error) {
+		topic, err := client.ReadTopic(t.Name)
+
+		if err != nil {
+			_, ok := err.(TopicMissingError)
+			if ok {
+				return topic, "Deleted", nil
+			}
+			return topic, "UNKNOWN", err
+		}
+		return topic, "Pending", nil
+	}
+
 }
 
 func topicRead(d *schema.ResourceData, meta interface{}) error {
 	name := d.Id()
 	client := meta.(*Client)
-	c := client.client
-	topics, err := c.Topics()
+	topic, err := client.ReadTopic(name)
 
 	if err != nil {
 		log.Printf("[ERROR] Error getting topics %s from Kafka", err)
+		_, ok := err.(TopicMissingError)
+		if ok {
+			d.SetId("")
+			return nil
+		}
+
 		return err
 	}
 
-	for _, t := range topics {
-		log.Printf("[DEBUG] Reading Topic %s from Kafka", t)
-		if name == t {
-			log.Printf("[DEBUG] FOUND %s from Kafka", t)
-			d.Set("name", t)
-			p, err := c.Partitions(t)
-			if err == nil {
-				log.Printf("[DEBUG] Partitions %v from Kafka", p)
-				d.Set("partitions", len(p))
+	log.Printf("[Debug] Setting the state from Kafka %v", topic)
+	d.Set("name", topic.Name)
+	d.Set("partitions", topic.Partitions)
+	d.Set("replication_factor", topic.ReplicationFactor)
+	d.Set("config", topic.Config)
 
-				r, err := ReplicaCount(c, name, p)
-				if err == nil {
-					log.Printf("[DEBUG] ReplicationFactor %d from Kafka", r)
-					d.Set("replication_factor", r)
-				}
-				configToSave, err := ConfigForTopic(t, client.config.Brokers)
-				if err != nil {
-					log.Printf("[ERROR] Could not get config for topic %s: %s", t, err)
-					return err
-				}
-
-				d.Set("config", configToSave)
-			}
-
-			return nil
-		}
-	}
-
-	d.SetId("")
 	return nil
 }
