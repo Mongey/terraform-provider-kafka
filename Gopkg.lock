@@ -2,10 +2,10 @@
 
 
 [[projects]]
-  branch = "cm-describe-configs"
+  branch = "cm-refresh-metadata"
   name = "github.com/Shopify/sarama"
   packages = ["."]
-  revision = "0bbd549d97945a27b4eaded7e59aae64802e31a2"
+  revision = "a3d529aa874ee03ea990b77762f124ac5bab6266"
   source = "github.com/Mongey/sarama"
 
 [[projects]]
@@ -222,6 +222,12 @@
   revision = "fa9f258a92500514cc8e9c67020487709df92432"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/logutils"
+  packages = ["."]
+  revision = "0dc08b1671f34c4250ce212759ebd880f743d883"
+
+[[projects]]
   name = "github.com/hashicorp/terraform"
   packages = [
     "config",
@@ -230,8 +236,11 @@
     "config/module",
     "dag",
     "flatmap",
+    "helper/config",
     "helper/hashcode",
     "helper/hilmapstructure",
+    "helper/logging",
+    "helper/resource",
     "helper/schema",
     "moduledeps",
     "plugin",
@@ -473,6 +482,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "dcfc8f489c5394ec548dd7ab320bec8e84beda42e5c17bd4c7652c1249a492b2"
+  inputs-digest = "da40c123519ab158db9cd39fd34b825e23503fc43827cd54d80e04bd70d3af58"
   solver-name = "gps-cdcl"
   solver-version = 1

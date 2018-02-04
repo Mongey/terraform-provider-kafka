@@ -3,8 +3,8 @@
 
 [[constraint]]
   name = "github.com/Shopify/sarama"
-  branch = "cm-describe-configs"
   source = "github.com/Mongey/sarama"
+  branch = "cm-refresh-metadata"
 
 [[constraint]]
   name = "github.com/hashicorp/terraform"

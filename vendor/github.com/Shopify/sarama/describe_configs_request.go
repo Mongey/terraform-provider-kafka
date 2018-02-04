@@ -1,13 +1,13 @@
 package sarama
 
-type Resource struct {
-	Type        ResourceType
+type ConfigResource struct {
+	Type        ConfigResourceType
 	Name        string
 	ConfigNames []string
 }
 
 type DescribeConfigsRequest struct {
-	Resources []*Resource
+	Resources []*ConfigResource
 }
 
 func (r *DescribeConfigsRequest) encode(pe packetEncoder) error {
@@ -19,6 +19,11 @@ func (r *DescribeConfigsRequest) encode(pe packetEncoder) error {
 		pe.putInt8(int8(c.Type))
 		if err := pe.putString(c.Name); err != nil {
 			return err
+		}
+
+		if len(c.ConfigNames) == 0 {
+			pe.putInt32(-1)
+			continue
 		}
 		if err := pe.putStringArray(c.ConfigNames); err != nil {
 			return err
@@ -34,25 +39,40 @@ func (r *DescribeConfigsRequest) decode(pd packetDecoder, version int16) (err er
 		return err
 	}
 
-	r.Resources = make([]*Resource, n)
+	r.Resources = make([]*ConfigResource, n)
 
 	for i := 0; i < n; i++ {
-		r.Resources[i] = &Resource{}
+		r.Resources[i] = &ConfigResource{}
 		t, err := pd.getInt8()
 		if err != nil {
 			return err
 		}
-		r.Resources[i].Type = ResourceType(t)
+		r.Resources[i].Type = ConfigResourceType(t)
 		name, err := pd.getString()
 		if err != nil {
 			return err
 		}
 		r.Resources[i].Name = name
-		s, err := pd.getStringArray()
+
+		confLength, err := pd.getArrayLength()
+
 		if err != nil {
 			return err
 		}
-		r.Resources[i].ConfigNames = s
+
+		if confLength == -1 {
+			continue
+		}
+
+		cfnames := make([]string, confLength)
+		for i := 0; i < confLength; i++ {
+			s, err := pd.getString()
+			if err != nil {
+				return err
+			}
+			cfnames[i] = s
+		}
+		r.Resources[i].ConfigNames = cfnames
 	}
 
 	return nil

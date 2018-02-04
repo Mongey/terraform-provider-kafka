@@ -2,25 +2,26 @@ package kafka
 
 import (
 	"fmt"
+	"log"
 
-	sarama "github.com/Shopify/sarama"
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 )
 
-// Provider does stuff
-//
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"brokers": &schema.Schema{
-				Type: schema.TypeList,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
+			"brokers": {
+				Type:        schema.TypeList,
+				Elem:        &schema.Schema{Type: schema.TypeString},
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KAFKA_BROKERS", []string{}),
 				Description: "A list of kafka brokers",
+			},
+			"timeout": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Default:     90,
+				Description: "Timeout in seconds",
 			},
 		},
 
@@ -31,49 +32,32 @@ func Provider() terraform.ResourceProvider {
 	}
 }
 
-// Config is the config
-type Config struct {
-	Brokers []string
-	Timeout int
-}
-
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	iBrokers := d.Get("brokers").([]interface{})
-	brokers := make([]string, 0, len(iBrokers))
-	for _, iBrokers := range iBrokers {
-		brokers = append(brokers, iBrokers.(string))
+	var brokers *[]string
+
+	if brokersRaw, ok := d.GetOk("brokers"); ok {
+		brokerI := brokersRaw.([]interface{})
+		log.Printf("[DEBUG] configuring provider with Brokers of size %d", len(brokerI))
+		b := make([]string, len(brokerI))
+		for i, v := range brokerI {
+			b[i] = v.(string)
+		}
+		log.Printf("[DEBUG] b of size %d", len(b))
+		brokers = &b
+	} else {
+		log.Printf("[ERROR] something wrong? %v , ", d.Get("timeout"))
+		return nil, fmt.Errorf("brokers was not set")
 	}
+
+	log.Printf("[DEBUG] configuring provider with Brokers @ %v", brokers)
+	timeout := d.Get("timeout").(int)
 
 	config := &Config{
 		Brokers: brokers,
+		Timeout: timeout,
 	}
 
-	client, err := NewClient(config)
-	if err != nil {
-		return nil, err
-	}
-	return client, client.client.Config().Validate()
-}
+	log.Printf("[DEBUG] Config @ %v", config)
 
-// Client is ok
-type Client struct {
-	client sarama.Client
-	config *Config
-}
-
-// NewClient is
-func NewClient(config *Config) (*Client, error) {
-	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V0_11_0_0
-	c, err := sarama.NewClient(config.Brokers, kafkaConfig)
-
-	if err != nil {
-		fmt.Println("Error connecting to kafka")
-		return nil, err
-	}
-
-	return &Client{
-		client: c,
-		config: config,
-	}, kafkaConfig.Validate()
+	return NewClient(config)
 }
