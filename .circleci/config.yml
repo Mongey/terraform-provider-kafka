@@ -4,6 +4,8 @@ jobs:
     working_directory: /go/src/github.com/Mongey/terraform-provider-kafka
     docker:
       - image: circleci/golang:1.9
+        environment:
+          TEST_RESULTS: /tmp/test-results
       - image: confluentinc/cp-zookeeper:latest
         environment:
           ZOOKEEPER_CLIENT_PORT: 2181
@@ -20,4 +22,12 @@ jobs:
       - store_artifacts:
           path: /go/src/github.com/Mongey/terraform-provider-kafka/terraform-provider-kafka
           destination: terraform-provider-kafka
-      - run: make testacc
+      - run: go get github.com/jstemmer/go-junit-report
+      - run: mkdir -p $TEST_RESULTS
+      - run:
+          name: Run Tests
+          command: |
+            trap "go-junit-report <${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
+            make testacc| tee ${TEST_RESULTS}/go-test.out
+      - store_test_results:
+          path: /tmp/test-results
