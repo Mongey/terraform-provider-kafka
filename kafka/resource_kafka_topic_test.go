@@ -25,6 +25,23 @@ func TestTopicConfigUpdate(t *testing.T) {
 	})
 }
 
+func TestTopicUpdatePartitions(t *testing.T) {
+	r.Test(t, r.TestCase{
+		Providers: accProvider(),
+		PreCheck:  func() { testAccPreCheck(t) },
+		Steps: []r.TestStep{
+			{
+				Config: testResourceTopic_initialConfig,
+				Check:  testResourceTopic_initialCheck,
+			},
+			{
+				Config: testResourceTopic_updatePartitions,
+				Check:  testResourceTopic_updatePartitionsCheck,
+			},
+		},
+	})
+}
+
 func testResourceTopic_initialCheck(s *terraform.State) error {
 	resourceState := s.Modules[0].Resources["kafka_topic.test"]
 	if resourceState == nil {
@@ -89,6 +106,21 @@ func testResourceTopic_updateCheck(s *terraform.State) error {
 	return nil
 }
 
+func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
+	client, _ := NewClient(&Config{
+		Brokers: &[]string{"localhost:9092"},
+	})
+	topic, err := client.ReadTopic("syslog")
+
+	if err != nil {
+		return err
+	}
+	if topic.Partitions != 2 {
+		return fmt.Errorf("partitions did not get increated got: %d", topic.Partitions)
+	}
+	return nil
+}
+
 const testResourceTopic_initialConfig = `
 provider "kafka" {
   brokers = ["localhost:9092"]
@@ -119,6 +151,23 @@ resource "kafka_topic" "test" {
   config = {
     "segment.ms" = "33333"
     "segment.bytes" = "44444"
+  }
+}
+`
+
+const testResourceTopic_updatePartitions = `
+provider "kafka" {
+  brokers = ["localhost:9092"]
+}
+
+resource "kafka_topic" "test" {
+  name               = "syslog"
+  replication_factor = 1
+  partitions         = 2
+
+  config = {
+    "retention.ms" = "11111"
+    "segment.ms" = "22222"
   }
 }
 `
