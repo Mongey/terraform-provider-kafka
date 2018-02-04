@@ -20,8 +20,8 @@ func Provider() terraform.ResourceProvider {
 			"timeout": {
 				Type:        schema.TypeInt,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("KAFKA_TIMEOUT", 10000),
-				Description: "A csv list of kafka brokers",
+				Default:     90,
+				Description: "Timeout in seconds",
 			},
 		},
 
@@ -50,9 +50,11 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	}
 
 	log.Printf("[DEBUG] configuring provider with Brokers @ %v", brokers)
+	timeout := d.Get("timeout").(int)
 
 	config := &Config{
 		Brokers: brokers,
+		Timeout: timeout,
 	}
 
 	log.Printf("[DEBUG] Config @ %v", config)

@@ -56,9 +56,10 @@ func (c *Client) DeleteTopcic(t string) error {
 		return err
 	}
 
+	timeout := time.Duration(c.config.Timeout) * time.Second
 	req := &sarama.DeleteTopicsRequest{
 		Topics:  []string{t},
-		Timeout: 1000 * time.Millisecond,
+		Timeout: timeout,
 	}
 	res, err := broker.DeleteTopics(req)
 
@@ -115,6 +116,8 @@ func (c *Client) CreateTopic(t Topic) error {
 		return err
 	}
 
+	timeout := time.Duration(c.config.Timeout) * time.Second
+	log.Printf("[DEBUG] Timeout is %v ", timeout)
 	req := &sarama.CreateTopicsRequest{
 		TopicDetails: map[string]*sarama.TopicDetail{
 			t.Name: {
@@ -123,7 +126,7 @@ func (c *Client) CreateTopic(t Topic) error {
 				ConfigEntries:     t.Config,
 			},
 		},
-		Timeout: 1000 * time.Millisecond,
+		Timeout: timeout,
 	}
 	res, err := broker.CreateTopics(req)
 
