@@ -49,7 +49,7 @@ func NewClient(config *Config) (*Client, error) {
 	}, kafkaConfig.Validate()
 }
 
-func (c *Client) DeleteTopcic(t string) error {
+func (c *Client) DeleteTopic(t string) error {
 	broker, err := c.availableBroker()
 
 	if err != nil {

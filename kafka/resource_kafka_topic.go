@@ -116,7 +116,7 @@ func topicDelete(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*Client)
 	t := metaToTopic(d, meta)
 
-	err := c.DeleteTopcic(t.Name)
+	err := c.DeleteTopic(t.Name)
 	if err != nil {
 		return err
 	}
