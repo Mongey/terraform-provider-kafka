@@ -22,22 +22,22 @@ type Client struct {
 }
 
 type Config struct {
-	Brokers *[]string
-	Timeout int
+	BootstrapServers *[]string
+	Timeout          int
 }
 
 func NewClient(config *Config) (*Client, error) {
 	kafkaConfig := sarama.NewConfig()
 	kafkaConfig.Version = sarama.V0_11_0_0
 
-	log.Printf("[INFO] configuring brokers %v", config)
-	brokers := *(config.Brokers)
+	log.Printf("[INFO] configuring bootstrap_servers %v", config)
+	bootstrapServers := *(config.BootstrapServers)
 
-	if brokers == nil {
-		return nil, fmt.Errorf("No brokers provided")
+	if bootstrapServers == nil {
+		return nil, fmt.Errorf("No bootstrap_servers provided")
 	}
 
-	c, err := sarama.NewClient(brokers, kafkaConfig)
+	c, err := sarama.NewClient(bootstrapServers, kafkaConfig)
 	if err != nil {
 		fmt.Println("Error connecting to kafka")
 		return nil, err
@@ -147,7 +147,7 @@ func (c *Client) availableBroker() (*sarama.Broker, error) {
 	kafkaConfig := sarama.NewConfig()
 	kafkaConfig.Version = sarama.V0_11_0_0
 
-	brokers := *c.config.Brokers
+	brokers := *c.config.BootstrapServers
 
 	log.Printf("[DEBUG] Looking for Brokers @ %v", brokers)
 	for _, b := range brokers {

@@ -9,7 +9,7 @@ A [Terraform][1] plugin for managing [Apache Kafka][2].
 
 ```hcl
 provider "kafka" {
-  brokers = ["localhost:9092"]
+  bootstrap_servers = ["localhost:9092"]
 }
 
 resource "kafka_topic" "logs" {

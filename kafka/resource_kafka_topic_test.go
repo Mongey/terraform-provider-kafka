@@ -64,7 +64,7 @@ func testResourceTopic_initialCheck(s *terraform.State) error {
 	}
 
 	client, _ := NewClient(&Config{
-		Brokers: &[]string{"localhost:9092"},
+		BootstrapServers: &[]string{"localhost:9092"},
 	})
 
 	topic, err := client.ReadTopic("syslog")
@@ -85,7 +85,7 @@ func testResourceTopic_initialCheck(s *terraform.State) error {
 
 func testResourceTopic_updateCheck(s *terraform.State) error {
 	client, _ := NewClient(&Config{
-		Brokers: &[]string{"localhost:9092"},
+		BootstrapServers: &[]string{"localhost:9092"},
 	})
 	topic, err := client.ReadTopic("syslog")
 	if err != nil {
@@ -108,7 +108,7 @@ func testResourceTopic_updateCheck(s *terraform.State) error {
 
 func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
 	client, _ := NewClient(&Config{
-		Brokers: &[]string{"localhost:9092"},
+		BootstrapServers: &[]string{"localhost:9092"},
 	})
 	topic, err := client.ReadTopic("syslog")
 
@@ -123,7 +123,7 @@ func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
 
 const testResourceTopic_initialConfig = `
 provider "kafka" {
-  brokers = ["localhost:9092"]
+  bootstrap_servers = ["localhost:9092"]
 }
 
 resource "kafka_topic" "test" {
@@ -140,7 +140,7 @@ resource "kafka_topic" "test" {
 
 const testResourceTopic_updateConfig = `
 provider "kafka" {
-  brokers = ["localhost:9092"]
+  bootstrap_servers = ["localhost:9092"]
 }
 
 resource "kafka_topic" "test" {
@@ -157,7 +157,7 @@ resource "kafka_topic" "test" {
 
 const testResourceTopic_updatePartitions = `
 provider "kafka" {
-  brokers = ["localhost:9092"]
+  bootstrap_servers = ["localhost:9092"]
 }
 
 resource "kafka_topic" "test" {

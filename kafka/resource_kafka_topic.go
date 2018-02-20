@@ -51,7 +51,7 @@ func topicCreate(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*Client)
 	t := metaToTopic(d, meta)
 
-	for i, b := range *c.config.Brokers {
+	for i, b := range *c.config.BootstrapServers {
 		log.Printf("[DEBUG] Brokers %d , %s", i, b)
 	}
 	err := c.CreateTopic(t)
