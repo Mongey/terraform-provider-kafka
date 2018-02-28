@@ -11,7 +11,7 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"brokers": {
+			"bootstrap_servers": {
 				Type:        schema.TypeList,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 				Required:    true,
@@ -35,7 +35,7 @@ func Provider() terraform.ResourceProvider {
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	var brokers *[]string
 
-	if brokersRaw, ok := d.GetOk("brokers"); ok {
+	if brokersRaw, ok := d.GetOk("bootstrap_servers"); ok {
 		brokerI := brokersRaw.([]interface{})
 		log.Printf("[DEBUG] configuring provider with Brokers of size %d", len(brokerI))
 		b := make([]string, len(brokerI))
@@ -53,8 +53,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	timeout := d.Get("timeout").(int)
 
 	config := &Config{
-		Brokers: brokers,
-		Timeout: timeout,
+		BootstrapServers: brokers,
+		Timeout:          timeout,
 	}
 
 	log.Printf("[DEBUG] Config @ %v", config)

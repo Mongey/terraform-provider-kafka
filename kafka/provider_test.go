@@ -22,9 +22,9 @@ func testAccPreCheck(t *testing.T) {
 
 func accProvider() map[string]terraform.ResourceProvider {
 	provider := Provider().(*schema.Provider)
-	brokers := []string{"localhost:9092"}
+	bootstrap_servers := []string{"localhost:9092"}
 	raw := map[string]interface{}{
-		"brokers": brokers,
+		"bootstrap_servers": bootstrap_servers,
 	}
 
 	rawConfig, err := config.NewRawConfig(raw)
