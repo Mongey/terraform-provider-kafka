@@ -686,10 +686,9 @@ func (client *client) updateMetadata(data *MetadataResponse, allKnownMetaData bo
 	for _, broker := range data.Brokers {
 		client.registerBroker(broker)
 	}
-	// clear out evertrhing that's in the metaData, that isn't in data
-
-	if (allKnownMetaData) {
-		client.metadata= make(map[string]map[int32]*PartitionMetadata)
+	if allKnownMetaData {
+		client.metadata = make(map[string]map[int32]*PartitionMetadata)
+		client.cachedPartitionsResults = make(map[string][maxPartitionIndex][]int32)
 	}
 	for _, topic := range data.Topics {
 		delete(client.metadata, topic.Name)
@@ -728,7 +727,6 @@ func (client *client) updateMetadata(data *MetadataResponse, allKnownMetaData bo
 		client.cachedPartitionsResults[topic.Name] = partitionCache
 	}
 
-
 	return
 }
 
@@ -741,8 +739,8 @@ func (client *client) cachedCoordinator(consumerGroup string) *Broker {
 	return nil
 }
 
-func (client *client) getConsumerMetadata(consumerGroup string, attemptsRemaining int) (*ConsumerMetadataResponse, error) {
-	retry := func(err error) (*ConsumerMetadataResponse, error) {
+func (client *client) getConsumerMetadata(consumerGroup string, attemptsRemaining int) (*FindCoordinatorResponse, error) {
+	retry := func(err error) (*FindCoordinatorResponse, error) {
 		if attemptsRemaining > 0 {
 			Logger.Printf("client/coordinator retrying after %dms... (%d attempts remaining)\n", client.conf.Metadata.Retry.Backoff/time.Millisecond, attemptsRemaining)
 			time.Sleep(client.conf.Metadata.Retry.Backoff)
@@ -754,10 +752,11 @@ func (client *client) getConsumerMetadata(consumerGroup string, attemptsRemainin
 	for broker := client.any(); broker != nil; broker = client.any() {
 		Logger.Printf("client/coordinator requesting coordinator for consumergroup %s from %s\n", consumerGroup, broker.Addr())
 
-		request := new(ConsumerMetadataRequest)
-		request.ConsumerGroup = consumerGroup
+		request := new(FindCoordinatorRequest)
+		request.CoordinatorKey = consumerGroup
+		request.CoordinatorType = CoordinatorGroup
 
-		response, err := broker.GetConsumerMetadata(request)
+		response, err := broker.FindCoordinator(request)
 
 		if err != nil {
 			Logger.Printf("client/coordinator request to broker %s failed: %s\n", broker.Addr(), err)
