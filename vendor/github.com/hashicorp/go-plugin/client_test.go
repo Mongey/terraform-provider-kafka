@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -169,6 +170,50 @@ func TestClient_testInterface(t *testing.T) {
 	// Test that it knows it is exited
 	if !c.Exited() {
 		t.Fatal("should say client has exited")
+	}
+}
+
+func TestClient_grpc_servercrash(t *testing.T) {
+	process := helperProcess("test-grpc")
+	c := NewClient(&ClientConfig{
+		Cmd:              process,
+		HandshakeConfig:  testHandshake,
+		Plugins:          testPluginMap,
+		AllowedProtocols: []Protocol{ProtocolGRPC},
+	})
+	defer c.Kill()
+
+	if _, err := c.Start(); err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	if v := c.Protocol(); v != ProtocolGRPC {
+		t.Fatalf("bad: %s", v)
+	}
+
+	// Grab the RPC client
+	client, err := c.Client()
+	if err != nil {
+		t.Fatalf("err should be nil, got %s", err)
+	}
+
+	// Grab the impl
+	raw, err := client.Dispense("test")
+	if err != nil {
+		t.Fatalf("err should be nil, got %s", err)
+	}
+
+	_, ok := raw.(testInterface)
+	if !ok {
+		t.Fatalf("bad: %#v", raw)
+	}
+
+	c.process.Kill()
+
+	select {
+	case <-c.doneCtx.Done():
+	case <-time.After(time.Second * 2):
+		t.Fatal("Context was not closed")
 	}
 }
 
@@ -814,12 +859,14 @@ func TestClient_logger(t *testing.T) {
 
 func testClient_logger(t *testing.T, proto string) {
 	var buffer bytes.Buffer
+	mutex := new(sync.Mutex)
 	stderr := io.MultiWriter(os.Stderr, &buffer)
 	// Custom hclog.Logger
 	clientLogger := hclog.New(&hclog.LoggerOptions{
 		Name:   "test-logger",
 		Level:  hclog.Trace,
 		Output: stderr,
+		Mutex:  mutex,
 	})
 
 	process := helperProcess("test-interface-logger-" + proto)
@@ -851,10 +898,14 @@ func testClient_logger(t *testing.T, proto string) {
 
 	{
 		// Discard everything else, and capture the output we care about
+		mutex.Lock()
 		buffer.Reset()
+		mutex.Unlock()
 		impl.PrintKV("foo", "bar")
 		time.Sleep(100 * time.Millisecond)
+		mutex.Lock()
 		line, err := buffer.ReadString('\n')
+		mutex.Unlock()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -865,10 +916,14 @@ func testClient_logger(t *testing.T, proto string) {
 
 	{
 		// Try an integer type
+		mutex.Lock()
 		buffer.Reset()
+		mutex.Unlock()
 		impl.PrintKV("foo", 12)
 		time.Sleep(100 * time.Millisecond)
+		mutex.Lock()
 		line, err := buffer.ReadString('\n')
+		mutex.Unlock()
 		if err != nil {
 			t.Fatal(err)
 		}
