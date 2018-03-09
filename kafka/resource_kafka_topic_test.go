@@ -118,6 +118,10 @@ func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
 	if topic.Partitions != 2 {
 		return fmt.Errorf("partitions did not get increated got: %d", topic.Partitions)
 	}
+
+	if v, ok := topic.Config["segment.ms"]; ok && *v != "33333" {
+		return fmt.Errorf("segment.ms !=  %v", topic)
+	}
 	return nil
 }
 
@@ -167,7 +171,7 @@ resource "kafka_topic" "test" {
 
   config = {
     "retention.ms" = "11111"
-    "segment.ms" = "22222"
+    "segment.ms" = "33333"
   }
 }
 `
