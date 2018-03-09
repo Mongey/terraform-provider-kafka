@@ -229,6 +229,7 @@
   revision = "0dc08b1671f34c4250ce212759ebd880f743d883"
 
 [[projects]]
+  branch = "master"
   name = "github.com/hashicorp/terraform"
   packages = [
     "config",
@@ -243,6 +244,7 @@
     "helper/logging",
     "helper/resource",
     "helper/schema",
+    "httpclient",
     "moduledeps",
     "plugin",
     "plugin/discovery",
@@ -256,8 +258,7 @@
     "tfdiags",
     "version"
   ]
-  revision = "3802b14260603f90c7a1faf55994dcc8933e2069"
-  version = "v0.11.3"
+  revision = "5727d3335247e5940af2bef35c88657753f6d260"
 
 [[projects]]
   branch = "master"
@@ -286,7 +287,7 @@
   branch = "master"
   name = "github.com/mitchellh/copystructure"
   packages = ["."]
-  revision = "d23ffcb85de31694d6ccaa23ccb4a03e55c1303f"
+  revision = "5af94aef99f597e6a9e1f6ac6be6ce0f3c96b49d"
 
 [[projects]]
   branch = "master"
@@ -358,12 +359,6 @@
   name = "github.com/rcrowley/go-metrics"
   packages = ["."]
   revision = "8732c616f52954686704c8645fe1a9d59e9df7c1"
-
-[[projects]]
-  name = "github.com/satori/go.uuid"
-  packages = ["."]
-  revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
-  version = "v1.2.0"
 
 [[projects]]
   name = "github.com/ulikunitz/xz"
@@ -490,6 +485,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "da40c123519ab158db9cd39fd34b825e23503fc43827cd54d80e04bd70d3af58"
+  inputs-digest = "04f2291261704c3ff3bcc67cb3fd06b2603f335e038ec24debb70c7de020ba6c"
   solver-name = "gps-cdcl"
   solver-version = 1

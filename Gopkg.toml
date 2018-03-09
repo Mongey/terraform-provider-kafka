@@ -8,4 +8,4 @@
 
 [[constraint]]
   name = "github.com/hashicorp/terraform"
-  version = "0.11.2"
+  branch = "master"

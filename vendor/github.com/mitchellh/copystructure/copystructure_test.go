@@ -24,32 +24,6 @@ func TestCopy_complex(t *testing.T) {
 	}
 }
 
-func TestCopy_interfacePointer(t *testing.T) {
-	type Nested struct {
-		Field string
-	}
-
-	type Test struct {
-		Value *interface{}
-	}
-
-	ifacePtr := func(v interface{}) *interface{} {
-		return &v
-	}
-
-	v := Test{
-		Value: ifacePtr(Nested{Field: "111"}),
-	}
-	result, err := Copy(v)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !reflect.DeepEqual(result, v) {
-		t.Fatalf("bad: %#v", result)
-	}
-}
-
 func TestCopy_primitive(t *testing.T) {
 	cases := []interface{}{
 		42,
@@ -105,60 +79,8 @@ func TestCopy_map(t *testing.T) {
 	}
 }
 
-func TestCopy_array(t *testing.T) {
-	v := [2]string{"bar", "baz"}
-
-	result, err := Copy(v)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !reflect.DeepEqual(result, v) {
-		t.Fatalf("bad: %#v", result)
-	}
-}
-
-func TestCopy_pointerToArray(t *testing.T) {
-	v := &[2]string{"bar", "baz"}
-
-	result, err := Copy(v)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !reflect.DeepEqual(result, v) {
-		t.Fatalf("bad: %#v", result)
-	}
-}
-
 func TestCopy_slice(t *testing.T) {
 	v := []string{"bar", "baz"}
-
-	result, err := Copy(v)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !reflect.DeepEqual(result, v) {
-		t.Fatalf("bad: %#v", result)
-	}
-}
-
-func TestCopy_pointerToSlice(t *testing.T) {
-	v := &[]string{"bar", "baz"}
-
-	result, err := Copy(v)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !reflect.DeepEqual(result, v) {
-		t.Fatalf("bad: %#v", result)
-	}
-}
-
-func TestCopy_pointerToMap(t *testing.T) {
-	v := &map[string]string{"bar": "baz"}
 
 	result, err := Copy(v)
 	if err != nil {
@@ -240,89 +162,6 @@ func TestCopy_structNested(t *testing.T) {
 	}
 }
 
-func TestCopy_structWithNestedArray(t *testing.T) {
-	type TestInner struct {
-		Value string
-	}
-
-	type Test struct {
-		Value [2]TestInner
-	}
-
-	v := Test{
-		Value: [2]TestInner{
-			{Value: "bar"},
-			{Value: "baz"},
-		},
-	}
-
-	result, err := Copy(v)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !reflect.DeepEqual(result, v) {
-		t.Fatalf("bad: %#v", result)
-	}
-}
-
-func TestCopy_structWithPointerToSliceField(t *testing.T) {
-	type Test struct {
-		Value *[]string
-	}
-
-	v := Test{
-		Value: &[]string{"bar", "baz"},
-	}
-
-	result, err := Copy(v)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !reflect.DeepEqual(result, v) {
-		t.Fatalf("bad: %#v", result)
-	}
-}
-
-func TestCopy_structWithPointerToArrayField(t *testing.T) {
-	type Test struct {
-		Value *[2]string
-	}
-
-	v := Test{
-		Value: &[2]string{"bar", "baz"},
-	}
-
-	result, err := Copy(v)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !reflect.DeepEqual(result, v) {
-		t.Fatalf("bad: %#v", result)
-	}
-}
-
-func TestCopy_structWithPointerToMapField(t *testing.T) {
-	type Test struct {
-		Value *map[string]string
-	}
-
-	v := Test{
-		Value: &map[string]string{"bar": "baz"},
-	}
-
-	result, err := Copy(v)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	if !reflect.DeepEqual(result, v) {
-		t.Fatalf("bad: %#v", result)
-	}
-}
-
 func TestCopy_structUnexported(t *testing.T) {
 	type test struct {
 		Value string
@@ -359,36 +198,6 @@ func TestCopy_structUnexportedMap(t *testing.T) {
 			Foo: map[string]interface{}{
 				"yo": 42,
 			},
-		},
-	}
-
-	result, err := Copy(v)
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-
-	// private should not be copied
-	v.private = Sub{}
-	if !reflect.DeepEqual(result, v) {
-		t.Fatalf("bad:\n\n%#v\n\n%#v", result, v)
-	}
-}
-
-func TestCopy_structUnexportedArray(t *testing.T) {
-	type Sub struct {
-		Foo [2]string
-	}
-
-	type test struct {
-		Value string
-
-		private Sub
-	}
-
-	v := test{
-		Value: "foo",
-		private: Sub{
-			Foo: [2]string{"bar", "baz"},
 		},
 	}
 
@@ -678,14 +487,14 @@ func TestCopy_lockedMap(t *testing.T) {
 	<-copied
 
 	// test that the mutex is in the correct state
-	result.(*lockedMap).Lock()
-	result.(*lockedMap).Unlock()
+	result.(lockedMap).Lock()
+	result.(lockedMap).Unlock()
 
 	if err != nil {
 		t.Fatalf("err: %s", err)
 	}
 
-	if !reflect.DeepEqual(result, &v) {
+	if !reflect.DeepEqual(result, v) {
 		t.Fatalf("bad: %#v", result)
 	}
 }
@@ -1004,72 +813,6 @@ func TestCopy_nilPointerInSlice(t *testing.T) {
 
 	v := &T{
 		Ps: []*int{nil},
-	}
-
-	result, err := Copy(v)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !reflect.DeepEqual(v, result) {
-		t.Fatalf("\n%#v\n\n%#v", v, result)
-	}
-}
-
-//-------------------------------------------------------------------
-// The tests below all tests various pointer cases around copying
-// a structure that uses a defined Copier. This was originally raised
-// around issue #26.
-
-func TestCopy_timePointer(t *testing.T) {
-	type T struct {
-		Value *time.Time
-	}
-
-	now := time.Now()
-	v := &T{
-		Value: &now,
-	}
-
-	result, err := Copy(v)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !reflect.DeepEqual(v, result) {
-		t.Fatalf("\n%#v\n\n%#v", v, result)
-	}
-}
-
-func TestCopy_timeNonPointer(t *testing.T) {
-	type T struct {
-		Value time.Time
-	}
-
-	v := &T{
-		Value: time.Now(),
-	}
-
-	result, err := Copy(v)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !reflect.DeepEqual(v, result) {
-		t.Fatalf("\n%#v\n\n%#v", v, result)
-	}
-}
-
-func TestCopy_timeDoublePointer(t *testing.T) {
-	type T struct {
-		Value **time.Time
-	}
-
-	now := time.Now()
-	nowP := &now
-	nowPP := &nowP
-	v := &T{
-		Value: nowPP,
 	}
 
 	result, err := Copy(v)
