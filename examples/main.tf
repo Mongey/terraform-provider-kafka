@@ -1,5 +1,5 @@
 provider "kafka" {
-  brokers = ["localhost:9092"]
+  bootstrap_servers = ["localhost:9092"]
 }
 
 resource "kafka_topic" "syslog" {
