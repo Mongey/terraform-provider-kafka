@@ -22,6 +22,7 @@ jobs:
       - store_artifacts:
           path: /go/src/github.com/Mongey/terraform-provider-kafka/terraform-provider-kafka
           destination: terraform-provider-kafka
+      - run: make test
       - run: go get github.com/jstemmer/go-junit-report
       - run: mkdir -p $TEST_RESULTS
       - run:
