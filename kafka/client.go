@@ -27,16 +27,13 @@ type Config struct {
 }
 
 func NewClient(config *Config) (*Client, error) {
-	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V1_0_0_0
-
 	log.Printf("[INFO] configuring bootstrap_servers %v", config)
 	bootstrapServers := *(config.BootstrapServers)
 
 	if bootstrapServers == nil {
 		return nil, fmt.Errorf("No bootstrap_servers provided")
 	}
-
+	kafkaConfig := newKafkaConfig()
 	c, err := sarama.NewClient(bootstrapServers, kafkaConfig)
 	if err != nil {
 		fmt.Println("Error connecting to kafka")
@@ -178,15 +175,12 @@ func (c *Client) AddPartitions(t Topic) error {
 
 func (c *Client) availableBroker() (*sarama.Broker, error) {
 	var err error
-	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V1_0_0_0
-
 	brokers := *c.config.BootstrapServers
 
 	log.Printf("[DEBUG] Looking for Brokers @ %v", brokers)
 	for _, b := range brokers {
 		broker := sarama.NewBroker(b)
-		err = broker.Open(kafkaConfig)
+		err = broker.Open(newKafkaConfig())
 		if err == nil {
 			return broker, nil
 		}
@@ -272,4 +266,10 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 		}
 	}
 	return conf, nil
+}
+
+func newKafkaConfig() *sarama.Config {
+	kafkaConfig := sarama.NewConfig()
+	kafkaConfig.Version = sarama.V1_0_0_0
+	return kafkaConfig
 }
