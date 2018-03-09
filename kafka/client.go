@@ -28,7 +28,7 @@ type Config struct {
 
 func NewClient(config *Config) (*Client, error) {
 	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V0_11_0_0
+	kafkaConfig.Version = sarama.V1_0_0_0
 
 	log.Printf("[INFO] configuring bootstrap_servers %v", config)
 	bootstrapServers := *(config.BootstrapServers)
@@ -142,10 +142,44 @@ func (c *Client) CreateTopic(t Topic) error {
 	return err
 }
 
+func (c *Client) AddPartitions(t Topic) error {
+	broker, err := c.availableBroker()
+
+	if err != nil {
+		log.Printf("[WARN] DERP %s", err)
+		return err
+	}
+	timeout := time.Duration(c.config.Timeout) * time.Second
+	log.Printf("[DEBUG] b of size %d", 1)
+	tp := map[string]*sarama.TopicPartition{
+		t.Name: &sarama.TopicPartition{
+			Count: t.Partitions,
+		},
+	}
+	log.Printf("[DEBUG] b of size %d", 2)
+	req := &sarama.CreatePartitionsRequest{
+		TopicPartitions: tp,
+		Timeout:         timeout,
+		ValidateOnly:    false,
+	}
+	log.Printf("[INFO] Adding partitions to %s in Kafka", t.Name)
+	res, err := broker.CreatePartitions(req)
+	if err == nil {
+		for _, e := range res.TopicPartitionErrors {
+			if e.Err != sarama.ErrNoError {
+				return fmt.Errorf("%s", e.Err)
+			}
+		}
+		log.Printf("[INFO] Added partitions to %s in Kafka", t.Name)
+	}
+
+	return err
+}
+
 func (c *Client) availableBroker() (*sarama.Broker, error) {
 	var err error
 	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V0_11_0_0
+	kafkaConfig.Version = sarama.V1_0_0_0
 
 	brokers := *c.config.BootstrapServers
 

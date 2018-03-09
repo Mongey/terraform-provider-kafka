@@ -18,6 +18,7 @@ func kafkaTopicResource() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		CustomizeDiff: customPartitionDiff,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
@@ -28,7 +29,6 @@ func kafkaTopicResource() *schema.Resource {
 			"partitions": {
 				Type:        schema.TypeInt,
 				Required:    true,
-				ForceNew:    true,
 				Description: "number of partitions",
 			},
 			"replication_factor": {
@@ -86,9 +86,20 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 	t := metaToTopic(d, meta)
 
 	err := c.UpdateTopic(t)
-
 	if err != nil {
 		return err
+	}
+	if d.HasChange("partitions") {
+		// update should only be called when we're increasing partitions
+		oi, ni := d.GetChange("partitions")
+		oldPartitions := oi.(int)
+		newPartitions := ni.(int)
+		log.Printf("Updating partitions from %d to %d", oldPartitions, newPartitions)
+		t.Partitions = int32(newPartitions)
+		err = c.AddPartitions(t)
+		if err != nil {
+			return err
+		}
 	}
 
 	stateConf := &resource.StateChangeConf{
@@ -178,5 +189,21 @@ func topicRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("replication_factor", topic.ReplicationFactor)
 	d.Set("config", topic.Config)
 
+	return nil
+}
+func customPartitionDiff(diff *schema.ResourceDiff, v interface{}) error {
+	log.Printf("[INFO] Checking the diff!")
+	if diff.HasChange("partitions") {
+		log.Printf("[INFO] Partitions have changed!")
+		o, n := diff.GetChange("partitions")
+		oi := o.(int)
+		ni := n.(int)
+		log.Printf("Partitions is changing from %d to %d", oi, ni)
+		if ni < oi {
+			log.Printf("Partitions decreased from %d to %d. Forcing new resource", oi, ni)
+			diff.ForceNew("partitions")
+		}
+
+	}
 	return nil
 }
