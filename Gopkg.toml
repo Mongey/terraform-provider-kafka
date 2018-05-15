@@ -3,9 +3,13 @@
 
 [[constraint]]
   name = "github.com/Shopify/sarama"
-  source = "github.com/Mongey/sarama"
-  branch = "cm-refresh-metadata"
+  revision =  "e8552c0dbf502cd7ec9186b57897e6cf9f15fb34"
 
 [[constraint]]
   name = "github.com/hashicorp/terraform"
   branch = "master"
+
+[prune]
+  go-tests = true
+  non-go = true
+  unused-packages = true
