@@ -4,7 +4,8 @@
 [[projects]]
   name = "github.com/Shopify/sarama"
   packages = ["."]
-  revision = "e8552c0dbf502cd7ec9186b57897e6cf9f15fb34"
+  revision = "35324cf48e33d8260e1c7c18854465a904ade249"
+  version = "v1.17.0"
 
 [[projects]]
   name = "github.com/agext/levenshtein"
@@ -483,6 +484,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "be70511de8166469da46dc8b3b74050cb554e0ab0bab016724019e3aa9fa727d"
+  inputs-digest = "71155dd98d62c3b5bb5947ac9baa6aafb7ca555b5408c24acefedad9403f153b"
   solver-name = "gps-cdcl"
   solver-version = 1
