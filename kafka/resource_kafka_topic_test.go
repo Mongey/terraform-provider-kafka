@@ -63,9 +63,7 @@ func testResourceTopic_initialCheck(s *terraform.State) error {
 		return fmt.Errorf("unexpected topic name %s", name)
 	}
 
-	client, _ := NewClient(&Config{
-		BootstrapServers: &[]string{"localhost:9092"},
-	})
+	client := testProvider.Meta().(*Client)
 
 	topic, err := client.ReadTopic("syslog")
 
@@ -84,9 +82,8 @@ func testResourceTopic_initialCheck(s *terraform.State) error {
 }
 
 func testResourceTopic_updateCheck(s *terraform.State) error {
-	client, _ := NewClient(&Config{
-		BootstrapServers: &[]string{"localhost:9092"},
-	})
+	client := testProvider.Meta().(*Client)
+
 	topic, err := client.ReadTopic("syslog")
 	if err != nil {
 		return err
@@ -107,9 +104,7 @@ func testResourceTopic_updateCheck(s *terraform.State) error {
 }
 
 func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
-	client, _ := NewClient(&Config{
-		BootstrapServers: &[]string{"localhost:9092"},
-	})
+	client := testProvider.Meta().(*Client)
 	topic, err := client.ReadTopic("syslog")
 
 	if err != nil {
