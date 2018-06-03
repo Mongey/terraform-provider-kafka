@@ -92,10 +92,10 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 const testResourceACL_initialConfig = `
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
-	ca_cert_file      = "../ssl-ffs/secrets/snakeoil-ca-1.crt"
+	ca_cert_file      = "../secrets/snakeoil-ca-1.crt"
+	client_cert_file = "../secrets/kafkacat-ca1-signed.pem"
+	client_key_file  = "../secrets/kafkacat-raw-private-key.pem"
 	skip_tls_verify   = true
-	client_cert_file = "../ssl-ffs/secrets/kafkacat-ca1-signed.pem"
-	client_key_file  = "../ssl-ffs/secrets/kafkacat-raw-private-key.pem"
 }
 
 resource "kafka_acl" "test" {
@@ -111,10 +111,10 @@ resource "kafka_acl" "test" {
 const testResourceACL_updateConfig = `
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
-	ca_cert_file      = "../ssl-ffs/secrets/snakeoil-ca-1.crt"
+	ca_cert_file      = "../secrets/snakeoil-ca-1.crt"
+	client_cert_file = "../secrets/kafkacat-ca1-signed.pem"
+	client_key_file  = "../secrets/kafkacat-raw-private-key.pem"
 	skip_tls_verify   = true
-	client_cert_file = "../ssl-ffs/secrets/kafkacat-ca1-signed.pem"
-	client_key_file  = "../ssl-ffs/secrets/kafkacat-raw-private-key.pem"
 }
 
 resource "kafka_acl" "test" {
