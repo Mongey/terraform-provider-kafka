@@ -24,24 +24,24 @@ func kafkaTopicResource() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
-				Description: "The name of the topic",
+				Description: "The name of the topic.",
 			},
 			"partitions": {
 				Type:        schema.TypeInt,
 				Required:    true,
-				Description: "number of partitions",
+				Description: "Number of partitions.",
 			},
 			"replication_factor": {
 				Type:        schema.TypeInt,
 				Required:    true,
 				ForceNew:    true,
-				Description: "number of replicas",
+				Description: "Number of replicas.",
 			},
 			"config": {
 				Type:        schema.TypeMap,
 				Optional:    true,
 				ForceNew:    false,
-				Description: "A map of string k/v attributes",
+				Description: "A map of string k/v attributes.",
 			},
 		},
 	}
