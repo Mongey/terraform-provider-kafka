@@ -23,6 +23,16 @@ resource "kafka_topic" "logs" {
 }
 ```
 
+# Provider Configuration
+| Property            | Description                                                                                      | Default    |
+| ----------------    | -----------------------                                                                          | ---------- |
+| `bootstrap_servers` | A list of host:port addresses that will be used to discover the full set of alive brokers        | `Required` |
+| `ca_cert_file`      | The path to a CA certificate file to validate the server's certificate.                          | `""`       |
+| `client_cert_file`  | The path the a file containing the client certificate -- Use for Client authentication to Kafka. | `""`       |
+| `client_key_file`   | Path to a file containing the private key that the client certificate was issued for.            | `""`       |
+| `skip_tls_verify`   | Skip TLS verification.                                                                           | `false`    |
+| `tls_enabled`       | Enable communication with the Kafka Cluster over TLS.                                            | `false`    |
+
 # Importing Existing Topics
 You can import topics with the following
 
