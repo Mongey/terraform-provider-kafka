@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform/terraform"
 )
 
-func TestTopicConfigUpdate(t *testing.T) {
+func testAccTopicConfigUpdate(t *testing.T) {
 	r.Test(t, r.TestCase{
 		Providers: accProvider(),
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -25,7 +25,7 @@ func TestTopicConfigUpdate(t *testing.T) {
 	})
 }
 
-func TestTopicUpdatePartitions(t *testing.T) {
+func TestAccTopicUpdatePartitions(t *testing.T) {
 	r.Test(t, r.TestCase{
 		Providers: accProvider(),
 		PreCheck:  func() { testAccPreCheck(t) },
