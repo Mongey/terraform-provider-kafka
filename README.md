@@ -32,6 +32,8 @@ resource "kafka_topic" "logs" {
 | `client_key_file`   | Path to a file containing the private key that the client certificate was issued for.            | `""`       |
 | `skip_tls_verify`   | Skip TLS verification.                                                                           | `false`    |
 | `tls_enabled`       | Enable communication with the Kafka Cluster over TLS.                                            | `false`    |
+| `sasl_username`     | Username for SASL authentication.                                                                | `""`       |
+| `sasl_password`     | Password for SASL authentication.                                                                | `""`       |
 
 # Importing Existing Topics
 You can import topics with the following

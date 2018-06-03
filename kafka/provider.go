@@ -35,6 +35,18 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY", ""),
 				Description: "Path to a file containing the private key that the certificate was issued for.",
 			},
+			"sasl_username": &schema.Schema{
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_USERNAME", ""),
+				Description: "Username for SASL authentication.",
+			},
+			"sasl_password": &schema.Schema{
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_PASSWORD", ""),
+				Description: "Password for SASL authentication.",
+			},
 			"skip_tls_verify": &schema.Schema{
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -88,6 +100,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		ClientCertFile:   d.Get("client_cert_file").(string),
 		ClientCertKey:    d.Get("client_key_file").(string),
 		SkipTLSVerify:    d.Get("skip_tls_verify").(bool),
+		SASLUsername:     d.Get("sasl_username").(string),
+		SASLPassword:     d.Get("sasl_password").(string),
 		TLSEnabled:       d.Get("tls_enabled").(bool),
 		Timeout:          timeout,
 	}

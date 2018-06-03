@@ -3,12 +3,11 @@ package kafka
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"time"
-
-	"errors"
 
 	"github.com/Shopify/sarama"
 )
@@ -33,6 +32,12 @@ type Config struct {
 	ClientCertKey    string
 	TLSEnabled       bool
 	SkipTLSVerify    bool
+	SASLUsername     string
+	SASLPassword     string
+}
+
+func (c *Config) SASLEnabled() bool {
+	return c.SASLUsername != "" || c.SASLPassword != ""
 }
 
 func NewClient(config *Config) (*Client, error) {
@@ -289,16 +294,22 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig := sarama.NewConfig()
 	kafkaConfig.Version = sarama.V1_0_0_0
 
-	tlsConfig, err := newTLSConfig(
-		c.ClientCertFile,
-		c.ClientCertKey,
-		c.CACertFile)
-
-	if err != nil {
-		return kafkaConfig, err
+	if c.SASLEnabled() {
+		kafkaConfig.Net.SASL.Enable = true
+		kafkaConfig.Net.SASL.Password = c.SASLPassword
+		kafkaConfig.Net.SASL.User = c.SASLUsername
 	}
 
 	if c.TLSEnabled {
+		tlsConfig, err := newTLSConfig(
+			c.ClientCertFile,
+			c.ClientCertKey,
+			c.CACertFile)
+
+		if err != nil {
+			return kafkaConfig, err
+		}
+
 		kafkaConfig.Net.TLS.Enable = true
 		kafkaConfig.Net.TLS.Config = tlsConfig
 		kafkaConfig.Net.TLS.Config.InsecureSkipVerify = c.SkipTLSVerify
