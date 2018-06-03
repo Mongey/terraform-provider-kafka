@@ -64,23 +64,6 @@ func topicCreate(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func topicRefreshFunc(client *Client, topic string, expected Topic) resource.StateRefreshFunc {
-	return func() (result interface{}, s string, err error) {
-		log.Printf("[DEBUG] waiting for topic to update %s", topic)
-		actual, err := client.ReadTopic(topic)
-		if err != nil {
-			log.Printf("[ERROR] could not read topic %s, %s", topic, err)
-			return actual, "Error", err
-		}
-
-		if expected.Equal(actual) {
-			return actual, "Ready", nil
-		}
-
-		return nil, fmt.Sprintf("%v != %v", strPtrMapToStrMap(actual.Config), strPtrMapToStrMap(expected.Config)), nil
-	}
-}
-
 func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*Client)
 	t := metaToTopic(d, meta)
@@ -121,6 +104,23 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	return err
+}
+
+func topicRefreshFunc(client *Client, topic string, expected Topic) resource.StateRefreshFunc {
+	return func() (result interface{}, s string, err error) {
+		log.Printf("[DEBUG] waiting for topic to update %s", topic)
+		actual, err := client.ReadTopic(topic)
+		if err != nil {
+			log.Printf("[ERROR] could not read topic %s, %s", topic, err)
+			return actual, "Error", err
+		}
+
+		if expected.Equal(actual) {
+			return actual, "Ready", nil
+		}
+
+		return nil, fmt.Sprintf("%v != %v", strPtrMapToStrMap(actual.Config), strPtrMapToStrMap(expected.Config)), nil
+	}
 }
 
 func topicDelete(d *schema.ResourceData, meta interface{}) error {
@@ -191,6 +191,7 @@ func topicRead(d *schema.ResourceData, meta interface{}) error {
 
 	return nil
 }
+
 func customPartitionDiff(diff *schema.ResourceDiff, v interface{}) error {
 	log.Printf("[INFO] Checking the diff!")
 	if diff.HasChange("partitions") {

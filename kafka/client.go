@@ -130,7 +130,7 @@ func (c *Client) CreateTopic(t Topic) error {
 	broker, err := c.availableBroker()
 
 	if err != nil {
-		log.Printf("[WARN] DERP %s", err)
+		log.Printf("[WARN] Could get an available broker %s", err)
 		return err
 	}
 
