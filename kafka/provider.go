@@ -70,29 +70,18 @@ func Provider() terraform.ResourceProvider {
 		ConfigureFunc: providerConfigure,
 		ResourcesMap: map[string]*schema.Resource{
 			"kafka_topic": kafkaTopicResource(),
+			"kafka_acl":   kafkaACLResource(),
 		},
 	}
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	var brokers *[]string
+	brokers := dTos("bootstrap_servers", d)
 
-	if brokersRaw, ok := d.GetOk("bootstrap_servers"); ok {
-		brokerI := brokersRaw.([]interface{})
-		log.Printf("[DEBUG] configuring provider with Brokers of size %d", len(brokerI))
-		b := make([]string, len(brokerI))
-		for i, v := range brokerI {
-			b[i] = v.(string)
-		}
-		log.Printf("[DEBUG] b of size %d", len(b))
-		brokers = &b
-	} else {
-		log.Printf("[ERROR] something wrong? %v , ", d.Get("timeout"))
-		return nil, fmt.Errorf("brokers was not set")
+	if brokers == nil {
+		return nil, fmt.Errorf("bootstrap_servers was not set")
 	}
-
 	log.Printf("[DEBUG] configuring provider with Brokers @ %v", brokers)
-	timeout := d.Get("timeout").(int)
 
 	config := &Config{
 		BootstrapServers: brokers,
@@ -103,10 +92,34 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SASLUsername:     d.Get("sasl_username").(string),
 		SASLPassword:     d.Get("sasl_password").(string),
 		TLSEnabled:       d.Get("tls_enabled").(bool),
-		Timeout:          timeout,
+		Timeout:          d.Get("timeout").(int),
 	}
 
 	log.Printf("[DEBUG] Config @ %v", config)
 
 	return NewClient(config)
+}
+
+func dTos(key string, d *schema.ResourceData) *[]string {
+	var r *[]string
+
+	if v, ok := d.GetOk(key); ok {
+		if v == nil {
+			return r
+		}
+		vI := v.([]interface{})
+		b := make([]string, len(vI))
+
+		for i, vv := range vI {
+			if vv == nil {
+				log.Printf("[DEBUG] %d %v was nil", i, vv)
+				continue
+			}
+			log.Printf("[DEBUG] %d:Converting %v to string", i, vv)
+			b[i] = vv.(string)
+		}
+		r = &b
+	}
+
+	return r
 }
