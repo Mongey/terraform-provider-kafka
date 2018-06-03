@@ -45,7 +45,7 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_ENABLE_TLS", ""),
-				Description: "Set this to true only if the target Vault server is an insecure development instance.",
+				Description: "Enable communication with the Kafka Cluster over TLS.",
 			},
 			"timeout": {
 				Type:        schema.TypeInt,
