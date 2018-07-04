@@ -62,7 +62,7 @@ func Provider() terraform.ResourceProvider {
 			"timeout": {
 				Type:        schema.TypeInt,
 				Optional:    true,
-				Default:     90,
+				Default:     120,
 				Description: "Timeout in seconds",
 			},
 		},
