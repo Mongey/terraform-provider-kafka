@@ -85,11 +85,12 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
+	timeout := time.Duration(c.config.Timeout) * time.Second
 	stateConf := &resource.StateChangeConf{
 		Pending:      []string{"Updating"},
 		Target:       []string{"Ready"},
 		Refresh:      topicRefreshFunc(c, d.Id(), t),
-		Timeout:      10 * time.Second,
+		Timeout:      timeout,
 		Delay:        1 * time.Second,
 		PollInterval: 1 * time.Second,
 		MinTimeout:   2 * time.Second,
