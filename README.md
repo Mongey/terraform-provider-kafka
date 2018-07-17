@@ -88,7 +88,7 @@ resource "kafka_topic" "logs" {
 | Property             | Description                                    |
 | ----------------     | -----------------------                        |
 | `name`               | The name of the topic                          |
-| `paritions`          | The number of partitions the topic should have |
+| `partitions`          | The number of partitions the topic should have |
 | `replication_factor` | The number of replicas the topic should have   |
 | `config`             | A map of string k/v attributes                 |
 
