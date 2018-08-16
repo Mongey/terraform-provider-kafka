@@ -68,7 +68,7 @@ func NewClient(config *Config) (*Client, error) {
 }
 
 func (c *Client) DeleteTopic(t string) error {
-	broker, err := c.availableBroker()
+	broker, err := c.client.Controller()
 
 	if err != nil {
 		return err
@@ -98,7 +98,7 @@ func (c *Client) DeleteTopic(t string) error {
 }
 
 func (c *Client) UpdateTopic(topic Topic) error {
-	broker, err := c.availableBroker()
+	broker, err := c.client.Controller()
 
 	if err != nil {
 		return err
@@ -127,7 +127,7 @@ func (c *Client) UpdateTopic(topic Topic) error {
 }
 
 func (c *Client) CreateTopic(t Topic) error {
-	broker, err := c.availableBroker()
+	broker, err := c.client.Controller()
 
 	if err != nil {
 		log.Printf("[WARN] Could get an available broker %s", err)
@@ -161,7 +161,7 @@ func (c *Client) CreateTopic(t Topic) error {
 }
 
 func (c *Client) AddPartitions(t Topic) error {
-	broker, err := c.availableBroker()
+	broker, err := c.client.Controller()
 
 	if err != nil {
 		log.Printf("[WARN] DERP %s", err)
@@ -250,7 +250,7 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 		},
 	}
 
-	broker, err := c.availableBroker()
+	broker, err := c.client.Controller()
 	if err != nil {
 		return conf, err
 	}
