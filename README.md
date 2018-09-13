@@ -127,14 +127,14 @@ resource "kafka_acl" "test" {
 
 #### Properties
 
-| Property              | Description                                  | Valid values                                                                                                                                             |
-| ----------------      | -----------------------                      | --------------                                                                                                                                           |
-| `acl_host`            | A map of string k/v attributes               | `*`                                                                                                                                                      |
-| `acl_operation`       | A map of string k/v attributes               | `Unknown`, `Any`, `All`, `Read`, `Write`, `Create`, `Delete`, `Alter`, `Describe`, `ClusterAction`, `DescribeConfigs`, `AlterConfigs`, `IdempotentWrite` |
-| `acl_permission_type` | A map of string k/v attributes               | `Unknown`, `Any`, `Allow`, `Deny`                                                                                                                        |
-| `acl_principal`       | The number of replicas the topic should have | `*`                                                                                                                                                      |
-| `resource_name`       | The name of the resource                     | `*`                                                                                                                                                      |
-| `resource_type`       | The type of resource                         | `Unknown`, `Any`, `Topic`, `Group`, `Cluster`, `TransactionalID`                                                                                         |
+| Property              | Description                                                        | Valid values                                                     |
+| ----------------      | ----------------------                                             | --------------                                                   |
+| `acl_host`            | Host from which principal listed in acl_principal will have access | `*`                                                              |
+| `acl_operation`       | Operation that is being allowed or denied                          | `Unknown`, `Any`, `All`, `Read`, `Write`, `Create`, `Delete`, `Alter`, `Describe`, `ClusterAction`, `DescribeConfigs`, `AlterConfigs`, `IdempotentWrite` |
+| `acl_permission_type` | Type of permission                                                 | `Unknown`, `Any`, `Allow`, `Deny`                                |
+| `acl_principal`       | Principal that is being allowed or denied                          | `*`                                                              |
+| `resource_name`       | The name of the resource                                           | `*`                                                              |
+| `resource_type`       | The type of resource                                               | `Unknown`, `Any`, `Topic`, `Group`, `Cluster`, `TransactionalID` |
 
 
 ## Requirements
