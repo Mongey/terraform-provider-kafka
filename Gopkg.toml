@@ -3,11 +3,11 @@
 
 [[constraint]]
   name = "github.com/Shopify/sarama"
-  version = "v1.17.0"
+  version = "v1.19.0"
 
 [[constraint]]
   name = "github.com/hashicorp/terraform"
-  branch = "master"
+  version = "v0.11.8"
 
 [prune]
   go-tests = true
