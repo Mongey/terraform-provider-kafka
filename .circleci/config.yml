@@ -10,7 +10,7 @@ jobs:
         environment:
           ZOOKEEPER_CLIENT_PORT: 2181
           ZOOKEEPER_TICK_TIME: 2000
-      - image: mongey/kafka
+      - image: mongey/kafka:5.0.0
         environment:
           KAFKA_BROKER_ID: 1
           KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
