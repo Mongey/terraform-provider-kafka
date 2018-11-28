@@ -1,4 +1,4 @@
-FROM confluentinc/cp-kafka:5.0.0
+FROM confluentinc/cp-kafka:5.0.1
 COPY secrets/ /etc/kafka/secrets
 
 ENV KAFKA_ADVERTISED_LISTENERS=SSL://localhost:9092
