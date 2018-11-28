@@ -2,13 +2,27 @@ package kafka
 
 import (
 	"fmt"
+	"log"
 	"testing"
 
 	r "github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
-func testAccTopicConfigUpdate(t *testing.T) {
+func TestAccBasicTopic(t *testing.T) {
+	r.Test(t, r.TestCase{
+		Providers: accProvider(),
+		PreCheck:  func() { testAccPreCheck(t) },
+		Steps: []r.TestStep{
+			{
+				Config: testResourceTopic_noConfig,
+				Check:  testResourceTopic_noConfigCheck,
+			},
+		},
+	})
+}
+
+func TestAccTopicConfigUpdate(t *testing.T) {
 	r.Test(t, r.TestCase{
 		Providers: accProvider(),
 		PreCheck:  func() { testAccPreCheck(t) },
@@ -40,6 +54,44 @@ func TestAccTopicUpdatePartitions(t *testing.T) {
 			},
 		},
 	})
+}
+
+func testResourceTopic_noConfigCheck(s *terraform.State) error {
+	resourceState := s.Modules[0].Resources["kafka_topic.test"]
+	if resourceState == nil {
+		return fmt.Errorf("resource not found in state")
+	}
+
+	instanceState := resourceState.Primary
+	if instanceState == nil {
+		return fmt.Errorf("resource has no primary instance")
+	}
+
+	name := instanceState.ID
+
+	if name != instanceState.Attributes["name"] {
+		return fmt.Errorf("id doesn't match name")
+	}
+
+	if name != "syslog" {
+		return fmt.Errorf("unexpected topic name %s", name)
+	}
+
+	client := testProvider.Meta().(*Client)
+
+	topic, err := client.ReadTopic("syslog")
+
+	if err != nil {
+		return err
+	}
+
+	log.Println("[INFO] Hello from tests")
+
+	if len(topic.Config) != 0 {
+		return fmt.Errorf("expected no configs for %s, got %v", name, topic.Config)
+	}
+
+	return nil
 }
 
 func testResourceTopic_initialCheck(s *terraform.State) error {
@@ -119,6 +171,18 @@ func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
 	}
 	return nil
 }
+
+const testResourceTopic_noConfig = `
+provider "kafka" {
+  bootstrap_servers = ["localhost:9092"]
+}
+
+resource "kafka_topic" "test" {
+  name               = "syslog"
+  replication_factor = 1
+  partitions         = 1
+}
+`
 
 const testResourceTopic_initialConfig = `
 provider "kafka" {
