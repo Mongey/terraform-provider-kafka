@@ -74,6 +74,12 @@ func (val Value) GoString() string {
 // as dynamic if either of the given values are. Use RawEquals to compare
 // if two values are equal *ignoring* the short-circuit rules.
 func (val Value) Equals(other Value) Value {
+	// If only one is null, then we know this must be false
+	// val.IsNull() XOR other.IsNull()
+	if (val.IsNull() || other.IsNull()) && !(val.IsNull() && other.IsNull()) {
+		return BoolVal(false)
+	}
+
 	if val.ty.HasDynamicTypes() || other.ty.HasDynamicTypes() {
 		return UnknownVal(Bool)
 	}
@@ -86,11 +92,9 @@ func (val Value) Equals(other Value) Value {
 		return UnknownVal(Bool)
 	}
 
-	if val.IsNull() || other.IsNull() {
-		if val.IsNull() && other.IsNull() {
-			return BoolVal(true)
-		}
-		return BoolVal(false)
+	// The types are equal, so the Nulls are equal.
+	if val.IsNull() && other.IsNull() {
+		return BoolVal(true)
 	}
 
 	ty := val.ty
@@ -757,7 +761,7 @@ func (val Value) HasElement(elem Value) Value {
 	if val.IsNull() {
 		panic("can't call HasElement on a nil value")
 	}
-	if ty.ElementType() != elem.Type() {
+	if !ty.ElementType().Equals(elem.Type()) {
 		return False
 	}
 
