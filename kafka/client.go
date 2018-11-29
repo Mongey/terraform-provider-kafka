@@ -215,14 +215,16 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 			log.Printf("[DEBUG] FOUND %s from Kafka", t)
 			p, err := c.Partitions(t)
 			if err == nil {
-				log.Printf("[DEBUG] Partitions %v from Kafka", p)
-				topic.Partitions = int32(len(p))
+				partitionCount := int32(len(p))
+				log.Printf("[DEBUG] %d Partitions Found: %v from Kafka", partitionCount, p)
+				topic.Partitions = partitionCount
 
 				r, err := ReplicaCount(c, name, p)
 				if err == nil {
 					log.Printf("[DEBUG] ReplicationFactor %d from Kafka", r)
 					topic.ReplicationFactor = int16(r)
 				}
+
 				configToSave, err := client.topicConfig(t)
 				if err != nil {
 					log.Printf("[ERROR] Could not get config for topic %s: %s", t, err)
@@ -242,6 +244,7 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	conf := map[string]*string{}
 	request := &sarama.DescribeConfigsRequest{
+		Version: 1,
 		Resources: []*sarama.ConfigResource{
 			{
 				Type: sarama.TopicResource,
@@ -254,22 +257,34 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	if err != nil {
 		return conf, err
 	}
-	cr, err := broker.DescribeConfigs(request)
 
+	cr, err := broker.DescribeConfigs(request)
 	if err != nil {
 		return conf, err
 	}
 
 	if len(cr.Resources) > 0 && len(cr.Resources[0].Configs) > 0 {
 		for _, tConf := range cr.Resources[0].Configs {
-			if tConf.Default {
+			v := tConf.Value
+			log.Printf("[INFO] Topic: %s. %s: %v. Default %v, Source %v, Version %d", topic, tConf.Name, v, tConf.Default, tConf.Source, cr.Version)
+			for _, s := range tConf.Synonyms {
+				log.Printf("[INFO] Syonyms: %v", s)
+			}
+
+			if isDefault(tConf, int(cr.Version)) {
 				continue
 			}
-			v := tConf.Value
 			conf[tConf.Name] = &v
 		}
 	}
 	return conf, nil
+}
+
+func isDefault(tc *sarama.ConfigEntry, version int) bool {
+	if version == 0 {
+		return tc.Default
+	}
+	return tc.Source == sarama.SourceDefault || tc.Source == sarama.SourceStaticBroker
 }
 
 func (c *Client) availableBroker() (*sarama.Broker, error) {
