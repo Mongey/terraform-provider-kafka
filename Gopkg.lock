@@ -10,13 +10,12 @@
   version = "v1.3.4"
 
 [[projects]]
-  branch = "cm-new-describe-configs"
-  digest = "1:1da0bcc79ed11012ddda1303291729d46ae7f734e723fb0f3e9bcd9a1e6a2c9a"
+  branch = "master"
+  digest = "1:c13bdcfc4b0d36e4ee20816e1606e49aa60d601ecef38c72dd8902d773e3d992"
   name = "github.com/Shopify/sarama"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "f9494b44e15f8db1dae8c2257d641f52b5ba5f0a"
-  source = "github.com/Mongey/sarama"
+  revision = "861a752af5039cb76ed02ce31cb4e4fc1cb65d11"
 
 [[projects]]
   digest = "1:8bd40ec66a32437126e8ff3080f26b11ca5926917daa01eba1285d0b059416bc"

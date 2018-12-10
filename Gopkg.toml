@@ -3,9 +3,7 @@
 
 [[constraint]]
   name = "github.com/Shopify/sarama"
-  source = "github.com/Mongey/sarama"
-  #version = "v1.19.0"
-  branch = "cm-new-describe-configs"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/hashicorp/terraform"
