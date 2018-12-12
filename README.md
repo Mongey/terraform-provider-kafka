@@ -135,6 +135,7 @@ resource "kafka_acl" "test" {
 | `acl_principal`       | Principal that is being allowed or denied                          | `*`                                                              |
 | `resource_name`       | The name of the resource                                           | `*`                                                              |
 | `resource_type`       | The type of resource                                               | `Unknown`, `Any`, `Topic`, `Group`, `Cluster`, `TransactionalID` |
+| `resource_pattern_type_filter`       | ?                                                   | `prefixed`, `any`, `match`, `literal` |
 
 
 ## Requirements

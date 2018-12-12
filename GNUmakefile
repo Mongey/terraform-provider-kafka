@@ -17,6 +17,6 @@ testacc:
 	KAFKA_CLIENT_KEY=../secrets/kafkacat-raw-private-key.pem \
 	KAFKA_SKIP_VERIFY=true \
 	KAFKA_ENABLE_TLS=true \
-	TG_LOG=debug TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
+	TG_LOG=trace TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
 
 .PHONY: build test testacc

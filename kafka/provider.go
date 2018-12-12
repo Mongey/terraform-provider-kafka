@@ -76,12 +76,11 @@ func Provider() terraform.ResourceProvider {
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	brokers := dTos("bootstrap_servers", d)
+	brokers := StringSliceForKey("bootstrap_servers", d)
 
 	if brokers == nil {
 		return nil, fmt.Errorf("bootstrap_servers was not set")
 	}
-	log.Printf("[DEBUG] configuring provider with Brokers @ %v", brokers)
 
 	config := &Config{
 		BootstrapServers: brokers,
@@ -98,28 +97,4 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	log.Printf("[DEBUG] Config @ %v", config)
 
 	return NewClient(config)
-}
-
-func dTos(key string, d *schema.ResourceData) *[]string {
-	var r *[]string
-
-	if v, ok := d.GetOk(key); ok {
-		if v == nil {
-			return r
-		}
-		vI := v.([]interface{})
-		b := make([]string, len(vI))
-
-		for i, vv := range vI {
-			if vv == nil {
-				log.Printf("[DEBUG] %d %v was nil", i, vv)
-				continue
-			}
-			log.Printf("[DEBUG] %d:Converting %v to string", i, vv)
-			b[i] = vv.(string)
-		}
-		r = &b
-	}
-
-	return r
 }

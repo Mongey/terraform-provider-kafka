@@ -99,12 +99,13 @@ provider "kafka" {
 }
 
 resource "kafka_acl" "test" {
-	resource_name       = "syslog"
-	resource_type       = "Topic"
-	acl_principal       = "User:Alice"
-	acl_host            = "*"
-	acl_operation       = "Write"
-	acl_permission_type = "Allow"
+	resource_name                = "syslog"
+	resource_type                = "Topic"
+	resource_pattern_type_filter = "literal"
+	acl_principal                = "User:Alice"
+	acl_host                     = "*"
+	acl_operation                = "Write"
+	acl_permission_type          = "Allow"
 }
 `
 
@@ -112,17 +113,18 @@ const testResourceACL_updateConfig = `
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
 	ca_cert_file      = "../secrets/snakeoil-ca-1.crt"
-	client_cert_file = "../secrets/kafkacat-ca1-signed.pem"
-	client_key_file  = "../secrets/kafkacat-raw-private-key.pem"
+	client_cert_file  = "../secrets/kafkacat-ca1-signed.pem"
+	client_key_file   = "../secrets/kafkacat-raw-private-key.pem"
 	skip_tls_verify   = true
 }
 
 resource "kafka_acl" "test" {
-	resource_name       = "syslog"
-	resource_type       = "Topic"
-	acl_principal       = "User:Alice"
-	acl_host            = "*"
-	acl_operation       = "Write"
-	acl_permission_type = "Deny"
+	resource_name                = "syslog"
+	resource_type                = "Topic"
+	resource_pattern_type_filter = "literal"
+	acl_principal                = "User:Alice"
+	acl_host                     = "*"
+	acl_operation                = "Write"
+	acl_permission_type          = "Deny"
 }
 `

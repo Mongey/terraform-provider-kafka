@@ -2,6 +2,9 @@ package kafka
 
 import (
 	"fmt"
+	"log"
+
+	"github.com/hashicorp/terraform/helper/schema"
 )
 
 // MapEq compares two maps, and checks that the keys and values are the same
@@ -24,6 +27,32 @@ func MapEq(result, expected map[string]*string) error {
 		}
 	}
 	return nil
+}
+
+// StringSliceForKey retrieves a string slice for the given key from the
+// terraform data structure
+func StringSliceForKey(key string, d *schema.ResourceData) *[]string {
+	var r *[]string
+
+	if v, ok := d.GetOk(key); ok {
+		if v == nil {
+			return r
+		}
+		vI := v.([]interface{})
+		b := make([]string, len(vI))
+
+		for i, vv := range vI {
+			if vv == nil {
+				log.Printf("[DEBUG] %d %v was nil", i, vv)
+				continue
+			}
+			log.Printf("[DEBUG] %d:Converting %v to string", i, vv)
+			b[i] = vv.(string)
+		}
+		r = &b
+	}
+
+	return r
 }
 
 // TODO: can I just get rid of this?

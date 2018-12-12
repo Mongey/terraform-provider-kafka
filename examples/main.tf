@@ -20,10 +20,11 @@ resource "kafka_topic" "syslog" {
 }
 
 resource "kafka_acl" "test" {
-  resource_name       = "syslog"
-  resource_type       = "Topic"
-  acl_principal       = "User:Alice"
-  acl_host            = "*"
-  acl_operation       = "Write"
-  acl_permission_type = "Deny"
+  resource_name                = "syslog-*"
+  resource_type                = "Topic"
+  resource_pattern_type_filter = "prefixed"
+  acl_principal                = "User:Alice"
+  acl_host                     = "*"
+  acl_operation                = "Write"
+  acl_permission_type          = "Allow"
 }

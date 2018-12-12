@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -37,8 +38,11 @@ type Config struct {
 	SASLPassword     string
 }
 
+func (c *Config) String() string {
+	return fmt.Sprintf("BootstrapServers: %s\nTimeout: %d,\nTLS: %v,SkipVerify: %v", *c.BootstrapServers, c.Timeout, c.TLSEnabled, c.SkipTLSVerify)
+}
+
 func NewClient(config *Config) (*Client, error) {
-	log.Printf("[INFO] configuring bootstrap_servers %v", config)
 	bootstrapServers := *(config.BootstrapServers)
 
 	if bootstrapServers == nil {
@@ -56,6 +60,8 @@ func NewClient(config *Config) (*Client, error) {
 		log.Println("[ERROR] Error connecting to kafka")
 		return nil, err
 	}
+
+	sarama.Logger = log.New(os.Stdout, "[TRACE] [Sarama]", log.LstdFlags)
 
 	client := &Client{
 		client:      c,
@@ -115,7 +121,7 @@ func (c *Client) DeleteTopic(t string) error {
 			}
 		}
 	} else {
-		log.Printf("[ERROR] Error deleting topic %s from Kafka\n", err)
+		log.Printf("[ERROR] Error deleting topic %s from Kafka: %s", t, err)
 		return err
 	}
 
@@ -189,19 +195,19 @@ func (c *Client) CreateTopic(t Topic) error {
 
 func (c *Client) AddPartitions(t Topic) error {
 	broker, err := c.client.Controller()
-
 	if err != nil {
-		log.Printf("[WARN] DERP %s", err)
+		log.Printf("[ERROR] Unable to fetch controller: %s", err)
 		return err
 	}
+
 	timeout := time.Duration(c.config.Timeout) * time.Second
-	log.Printf("[DEBUG] b of size %d", 1)
+
 	tp := map[string]*sarama.TopicPartition{
 		t.Name: &sarama.TopicPartition{
 			Count: t.Partitions,
 		},
 	}
-	log.Printf("[DEBUG] b of size %d", 2)
+
 	req := &sarama.CreatePartitionsRequest{
 		TopicPartitions: tp,
 		Timeout:         timeout,
@@ -283,6 +289,103 @@ func (c *Client) versionForKey(apiKey, wantedMaxVersion int) int {
 	return 0
 }
 
+func (c *Client) CreateACL(s stringlyTypedACL) error {
+	broker, err := c.availableBroker()
+	if err != nil {
+		return err
+	}
+
+	ac, err := s.AclCreation()
+	if err != nil {
+		return err
+	}
+	req := &sarama.CreateAclsRequest{
+		Version:      1,
+		AclCreations: []*sarama.AclCreation{ac},
+	}
+
+	res, err := broker.CreateAcls(req)
+	if err != nil {
+		return err
+	}
+
+	for _, r := range res.AclCreationResponses {
+		if r.Err != sarama.ErrNoError {
+			return r.Err
+		}
+	}
+
+	return nil
+}
+
+func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
+	broker, err := c.availableBroker()
+	if err != nil {
+		return nil, err
+	}
+	err = c.client.RefreshMetadata()
+	if err != nil {
+		return nil, err
+	}
+	allResources := []*sarama.DescribeAclsRequest{
+		&sarama.DescribeAclsRequest{
+			Version: 1,
+			AclFilter: sarama.AclFilter{
+				ResourceType:              sarama.AclResourceTopic,
+				ResourcePatternTypeFilter: sarama.AclPatternAny,
+				PermissionType:            sarama.AclPermissionAny,
+				Operation:                 sarama.AclOperationAny,
+			},
+		},
+		&sarama.DescribeAclsRequest{
+			Version: 1,
+			AclFilter: sarama.AclFilter{
+				ResourceType:              sarama.AclResourceGroup,
+				ResourcePatternTypeFilter: sarama.AclPatternAny,
+				PermissionType:            sarama.AclPermissionAny,
+				Operation:                 sarama.AclOperationAny,
+			},
+		},
+		&sarama.DescribeAclsRequest{
+			Version: 1,
+			AclFilter: sarama.AclFilter{
+				ResourceType:              sarama.AclResourceCluster,
+				ResourcePatternTypeFilter: sarama.AclPatternAny,
+				PermissionType:            sarama.AclPermissionAny,
+				Operation:                 sarama.AclOperationAny,
+			},
+		},
+		&sarama.DescribeAclsRequest{
+			Version: 1,
+			AclFilter: sarama.AclFilter{
+				ResourceType:              sarama.AclResourceTransactionalID,
+				ResourcePatternTypeFilter: sarama.AclPatternAny,
+				PermissionType:            sarama.AclPermissionAny,
+				Operation:                 sarama.AclOperationAny,
+			},
+		},
+	}
+	res := []*sarama.ResourceAcls{}
+
+	for _, r := range allResources {
+		aclsR, err := broker.DescribeAcls(r)
+		if err != nil {
+			return nil, err
+		}
+
+		if err == nil {
+			if aclsR.Err != sarama.ErrNoError {
+				return nil, fmt.Errorf("%s", aclsR.Err)
+			}
+		}
+
+		for _, a := range aclsR.ResourceAcls {
+			res = append(res, a)
+		}
+	}
+	return res, err
+}
+
 func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	conf := map[string]*string{}
 	request := &sarama.DescribeConfigsRequest{
@@ -342,7 +445,8 @@ func (c *Client) availableBroker() (*sarama.Broker, error) {
 
 func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V1_0_0_0
+	kafkaConfig.Version = sarama.V2_0_0_0
+	kafkaConfig.ClientID = "terraform-provider-kafka"
 
 	if c.saslEnabled() {
 		kafkaConfig.Net.SASL.Enable = true

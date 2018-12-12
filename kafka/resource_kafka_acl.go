@@ -26,6 +26,13 @@ func kafkaACLResource() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"resource_pattern_type_filter": {
+				Type:     schema.TypeString,
+				Required: false,
+				Optional: true,
+				Default:  "literal",
+				ForceNew: true,
+			},
 			"acl_principal": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -52,7 +59,7 @@ func kafkaACLResource() *schema.Resource {
 
 func aclCreate(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*Client)
-	a := aclInfo(d)
+	a := TerraformToACL(d)
 
 	log.Printf("[INFO] Creating ACL %s", a)
 	err := c.CreateACL(a)
@@ -69,14 +76,14 @@ func aclCreate(d *schema.ResourceData, meta interface{}) error {
 
 func aclDelete(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*Client)
-	a := aclInfo(d)
+	a := TerraformToACL(d)
 	log.Printf("[INFO] Deleteing ACL %s", a)
 	return c.DeleteACL(a)
 }
 
 func aclRead(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*Client)
-	a := aclInfo(d)
+	a := TerraformToACL(d)
 
 	currentAcls, err := c.ListACLs()
 	if err != nil {
@@ -88,11 +95,11 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 		}
 
 	}
-	//panic(fmt.Sprintf("ACL read not implmented: %v", d))
 	return nil
 }
 
-func aclInfo(d *schema.ResourceData) stringlyTypedACL {
+// TerraformToACL returns a ACL from a terraform block
+func TerraformToACL(d *schema.ResourceData) stringlyTypedACL {
 	s := stringlyTypedACL{
 		ACL: ACL{
 			Principal:      d.Get("acl_principal").(string),
@@ -101,8 +108,9 @@ func aclInfo(d *schema.ResourceData) stringlyTypedACL {
 			PermissionType: d.Get("acl_permission_type").(string),
 		},
 		Resource: Resource{
-			Type: d.Get("resource_type").(string),
-			Name: d.Get("resource_name").(string),
+			Type:              d.Get("resource_type").(string),
+			Name:              d.Get("resource_name").(string),
+			PatternTypeFilter: d.Get("resource_pattern_type_filter").(string),
 		},
 	}
 	return s
