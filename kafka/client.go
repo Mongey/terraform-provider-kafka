@@ -29,7 +29,9 @@ type Client struct {
 type Config struct {
 	BootstrapServers *[]string
 	Timeout          int
+	CACert           *x509.Certificate
 	CACertFile       string
+	ClientCert       *tls.Certificate
 	ClientCertFile   string
 	ClientCertKey    string
 	TLSEnabled       bool
@@ -455,11 +457,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	}
 
 	if c.TLSEnabled {
-		tlsConfig, err := newTLSConfig(
-			c.ClientCertFile,
-			c.ClientCertKey,
-			c.CACertFile)
-
+		tlsConfig, err := c.newTLSConfig()
 		if err != nil {
 			return kafkaConfig, err
 		}
@@ -476,32 +474,55 @@ func (c *Config) saslEnabled() bool {
 	return c.SASLUsername != "" || c.SASLPassword != ""
 }
 
-func newTLSConfig(clientCertFile, clientKeyFile, caCertFile string) (*tls.Config, error) {
-	tlsConfig := tls.Config{}
+func (c *Config) newTLSConfig() (*tls.Config, error) {
+	tlsConfig := &tls.Config{}
 
-	// Load client cert
-	if clientCertFile != "" && clientKeyFile != "" {
-		cert, err := tls.LoadX509KeyPair(clientCertFile, clientKeyFile)
-		if err != nil {
-			return &tlsConfig, err
-		}
-		tlsConfig.Certificates = []tls.Certificate{cert}
-	} else {
-		log.Println("[WARN] skipping TLS client config")
-	}
-
-	if caCertFile == "" {
-		log.Println("[WARN] no CA file set skipping")
-		return &tlsConfig, nil
-	}
-	// Load CA cert
-	caCert, err := ioutil.ReadFile(caCertFile)
+	cert, err := c.clientCert()
 	if err != nil {
-		return &tlsConfig, err
+		return tlsConfig, err
 	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-	tlsConfig.RootCAs = caCertPool
+	if cert != nil {
+		tlsConfig.Certificates = []tls.Certificate{*cert}
+	}
+
+	pool, err := c.caCertPool()
+	if err != nil {
+		return tlsConfig, err
+	}
+	if pool != nil {
+		tlsConfig.RootCAs = pool
+	}
+
 	tlsConfig.BuildNameToCertificate()
-	return &tlsConfig, err
+
+	return tlsConfig, nil
+}
+
+func (c *Config) clientCert() (*tls.Certificate, error) {
+	if c.ClientCert != nil {
+		return c.ClientCert, nil
+	}
+	if c.ClientCertFile != "" && c.ClientCertKey != "" {
+		cert, err := tls.LoadX509KeyPair(c.ClientCertFile, c.ClientCertKey)
+		if err != nil {
+			return nil, err
+		}
+		return &cert, nil
+	}
+
+	return nil, nil
+}
+
+func (c *Config) caCertPool() (*x509.CertPool, error) {
+	pool := x509.NewCertPool()
+	if c.CACert != nil {
+		pool.AddCert(c.CACert)
+	} else if c.CACertFile == "" {
+		caCert, err := ioutil.ReadFile(c.CACertFile)
+		if err != nil {
+			return nil, err
+		}
+		pool.AppendCertsFromPEM(caCert)
+	}
+	return pool, nil
 }
