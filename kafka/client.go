@@ -291,7 +291,7 @@ func (c *Client) versionForKey(apiKey, wantedMaxVersion int) int {
 	return 0
 }
 
-func (c *Client) CreateACL(s stringlyTypedACL) error {
+func (c *Client) CreateACL(s StringlyTypedACL) error {
 	broker, err := c.availableBroker()
 	if err != nil {
 		return err
@@ -302,7 +302,7 @@ func (c *Client) CreateACL(s stringlyTypedACL) error {
 		return err
 	}
 	req := &sarama.CreateAclsRequest{
-		Version:      1,
+		Version:      c.aclVersion(),
 		AclCreations: []*sarama.AclCreation{ac},
 	}
 
@@ -331,7 +331,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	}
 	allResources := []*sarama.DescribeAclsRequest{
 		&sarama.DescribeAclsRequest{
-			Version: 1,
+			Version: c.aclVersion(),
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceTopic,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -340,7 +340,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 			},
 		},
 		&sarama.DescribeAclsRequest{
-			Version: 1,
+			Version: c.aclVersion(),
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceGroup,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -349,7 +349,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 			},
 		},
 		&sarama.DescribeAclsRequest{
-			Version: 1,
+			Version: c.aclVersion(),
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceCluster,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -358,7 +358,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 			},
 		},
 		&sarama.DescribeAclsRequest{
-			Version: 1,
+			Version: c.aclVersion(),
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceTransactionalID,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
@@ -428,7 +428,6 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 }
 
 func (c *Client) availableBroker() (*sarama.Broker, error) {
-	var err error
 	brokers := *c.config.BootstrapServers
 	kc := c.kafkaConfig
 
@@ -502,14 +501,6 @@ func (c *Config) clientCert() (*tls.Certificate, error) {
 	if c.ClientCert != nil {
 		return c.ClientCert, nil
 	}
-	if c.ClientCertFile != "" && c.ClientCertKey != "" {
-		cert, err := tls.LoadX509KeyPair(c.ClientCertFile, c.ClientCertKey)
-		if err != nil {
-			return nil, err
-		}
-		return &cert, nil
-	}
-
 	return nil, nil
 }
 
@@ -525,4 +516,14 @@ func (c *Config) caCertPool() (*x509.CertPool, error) {
 		pool.AppendCertsFromPEM(caCert)
 	}
 	return pool, nil
+}
+
+func (c *Client) aclVersion() int {
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
+		log.Printf("[DEBUG] Using version 1 for ACL requests; %s", c.kafkaConfig.Version)
+		return 1
+	}
+	log.Printf("[DEBUG] Using version 0 for ACL requests; %s", c.kafkaConfig.Version)
+
+	return 0
 }

@@ -50,8 +50,9 @@ provider "kafka" {
 | Property            | Description                                                                                      | Default    |
 | ----------------    | -----------------------                                                                          | ---------- |
 | `bootstrap_servers` | A list of host:port addresses that will be used to discover the full set of alive brokers        | `Required` |
+| `kafka_version`     | The version of Kafka to use. This will determine the version of requests the client will make    | `1.0.0`   |
 | `ca_cert_file`      | The path to a CA certificate file to validate the server's certificate.                          | `""`       |
-| `client_cert_file`  | The path the a file containing the client certificate -- Use for Client authentication to Kafka. | `""`       |
+| `client_cert_file`  | The path to a file containing the client certificate -- Use for Client authentication to Kafka.  | `""`       |
 | `client_key_file`   | Path to a file containing the private key that the client certificate was issued for.            | `""`       |
 | `skip_tls_verify`   | Skip TLS verification.                                                                           | `false`    |
 | `tls_enabled`       | Enable communication with the Kafka Cluster over TLS.                                            | `false`    |
@@ -135,7 +136,7 @@ resource "kafka_acl" "test" {
 | `acl_principal`       | Principal that is being allowed or denied                          | `*`                                                              |
 | `resource_name`       | The name of the resource                                           | `*`                                                              |
 | `resource_type`       | The type of resource                                               | `Unknown`, `Any`, `Topic`, `Group`, `Cluster`, `TransactionalID` |
-| `resource_pattern_type_filter`       | ?                                                   | `prefixed`, `any`, `match`, `literal` |
+| `resource_pattern_type_filter`       | ?                                                   | `Prefixed`, `Any`, `Match`, `Literal` |
 
 
 ## Requirements

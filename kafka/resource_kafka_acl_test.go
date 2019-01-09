@@ -101,7 +101,7 @@ provider "kafka" {
 resource "kafka_acl" "test" {
 	resource_name                = "syslog"
 	resource_type                = "Topic"
-	resource_pattern_type_filter = "literal"
+	resource_pattern_type_filter = "Literal"
 	acl_principal                = "User:Alice"
 	acl_host                     = "*"
 	acl_operation                = "Write"
@@ -121,7 +121,7 @@ provider "kafka" {
 resource "kafka_acl" "test" {
 	resource_name                = "syslog"
 	resource_type                = "Topic"
-	resource_pattern_type_filter = "literal"
+	resource_pattern_type_filter = "Literal"
 	acl_principal                = "User:Alice"
 	acl_host                     = "*"
 	acl_operation                = "Write"

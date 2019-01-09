@@ -7,7 +7,7 @@ import (
 )
 
 func TestACLToAclCreation(t *testing.T) {
-	acl := stringlyTypedACL{
+	acl := StringlyTypedACL{
 		ACL: ACL{
 			Principal:      "principal",
 			Host:           "*",
@@ -17,7 +17,7 @@ func TestACLToAclCreation(t *testing.T) {
 		Resource: Resource{
 			Type:              "Topic",
 			Name:              "vault_logs",
-			PatternTypeFilter: "prefixed",
+			PatternTypeFilter: "Prefixed",
 		},
 	}
 

@@ -9,42 +9,42 @@ import (
 )
 
 type ACL struct {
-	Principal      string
-	Host           string
-	Operation      string
-	PermissionType string
+	Principal      string `json:"principal"`
+	Host           string `json:"host"`
+	Operation      string `json:"operation"`
+	PermissionType string `json:"permission_type"`
 }
 
 type Resource struct {
-	Type              string
-	Name              string
-	PatternTypeFilter string
+	Type              string `json:"type"`
+	Name              string `json:"name"`
+	PatternTypeFilter string `json:"pattern_type_filter"`
 }
 
-type stringlyTypedACL struct {
-	ACL      ACL
-	Resource Resource
+type StringlyTypedACL struct {
+	ACL      ACL      `json:"acl"`
+	Resource Resource `json:"resource"`
 }
 
-func (a stringlyTypedACL) String() string {
+func (a StringlyTypedACL) String() string {
 	return strings.Join([]string{a.ACL.Principal, a.ACL.Host, a.ACL.Operation, a.ACL.PermissionType, a.Resource.Type, a.Resource.Name, a.Resource.PatternTypeFilter}, "|")
 }
 
 func stringToACLPrefix(s string) sarama.AclResourcePatternType {
 	switch s {
-	case "any":
+	case "Any":
 		return sarama.AclPatternAny
-	case "match":
+	case "Match":
 		return sarama.AclPatternMatch
-	case "literal":
+	case "Literal":
 		return sarama.AclPatternLiteral
-	case "prefixed":
+	case "Prefixed":
 		return sarama.AclPatternPrefixed
 	}
 	return unknownConversion
 }
 
-func (s stringlyTypedACL) AclCreation() (*sarama.AclCreation, error) {
+func (s StringlyTypedACL) AclCreation() (*sarama.AclCreation, error) {
 	acl := &sarama.AclCreation{}
 
 	op := stringToOperation(s.ACL.Operation)
@@ -82,7 +82,7 @@ func (s stringlyTypedACL) AclCreation() (*sarama.AclCreation, error) {
 
 const unknownConversion = -1
 
-func (s stringlyTypedACL) AclFilter() (sarama.AclFilter, error) {
+func (s StringlyTypedACL) AclFilter() (sarama.AclFilter, error) {
 	f := sarama.AclFilter{
 		Principal:    &s.ACL.Principal,
 		Host:         &s.ACL.Host,
@@ -116,7 +116,7 @@ func (s stringlyTypedACL) AclFilter() (sarama.AclFilter, error) {
 	return f, nil
 }
 
-func (c *Client) DeleteACL(s stringlyTypedACL) error {
+func (c *Client) DeleteACL(s StringlyTypedACL) error {
 	broker, err := c.availableBroker()
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func (c *Client) DeleteACL(s stringlyTypedACL) error {
 	}
 
 	req := &sarama.DeleteAclsRequest{
-		Version: 1,
+		Version: c.aclVersion(),
 		Filters: []*sarama.AclFilter{&filter},
 	}
 

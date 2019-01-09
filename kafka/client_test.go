@@ -1,6 +1,10 @@
 package kafka
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/Shopify/sarama"
+)
 
 func Test_ClientAPIVersion(t *testing.T) {
 	// Default to 0
@@ -24,5 +28,18 @@ func Test_ClientAPIVersion(t *testing.T) {
 	maxVersion = client.versionForKey(32, 1)
 	if maxVersion != 1 {
 		t.Errorf("Got %d, expected %d", maxVersion, 1)
+	}
+}
+
+func Test_kafkaConfigVersion(t *testing.T) {
+	c := Config{}
+
+	cfg, err := c.newKafkaConfig()
+	if err != nil {
+		t.Fatalf("Config should be valid: %s", err)
+	}
+
+	if cfg.Version != sarama.V1_0_0_0 {
+		t.Errorf("Default version should be v1; got %s", cfg.Version)
 	}
 }

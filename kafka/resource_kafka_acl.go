@@ -30,7 +30,7 @@ func kafkaACLResource() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: false,
 				Optional: true,
-				Default:  "literal",
+				Default:  "Literal",
 				ForceNew: true,
 			},
 			"acl_principal": {
@@ -99,8 +99,8 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 // TerraformToACL returns a ACL from a terraform block
-func TerraformToACL(d *schema.ResourceData) stringlyTypedACL {
-	s := stringlyTypedACL{
+func TerraformToACL(d *schema.ResourceData) StringlyTypedACL {
+	s := StringlyTypedACL{
 		ACL: ACL{
 			Principal:      d.Get("acl_principal").(string),
 			Host:           d.Get("acl_host").(string),
