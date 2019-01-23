@@ -42,6 +42,7 @@ func kafkaTopicResource() *schema.Resource {
 				Optional:    true,
 				ForceNew:    false,
 				Description: "A map of string k/v attributes.",
+				Elem:        schema.TypeString,
 			},
 		},
 	}
