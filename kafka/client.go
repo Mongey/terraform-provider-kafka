@@ -244,7 +244,6 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	conf := map[string]*string{}
 	request := &sarama.DescribeConfigsRequest{
-		Version: 1,
 		Resources: []*sarama.ConfigResource{
 			{
 				Type: sarama.TopicResource,
