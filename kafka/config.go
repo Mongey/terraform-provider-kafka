@@ -23,7 +23,7 @@ type Config struct {
 
 func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V1_0_0_0
+	kafkaConfig.Version = sarama.V2_1_0_0
 
 	if c.saslEnabled() {
 		kafkaConfig.Net.SASL.Enable = true
