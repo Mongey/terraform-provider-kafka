@@ -26,6 +26,13 @@ func kafkaACLResource() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"resource_pattern_type_filter": {
+				Type:     schema.TypeString,
+				Required: false,
+				Optional: true,
+				Default:  "Literal",
+				ForceNew: true,
+			},
 			"acl_principal": {
 				Type:     schema.TypeString,
 				Required: true,
@@ -75,8 +82,10 @@ func aclDelete(d *schema.ResourceData, meta interface{}) error {
 }
 
 func aclRead(d *schema.ResourceData, meta interface{}) error {
+	log.Println("[INFO] Reading ACL")
 	c := meta.(*Client)
 	a := aclInfo(d)
+	log.Printf("[INFO] Reading ACL %s", a)
 
 	currentAcls, err := c.ListACLs()
 	if err != nil {
@@ -84,11 +93,11 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	for _, c := range currentAcls {
 		if c.ResourceName == a.Resource.Name {
+			log.Printf("[INFO] Found ACL %v", c)
 			return nil
 		}
 
 	}
-	//panic(fmt.Sprintf("ACL read not implmented: %v", d))
 	return nil
 }
 
@@ -101,8 +110,9 @@ func aclInfo(d *schema.ResourceData) stringlyTypedACL {
 			PermissionType: d.Get("acl_permission_type").(string),
 		},
 		Resource: Resource{
-			Type: d.Get("resource_type").(string),
-			Name: d.Get("resource_name").(string),
+			Type:              d.Get("resource_type").(string),
+			Name:              d.Get("resource_name").(string),
+			PatternTypeFilter: d.Get("resource_pattern_type_filter").(string),
 		},
 	}
 	return s
