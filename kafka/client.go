@@ -299,6 +299,17 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	return conf, nil
 }
 
+func (c *Client) getDescribeAclsRequestAPIVersion() int16 {
+	return int16(c.versionForKey(29, 1))
+}
+func (c *Client) getCreateAclsRequestAPIVersion() int16 {
+	return int16(c.versionForKey(30, 1))
+}
+
+func (c *Client) getDeleteAclsRequestAPIVersion() int16 {
+	return int16(c.versionForKey(31, 1))
+}
+
 func (c *Client) getDescribeConfigAPIVersion() int16 {
 	return int16(c.versionForKey(32, 1))
 }
