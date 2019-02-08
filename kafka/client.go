@@ -93,7 +93,6 @@ func (c *Client) DeleteTopic(t string) error {
 		Timeout: timeout,
 	}
 	res, err := broker.DeleteTopics(req)
-
 	if err == nil {
 		for k, e := range res.TopicErrorCodes {
 			if e != sarama.ErrNoError {
@@ -101,7 +100,7 @@ func (c *Client) DeleteTopic(t string) error {
 			}
 		}
 	} else {
-		log.Printf("[ERROR] Error deleting topic %s from Kafka\n", err)
+		log.Printf("[ERROR] Error deleting topic %s from Kafka: %s", t, err)
 		return err
 	}
 
@@ -177,14 +176,12 @@ func (c *Client) AddPartitions(t Topic) error {
 	}
 
 	timeout := time.Duration(c.config.Timeout) * time.Second
-	log.Printf("[DEBUG] b of size %d", 1)
 	tp := map[string]*sarama.TopicPartition{
 		t.Name: &sarama.TopicPartition{
 			Count: t.Partitions,
 		},
 	}
 
-	log.Printf("[DEBUG] b of size %d", 2)
 	req := &sarama.CreatePartitionsRequest{
 		TopicPartitions: tp,
 		Timeout:         timeout,
@@ -251,10 +248,6 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 	return topic, err
 }
 
-func (c *Client) getDescribeConfigAPIVersion() int16 {
-	return int16(c.versionForKey(32, 1))
-}
-
 func (c *Client) versionForKey(apiKey, wantedMaxVersion int) int {
 	if maxSupportedVersion, ok := c.supportedAPIs[apiKey]; ok {
 		if maxSupportedVersion < wantedMaxVersion {
@@ -266,6 +259,7 @@ func (c *Client) versionForKey(apiKey, wantedMaxVersion int) int {
 	return 0
 }
 
+//topicConfig retrives the non-default config map for a topic
 func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	conf := map[string]*string{}
 	request := &sarama.DescribeConfigsRequest{
@@ -303,4 +297,8 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 		}
 	}
 	return conf, nil
+}
+
+func (c *Client) getDescribeConfigAPIVersion() int16 {
+	return int16(c.versionForKey(32, 1))
 }
