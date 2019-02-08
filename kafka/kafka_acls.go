@@ -90,10 +90,11 @@ func tfToAclFilter(s stringlyTypedACL) (sarama.AclFilter, error) {
 }
 
 func (c *Client) DeleteACL(s stringlyTypedACL) error {
-	broker, err := c.availableBroker()
+	broker, err := c.client.Controller()
 	if err != nil {
 		return err
 	}
+
 	filter, err := tfToAclFilter(s)
 	if err != nil {
 		return err
@@ -118,7 +119,7 @@ func (c *Client) DeleteACL(s stringlyTypedACL) error {
 }
 
 func (c *Client) CreateACL(s stringlyTypedACL) error {
-	broker, err := c.availableBroker()
+	broker, err := c.client.Controller()
 	if err != nil {
 		return err
 	}
@@ -210,7 +211,7 @@ func stringToAclPermissionType(in string) sarama.AclPermissionType {
 }
 
 func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
-	broker, err := c.availableBroker()
+	broker, err := c.client.Controller()
 	if err != nil {
 		return nil, err
 	}

@@ -302,21 +302,3 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	}
 	return conf, nil
 }
-
-func (c *Client) availableBroker() (*sarama.Broker, error) {
-	var err error
-	brokers := *c.config.BootstrapServers
-	kc := c.kafkaConfig
-
-	log.Printf("[DEBUG] Looking for Brokers @ %v", brokers)
-	for _, b := range brokers {
-		broker := sarama.NewBroker(b)
-		err = broker.Open(kc)
-		if err == nil {
-			return broker, nil
-		}
-		log.Printf("[WARN] Broker @ %s cannot be reached\n", b)
-	}
-
-	return nil, fmt.Errorf("No Available Brokers @ %v", brokers)
-}
