@@ -24,6 +24,7 @@ type Config struct {
 func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig := sarama.NewConfig()
 	kafkaConfig.Version = sarama.V2_1_0_0
+	kafkaConfig.ClientID = "terraform-provider-kafka"
 
 	if c.saslEnabled() {
 		kafkaConfig.Net.SASL.Enable = true
