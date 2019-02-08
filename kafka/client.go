@@ -19,9 +19,10 @@ type TopicMissingError struct {
 func (e TopicMissingError) Error() string { return e.msg }
 
 type Client struct {
-	client      sarama.Client
-	kafkaConfig *sarama.Config
-	config      *Config
+	client        sarama.Client
+	kafkaConfig   *sarama.Config
+	config        *Config
+	supportedAPIs map[int]int
 }
 
 type Config struct {
@@ -56,11 +57,41 @@ func NewClient(config *Config) (*Client, error) {
 		return nil, err
 	}
 
-	return &Client{
+	client := &Client{
 		client:      c,
 		config:      config,
 		kafkaConfig: kc,
-	}, kc.Validate()
+	}
+
+	err = kc.Validate()
+	if err != nil {
+		return client, err
+	}
+
+	client.populateAPIVersions()
+	return client, nil
+}
+
+func (c *Client) populateAPIVersions() {
+	log.Printf("[DEBUG] retrieving supported APIs from broker")
+	broker, err := c.client.Controller()
+	if err != nil {
+		log.Printf("[ERROR] Unable to populate supported API versions. Error retrieving controller: %s", err)
+		return
+	}
+
+	resp, err := broker.ApiVersions(&sarama.ApiVersionsRequest{})
+	if err != nil {
+		log.Printf("[ERROR] Unable to populate supported API versions. %s", err)
+		return
+	}
+
+	m := map[int]int{}
+	for _, v := range resp.ApiVersions {
+		log.Printf("[TRACE] API key %d. Min %d, Max %d", v.ApiKey, v.MinVersion, v.MaxVersion)
+		m[int(v.ApiKey)] = int(v.MaxVersion)
+	}
+	c.supportedAPIs = m
 }
 
 func (c *Client) DeleteTopic(t string) error {
@@ -237,10 +268,25 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 	return topic, err
 }
 
+func (c *Client) getDescribeConfigAPIVersion() int16 {
+	return int16(c.versionForKey(32, 1))
+}
+
+func (c *Client) versionForKey(apiKey, wantedMaxVersion int) int {
+	if maxSupportedVersion, ok := c.supportedAPIs[apiKey]; ok {
+		if maxSupportedVersion < wantedMaxVersion {
+			return maxSupportedVersion
+		}
+		return wantedMaxVersion
+	}
+
+	return 0
+}
+
 func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	conf := map[string]*string{}
 	request := &sarama.DescribeConfigsRequest{
-		Version: 1,
+		Version: c.getDescribeConfigAPIVersion(),
 		Resources: []*sarama.ConfigResource{
 			{
 				Type: sarama.TopicResource,
