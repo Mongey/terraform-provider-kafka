@@ -36,10 +36,6 @@ type Config struct {
 	SASLPassword     string
 }
 
-func (c *Config) SASLEnabled() bool {
-	return c.SASLUsername != "" || c.SASLPassword != ""
-}
-
 func NewClient(config *Config) (*Client, error) {
 	log.Printf("[INFO] configuring bootstrap_servers %v", config)
 	bootstrapServers := *(config.BootstrapServers)
@@ -280,13 +276,6 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	return conf, nil
 }
 
-func isDefault(tc *sarama.ConfigEntry, version int) bool {
-	if version == 0 {
-		return tc.Default
-	}
-	return tc.Source == sarama.SourceDefault || tc.Source == sarama.SourceStaticBroker
-}
-
 func (c *Client) availableBroker() (*sarama.Broker, error) {
 	var err error
 	brokers := *c.config.BootstrapServers
@@ -309,7 +298,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig := sarama.NewConfig()
 	kafkaConfig.Version = sarama.V1_0_0_0
 
-	if c.SASLEnabled() {
+	if c.saslEnabled() {
 		kafkaConfig.Net.SASL.Enable = true
 		kafkaConfig.Net.SASL.Password = c.SASLPassword
 		kafkaConfig.Net.SASL.User = c.SASLUsername
@@ -331,6 +320,10 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	}
 
 	return kafkaConfig, nil
+}
+
+func (c *Config) saslEnabled() bool {
+	return c.SASLUsername != "" || c.SASLPassword != ""
 }
 
 func newTLSConfig(clientCertFile, clientKeyFile, caCertFile string) (*tls.Config, error) {

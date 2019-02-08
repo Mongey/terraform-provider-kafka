@@ -56,6 +56,13 @@ func configToResources(topic Topic) []*sarama.AlterConfigsResource {
 	}
 }
 
+func isDefault(tc *sarama.ConfigEntry, version int) bool {
+	if version == 0 {
+		return tc.Default
+	}
+	return tc.Source == sarama.SourceDefault || tc.Source == sarama.SourceStaticBroker
+}
+
 func metaToTopic(d *schema.ResourceData, meta interface{}) Topic {
 	topicName := d.Get("name").(string)
 	partitions := d.Get("partitions").(int)
