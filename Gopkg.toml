@@ -3,7 +3,8 @@
 
 [[constraint]]
   name = "github.com/Shopify/sarama"
-  branch = "master"
+  source = "github.com/Mongey/sarama"
+  branch = "cm-v1-create-acl-request"
 
 [[constraint]]
   name = "github.com/hashicorp/terraform"
