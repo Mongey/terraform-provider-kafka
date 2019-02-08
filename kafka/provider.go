@@ -65,11 +65,6 @@ func Provider() terraform.ResourceProvider {
 				Default:     120,
 				Description: "Timeout in seconds",
 			},
-			"kafka_version": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "The kafka version to target",
-			},
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -90,7 +85,6 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	config := &Config{
 		BootstrapServers: brokers,
 		CACertFile:       d.Get("ca_cert_file").(string),
-		KafkaVersion:     d.Get("kafka_version").(string),
 		ClientCertFile:   d.Get("client_cert_file").(string),
 		ClientCertKey:    d.Get("client_key_file").(string),
 		SkipTLSVerify:    d.Get("skip_tls_verify").(bool),

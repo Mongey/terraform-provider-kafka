@@ -1,11 +1,8 @@
 package kafka
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -24,20 +21,6 @@ type Client struct {
 	kafkaConfig   *sarama.Config
 	config        *Config
 	supportedAPIs map[int]int
-}
-
-type Config struct {
-	BootstrapServers *[]string
-	Timeout          int
-	CACert           *x509.Certificate
-	CACertFile       string
-	ClientCert       *tls.Certificate
-	ClientCertFile   string
-	ClientCertKey    string
-	TLSEnabled       bool
-	SkipTLSVerify    bool
-	SASLUsername     string
-	SASLPassword     string
 }
 
 func (c *Config) String() string {
@@ -428,6 +411,7 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 }
 
 func (c *Client) availableBroker() (*sarama.Broker, error) {
+	var err error
 	brokers := *c.config.BootstrapServers
 	kc := c.kafkaConfig
 
@@ -442,80 +426,6 @@ func (c *Client) availableBroker() (*sarama.Broker, error) {
 	}
 
 	return nil, fmt.Errorf("No Available Brokers @ %v", brokers)
-}
-
-func (c *Config) newKafkaConfig() (*sarama.Config, error) {
-	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V2_0_0_0
-	kafkaConfig.ClientID = "terraform-provider-kafka"
-
-	if c.saslEnabled() {
-		kafkaConfig.Net.SASL.Enable = true
-		kafkaConfig.Net.SASL.Password = c.SASLPassword
-		kafkaConfig.Net.SASL.User = c.SASLUsername
-	}
-
-	if c.TLSEnabled {
-		tlsConfig, err := c.newTLSConfig()
-		if err != nil {
-			return kafkaConfig, err
-		}
-
-		kafkaConfig.Net.TLS.Enable = true
-		kafkaConfig.Net.TLS.Config = tlsConfig
-		kafkaConfig.Net.TLS.Config.InsecureSkipVerify = c.SkipTLSVerify
-	}
-
-	return kafkaConfig, nil
-}
-
-func (c *Config) saslEnabled() bool {
-	return c.SASLUsername != "" || c.SASLPassword != ""
-}
-
-func (c *Config) newTLSConfig() (*tls.Config, error) {
-	tlsConfig := &tls.Config{}
-
-	cert, err := c.clientCert()
-	if err != nil {
-		return tlsConfig, err
-	}
-	if cert != nil {
-		tlsConfig.Certificates = []tls.Certificate{*cert}
-	}
-
-	pool, err := c.caCertPool()
-	if err != nil {
-		return tlsConfig, err
-	}
-	if pool != nil {
-		tlsConfig.RootCAs = pool
-	}
-
-	tlsConfig.BuildNameToCertificate()
-
-	return tlsConfig, nil
-}
-
-func (c *Config) clientCert() (*tls.Certificate, error) {
-	if c.ClientCert != nil {
-		return c.ClientCert, nil
-	}
-	return nil, nil
-}
-
-func (c *Config) caCertPool() (*x509.CertPool, error) {
-	pool := x509.NewCertPool()
-	if c.CACert != nil {
-		pool.AddCert(c.CACert)
-	} else if c.CACertFile == "" {
-		caCert, err := ioutil.ReadFile(c.CACertFile)
-		if err != nil {
-			return nil, err
-		}
-		pool.AppendCertsFromPEM(caCert)
-	}
-	return pool, nil
 }
 
 func (c *Client) aclVersion() int {

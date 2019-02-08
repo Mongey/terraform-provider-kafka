@@ -50,7 +50,6 @@ provider "kafka" {
 | Property            | Description                                                                                      | Default    |
 | ----------------    | -----------------------                                                                          | ---------- |
 | `bootstrap_servers` | A list of host:port addresses that will be used to discover the full set of alive brokers        | `Required` |
-| `kafka_version`     | The version of Kafka to use. This will determine the version of requests the client will make    | `1.0.0`   |
 | `ca_cert_file`      | The path to a CA certificate file to validate the server's certificate.                          | `""`       |
 | `client_cert_file`  | The path to a file containing the client certificate -- Use for Client authentication to Kafka.  | `""`       |
 | `client_key_file`   | Path to a file containing the private key that the client certificate was issued for.            | `""`       |

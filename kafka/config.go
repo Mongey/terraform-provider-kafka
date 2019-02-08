@@ -3,7 +3,6 @@ package kafka
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
 	"io/ioutil"
 
 	"github.com/Shopify/sarama"
@@ -12,7 +11,6 @@ import (
 type Config struct {
 	BootstrapServers *[]string
 	Timeout          int
-	KafkaVersion     string
 
 	CACert         *x509.Certificate
 	CACertFile     string
@@ -25,20 +23,16 @@ type Config struct {
 	SASLPassword   string
 }
 
-func (c *Config) String() string {
-	return fmt.Sprintf("BootstrapServers: %s\nTimeout: %d,\nTLS: %v,SkipVerify: %v", *c.BootstrapServers, c.Timeout, c.TLSEnabled, c.SkipTLSVerify)
-}
-
-func (c *Config) SASLEnabled() bool {
+func (c *Config) saslEnabled() bool {
 	return c.SASLUsername != "" || c.SASLPassword != ""
 }
 
 func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = versionFromString(c.KafkaVersion)
+	kafkaConfig.Version = sarama.V2_1_0_0
 	kafkaConfig.ClientID = "terraform-provider-kafka"
 
-	if c.SASLEnabled() {
+	if c.saslEnabled() {
 		kafkaConfig.Net.SASL.Enable = true
 		kafkaConfig.Net.SASL.Password = c.SASLPassword
 		kafkaConfig.Net.SASL.User = c.SASLUsername
