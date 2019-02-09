@@ -636,6 +636,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/Shopify/sarama",
+    "github.com/hashicorp/go-uuid",
     "github.com/hashicorp/terraform/config",
     "github.com/hashicorp/terraform/helper/resource",
     "github.com/hashicorp/terraform/helper/schema",
