@@ -5,17 +5,23 @@ import (
 	"log"
 	"testing"
 
+	uuid "github.com/hashicorp/go-uuid"
 	r "github.com/hashicorp/terraform/helper/resource"
 	"github.com/hashicorp/terraform/terraform"
 )
 
 func TestAccBasicTopic(t *testing.T) {
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	topicName := fmt.Sprintf("syslog-%s", u)
 	r.Test(t, r.TestCase{
 		Providers: accProvider(),
 		PreCheck:  func() { testAccPreCheck(t) },
 		Steps: []r.TestStep{
 			{
-				Config: testResourceTopic_noConfig,
+				Config: fmt.Sprintf(testResourceTopic_noConfig, topicName),
 				Check:  testResourceTopic_noConfigCheck,
 			},
 		},
@@ -23,16 +29,22 @@ func TestAccBasicTopic(t *testing.T) {
 }
 
 func TestAccTopicConfigUpdate(t *testing.T) {
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	topicName := fmt.Sprintf("syslog-%s", u)
+
 	r.Test(t, r.TestCase{
 		Providers: accProvider(),
 		PreCheck:  func() { testAccPreCheck(t) },
 		Steps: []r.TestStep{
 			{
-				Config: testResourceTopic_initialConfig,
+				Config: fmt.Sprintf(testResourceTopic_initialConfig, topicName),
 				Check:  testResourceTopic_initialCheck,
 			},
 			{
-				Config: testResourceTopic_updateConfig,
+				Config: fmt.Sprintf(testResourceTopic_updateConfig, topicName),
 				Check:  testResourceTopic_updateCheck,
 			},
 		},
@@ -40,16 +52,22 @@ func TestAccTopicConfigUpdate(t *testing.T) {
 }
 
 func TestAccTopicUpdatePartitions(t *testing.T) {
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	topicName := fmt.Sprintf("syslog-%s", u)
+
 	r.Test(t, r.TestCase{
 		Providers: accProvider(),
 		PreCheck:  func() { testAccPreCheck(t) },
 		Steps: []r.TestStep{
 			{
-				Config: testResourceTopic_initialConfig,
+				Config: fmt.Sprintf(testResourceTopic_initialConfig, topicName),
 				Check:  testResourceTopic_initialCheck,
 			},
 			{
-				Config: testResourceTopic_updatePartitions,
+				Config: fmt.Sprintf(testResourceTopic_updatePartitions, topicName),
 				Check:  testResourceTopic_updatePartitionsCheck,
 			},
 		},
@@ -73,13 +91,12 @@ func testResourceTopic_noConfigCheck(s *terraform.State) error {
 		return fmt.Errorf("id doesn't match name")
 	}
 
-	if name != "syslog" {
-		return fmt.Errorf("unexpected topic name %s", name)
-	}
+	//if name != "syslog" {
+	//return fmt.Errorf("unexpected topic name %s", name)
+	//}
 
 	client := testProvider.Meta().(*Client)
-
-	topic, err := client.ReadTopic("syslog")
+	topic, err := client.ReadTopic(name)
 
 	if err != nil {
 		return err
@@ -111,14 +128,12 @@ func testResourceTopic_initialCheck(s *terraform.State) error {
 		return fmt.Errorf("id doesn't match name")
 	}
 
-	if name != "syslog" {
-		return fmt.Errorf("unexpected topic name %s", name)
-	}
+	//if name != "syslog" {
+	//return fmt.Errorf("unexpected topic name %s", name)
+	//}
 
 	client := testProvider.Meta().(*Client)
-
-	topic, err := client.ReadTopic("syslog")
-
+	topic, err := client.ReadTopic(name)
 	if err != nil {
 		return err
 	}
@@ -134,9 +149,16 @@ func testResourceTopic_initialCheck(s *terraform.State) error {
 }
 
 func testResourceTopic_updateCheck(s *terraform.State) error {
+	resourceState := s.Modules[0].Resources["kafka_topic.test"]
+	instanceState := resourceState.Primary
 	client := testProvider.Meta().(*Client)
+	name := instanceState.ID
 
-	topic, err := client.ReadTopic("syslog")
+	if name != instanceState.Attributes["name"] {
+		return fmt.Errorf("id doesn't match name")
+	}
+
+	topic, err := client.ReadTopic(name)
 	if err != nil {
 		return err
 	}
@@ -156,9 +178,11 @@ func testResourceTopic_updateCheck(s *terraform.State) error {
 }
 
 func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
+	resourceState := s.Modules[0].Resources["kafka_topic.test"]
+	instanceState := resourceState.Primary
 	client := testProvider.Meta().(*Client)
-	topic, err := client.ReadTopic("syslog")
-
+	name := instanceState.ID
+	topic, err := client.ReadTopic(name)
 	if err != nil {
 		return err
 	}
@@ -178,7 +202,7 @@ provider "kafka" {
 }
 
 resource "kafka_topic" "test" {
-  name               = "syslog"
+  name               = "%s"
   replication_factor = 1
   partitions         = 1
 }
@@ -190,7 +214,7 @@ provider "kafka" {
 }
 
 resource "kafka_topic" "test" {
-  name               = "syslog"
+  name               = "%s"
   replication_factor = 1
   partitions         = 1
 
@@ -207,7 +231,7 @@ provider "kafka" {
 }
 
 resource "kafka_topic" "test" {
-  name               = "syslog"
+  name               = "%s"
   replication_factor = 1
   partitions         = 1
 
@@ -224,7 +248,7 @@ provider "kafka" {
 }
 
 resource "kafka_topic" "test" {
-  name               = "syslog"
+  name               = "%s"
   replication_factor = 1
   partitions         = 2
 

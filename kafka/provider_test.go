@@ -21,7 +21,11 @@ func TestProvider(t *testing.T) {
 }
 
 func testAccPreCheck(t *testing.T) {
-	client := testProvider.Meta().(*Client)
+	meta := testProvider.Meta()
+	if meta == nil {
+		t.Fatal("Could not construct client")
+	}
+	client := meta.(*Client)
 	if client == nil {
 		t.Fatal("No client")
 	}
