@@ -56,12 +56,24 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 		return fmt.Errorf("There should be one acls %v %s", acls, err)
 	}
 
-	if acls[0].Acls[0].PermissionType != sarama.AclPermissionAllow {
-		return fmt.Errorf("Should be Allow, not %v", acls[0].Acls[0].PermissionType)
+	name := instanceState.Attributes["resource_name"]
+	log.Printf("[INFO] Searching for the ACL with resource_name %s", name)
+	acl := acls[0]
+	aclCount := 0
+	for _, searchACL := range acls {
+		if searchACL.ResourceName == name {
+			log.Printf("[INFO] Found acl with resource_name %s : %v", name, searchACL)
+			acl = searchACL
+			aclCount++
+		}
 	}
 
-	if acls[0].Resource.ResoucePatternType != sarama.AclPatternLiteral {
-		return fmt.Errorf("Should be Literal, not %v", acls[0].Resource.ResoucePatternType)
+	if acl.Acls[0].PermissionType != sarama.AclPermissionAllow {
+		return fmt.Errorf("Should be Allow, not %v", acl.Acls[0].PermissionType)
+	}
+
+	if acl.Resource.ResoucePatternType != sarama.AclPatternLiteral {
+		return fmt.Errorf("Should be Literal, not %v", acl.Resource.ResoucePatternType)
 	}
 	return nil
 }
@@ -90,20 +102,25 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 	name := instanceState.Attributes["resource_name"]
 	log.Printf("[INFO] Searching for the ACL with resource_name %s", name)
 
+	aclCount := 0
 	acl := acls[0]
 	for _, searchACL := range acls {
 		if searchACL.ResourceName == name {
-			log.Printf("[INFO] Found acl with resource_name %s", name)
+			log.Printf("[INFO] Found acl with resource_name %s : %v", name, searchACL)
 			acl = searchACL
+			aclCount++
 		}
 	}
 
-	//if acls[0].ResourceName != "syslog" {
+	//if acl.ResourceName != "syslog" {
 	//return fmt.Errorf("The expected ACL should be for syslog")
 	//}
 
 	if len(acl.Acls) != 1 {
 		return fmt.Errorf("There are %d ACLs when there should be 1: %v", len(acl.Acls), acl.Acls)
+	}
+	if aclCount != 1 {
+		return fmt.Errorf("There should only be one acl with this resource, but there are %d", aclCount)
 	}
 	if acl.ResourceType != sarama.AclResourceTopic {
 		return fmt.Errorf("Should be for a topic")
