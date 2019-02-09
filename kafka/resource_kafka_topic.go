@@ -74,7 +74,7 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 		oi, ni := d.GetChange("partitions")
 		oldPartitions := oi.(int)
 		newPartitions := ni.(int)
-		log.Printf("Updating partitions from %d to %d", oldPartitions, newPartitions)
+		log.Printf("[INFO] Updating partitions from %d to %d", oldPartitions, newPartitions)
 		t.Partitions = int32(newPartitions)
 		err = c.AddPartitions(t)
 		if err != nil {
@@ -181,7 +181,7 @@ func topicRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	log.Printf("[Debug] Setting the state from Kafka %v", topic)
+	log.Printf("[DEBUG] Setting the state from Kafka %v", topic)
 	d.Set("name", topic.Name)
 	d.Set("partitions", topic.Partitions)
 	d.Set("replication_factor", topic.ReplicationFactor)

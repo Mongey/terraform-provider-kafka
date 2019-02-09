@@ -77,7 +77,7 @@ func aclCreate(d *schema.ResourceData, meta interface{}) error {
 func aclDelete(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*Client)
 	a := aclInfo(d)
-	log.Printf("[INFO] Deleteing ACL %s", a)
+	log.Printf("[INFO] Deleting ACL %s", a)
 	return c.DeleteACL(a)
 }
 
