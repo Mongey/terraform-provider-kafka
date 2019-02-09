@@ -216,10 +216,11 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 		return topic, err
 	}
 
+	log.Printf("[INFO] There are %d topics", len(topics))
 	for _, t := range topics {
 		log.Printf("[DEBUG] Reading Topic %s from Kafka", t)
 		if name == t {
-			log.Printf("[DEBUG] FOUND %s from Kafka", t)
+			log.Printf("[DEBUG] Found %s from Kafka", t)
 			p, err := c.Partitions(t)
 			if err == nil {
 				partitionCount := int32(len(p))
