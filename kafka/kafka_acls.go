@@ -121,6 +121,15 @@ func (c *Client) DeleteACL(s stringlyTypedACL) error {
 	if err != nil {
 		return err
 	}
+	aclsBeforeDelete, err := c.ListACLs()
+	if err != nil {
+		return fmt.Errorf("Unable to list acls before deleting -- can't be sure we're doing the right thing: %s", err)
+	}
+
+	log.Printf("[INFO] Acls before deletion: %d", len(aclsBeforeDelete))
+	for _, acl := range aclsBeforeDelete {
+		log.Printf("[DEBUG] ACL: %v", acl)
+	}
 
 	filter, err := tfToAclFilter(s)
 	if err != nil {
@@ -137,10 +146,17 @@ func (c *Client) DeleteACL(s stringlyTypedACL) error {
 		return err
 	}
 
+	matchingAclCount := 0
+
 	for _, r := range res.FilterResponses {
+		matchingAclCount += len(r.MatchingAcls)
 		if r.Err != sarama.ErrNoError {
 			return r.Err
 		}
+	}
+
+	if matchingAclCount == 0 {
+		return fmt.Errorf("There were no acls matching this filter")
 	}
 	return nil
 }
