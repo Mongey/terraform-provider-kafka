@@ -65,9 +65,6 @@ func Compress(dst, src []byte) ([]byte, error) {
 
 // CompressLevel is the same as Compress but you can pass a compression level
 func CompressLevel(dst, src []byte, level int) ([]byte, error) {
-	if len(src) == 0 {
-		return []byte{}, ErrEmptySlice
-	}
 	bound := CompressBound(len(src))
 	if cap(dst) >= bound {
 		dst = dst[0:bound] // Reuse dst buffer
@@ -75,10 +72,15 @@ func CompressLevel(dst, src []byte, level int) ([]byte, error) {
 		dst = make([]byte, bound)
 	}
 
+	srcPtr := C.uintptr_t(uintptr(0)) // Do not point anywhere, if src is empty
+	if len(src) > 0 {
+		srcPtr = C.uintptr_t(uintptr(unsafe.Pointer(&src[0])))
+	}
+
 	cWritten := C.ZSTD_compress_wrapper(
 		C.uintptr_t(uintptr(unsafe.Pointer(&dst[0]))),
 		C.size_t(len(dst)),
-		C.uintptr_t(uintptr(unsafe.Pointer(&src[0]))),
+		srcPtr,
 		C.size_t(len(src)),
 		C.int(level))
 
@@ -94,6 +96,9 @@ func CompressLevel(dst, src []byte, level int) ([]byte, error) {
 // prevent allocation.  If it is too small, or if nil is passed, a new buffer
 // will be allocated and returned.
 func Decompress(dst, src []byte) ([]byte, error) {
+	if len(src) == 0 {
+		return []byte{}, ErrEmptySlice
+	}
 	decompress := func(dst, src []byte) ([]byte, error) {
 
 		cWritten := C.ZSTD_decompress_wrapper(
@@ -110,7 +115,7 @@ func Decompress(dst, src []byte) ([]byte, error) {
 		return dst[:written], nil
 	}
 
-	if dst == nil {
+	if len(dst) == 0 {
 		// Attempt to use zStd to determine decompressed size (may result in error or 0)
 		size := int(C.size_t(C.ZSTD_getDecompressedSize(unsafe.Pointer(&src[0]), C.size_t(len(src)))))
 
