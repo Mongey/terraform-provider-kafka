@@ -1,0 +1,63 @@
+module github.com/Mongey/terraform-provider-kafka
+
+go 1.12
+
+require (
+	github.com/DataDog/zstd v1.3.5
+	github.com/Shopify/sarama v1.22.0
+	github.com/agext/levenshtein v1.2.1
+	github.com/apparentlymart/go-cidr v1.0.0
+	github.com/apparentlymart/go-textseg v1.0.0
+	github.com/armon/go-radix v1.0.0
+	github.com/aws/aws-sdk-go v1.15.86
+	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d
+	github.com/bgentry/speakeasy v0.1.0
+	github.com/blang/semver v3.5.1+incompatible
+	github.com/davecgh/go-spew v1.1.1
+	github.com/eapache/go-resiliency v1.1.0
+	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21
+	github.com/eapache/queue v1.1.0
+	github.com/fatih/color v1.7.0
+	github.com/golang/protobuf v1.2.0
+	github.com/golang/snappy v0.0.1
+	github.com/google/go-cmp v0.2.0
+	github.com/hashicorp/errwrap v1.0.0
+	github.com/hashicorp/go-cleanhttp v0.5.0
+	github.com/hashicorp/go-getter v0.0.0-20181119194526-bd1edc22f8ea
+	github.com/hashicorp/go-hclog v0.0.0-20181001195459-61d530d6c27f
+	github.com/hashicorp/go-multierror v1.0.0
+	github.com/hashicorp/go-plugin v0.0.0-20181030172320-54b6ff97d818
+	github.com/hashicorp/go-safetemp v1.0.0
+	github.com/hashicorp/go-uuid v1.0.0
+	github.com/hashicorp/go-version v1.0.0
+	github.com/hashicorp/hcl v1.0.0
+	github.com/hashicorp/hcl2 v0.0.0-20181126233546-67424e43b184
+	github.com/hashicorp/hil v0.0.0-20170627220502-fa9f258a9250
+	github.com/hashicorp/logutils v1.0.0
+	github.com/hashicorp/terraform v0.11.10
+	github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d
+	github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8
+	github.com/mattn/go-colorable v0.0.9
+	github.com/mattn/go-isatty v0.0.4
+	github.com/mitchellh/cli v1.0.0
+	github.com/mitchellh/copystructure v1.0.0
+	github.com/mitchellh/go-homedir v1.0.0
+	github.com/mitchellh/go-testing-interface v1.0.0
+	github.com/mitchellh/go-wordwrap v1.0.0
+	github.com/mitchellh/hashstructure v1.0.0
+	github.com/mitchellh/mapstructure v1.1.2
+	github.com/mitchellh/reflectwalk v1.0.0
+	github.com/oklog/run v1.0.0
+	github.com/pierrec/lz4 v0.0.0-20190327172049-315a67e90e41
+	github.com/posener/complete v1.2.1
+	github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a
+	github.com/ulikunitz/xz v0.5.5
+	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c
+	github.com/zclconf/go-cty v0.0.0-20181128220528-cb7740552062
+	golang.org/x/crypto v0.0.0-20190404164418-38d8ce5564a5
+	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3
+	golang.org/x/sys v0.0.0-20190403152447-81d4e9dc473e
+	golang.org/x/text v0.3.0
+	google.golang.org/genproto v0.0.0-20181127195345-31ac5d88444a
+	google.golang.org/grpc v1.16.0
+)

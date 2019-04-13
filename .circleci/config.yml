@@ -17,6 +17,7 @@ jobs:
     docker:
       - image: circleci/golang:1.11
         environment:
+          GO111MODULE: "on"
           TEST_RESULTS: /tmp/test-results
       - image: confluentinc/cp-zookeeper:latest
         environment:
