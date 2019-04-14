@@ -57,6 +57,7 @@ provider "kafka" {
 | `tls_enabled`       | Enable communication with the Kafka Cluster over TLS.                                            | `false`    |
 | `sasl_username`     | Username for SASL authentication.                                                                | `""`       |
 | `sasl_password`     | Password for SASL authentication.                                                                | `""`       |
+| `sasl_mechanism`    | Mechanism for SASL authentication. Allowed values are plain, scram-sha512 and scram-sha256       | `plain`    |
 
 ## Resources
 ### `kafka_topic`
