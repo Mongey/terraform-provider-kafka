@@ -173,7 +173,7 @@ func (c *Client) CreateACL(s stringlyTypedACL) error {
 		return err
 	}
 	req := &sarama.CreateAclsRequest{
-		Version:      int(c.getCreateAclsRequestAPIVersion()),
+		Version:      c.getCreateAclsRequestAPIVersion(),
 		AclCreations: []*sarama.AclCreation{ac},
 	}
 

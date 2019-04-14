@@ -10,13 +10,12 @@
   version = "v1.3.4"
 
 [[projects]]
-  branch = "cm-v1-create-acl-request"
-  digest = "1:7ba8eb8f8a834b59e9c771aa2a0228a78bfde2736aefb1aa0aa25854692f8520"
+  branch = "master"
+  digest = "1:a8d254f7942b4e1226ffd113ecd3f75368ad53c1c4380b7a07c1062544d2a592"
   name = "github.com/Shopify/sarama"
   packages = ["."]
   pruneopts = "NUT"
-  revision = "e8436b87bcb0daea746b79c779fe2b19eb5e282e"
-  source = "github.com/Mongey/sarama"
+  revision = "c14cccae56fa14dea0c7e8cf53e24917950e12a6"
 
 [[projects]]
   digest = "1:8bd40ec66a32437126e8ff3080f26b11ca5926917daa01eba1285d0b059416bc"
@@ -539,7 +538,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7bd4c9c1f1410e2a2a31ef28044c96a4d95d89aa46e4cc7091af25d0b1efbc44"
+  digest = "1:3199fc7bc956fbbfbbceca12347591619b369cf4e3b8b41894668e1faf1fdbd7"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -549,7 +548,9 @@
     "http2",
     "http2/hpack",
     "idna",
+    "internal/socks",
     "internal/timeseries",
+    "proxy",
     "trace",
   ]
   pruneopts = "NUT"

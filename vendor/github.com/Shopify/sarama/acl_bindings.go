@@ -1,12 +1,13 @@
 package sarama
 
+//Resource holds information about acl resource type
 type Resource struct {
 	ResourceType       AclResourceType
 	ResourceName       string
 	ResoucePatternType AclResourcePatternType
 }
 
-func (r *Resource) encode(pe packetEncoder, version int) error {
+func (r *Resource) encode(pe packetEncoder, version int16) error {
 	pe.putInt8(int8(r.ResourceType))
 
 	if err := pe.putString(r.ResourceName); err != nil {
@@ -45,6 +46,7 @@ func (r *Resource) decode(pd packetDecoder, version int16) (err error) {
 	return nil
 }
 
+//Acl holds information about acl type
 type Acl struct {
 	Principal      string
 	Host           string
@@ -91,12 +93,13 @@ func (a *Acl) decode(pd packetDecoder, version int16) (err error) {
 	return nil
 }
 
+//ResourceAcls is an acl resource type
 type ResourceAcls struct {
 	Resource
 	Acls []*Acl
 }
 
-func (r *ResourceAcls) encode(pe packetEncoder, version int) error {
+func (r *ResourceAcls) encode(pe packetEncoder, version int16) error {
 	if err := r.Resource.encode(pe, version); err != nil {
 		return err
 	}

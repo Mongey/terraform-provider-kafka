@@ -2,8 +2,9 @@ package sarama
 
 import "time"
 
+//DescribeAclsResponse is a describe acl response type
 type DescribeAclsResponse struct {
-	Version      int
+	Version      int16
 	ThrottleTime time.Duration
 	Err          KError
 	ErrMsg       *string
