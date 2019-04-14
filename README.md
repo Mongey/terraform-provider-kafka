@@ -51,7 +51,7 @@ provider "kafka" {
 | ----------------    | -----------------------                                                                          | ---------- |
 | `bootstrap_servers` | A list of host:port addresses that will be used to discover the full set of alive brokers        | `Required` |
 | `ca_cert_file`      | The path to a CA certificate file to validate the server's certificate.                          | `""`       |
-| `client_cert_file`  | The path the a file containing the client certificate -- Use for Client authentication to Kafka. | `""`       |
+| `client_cert_file`  | The path to a file containing the client certificate -- Use for Client authentication to Kafka.  | `""`       |
 | `client_key_file`   | Path to a file containing the private key that the client certificate was issued for.            | `""`       |
 | `skip_tls_verify`   | Skip TLS verification.                                                                           | `false`    |
 | `tls_enabled`       | Enable communication with the Kafka Cluster over TLS.                                            | `false`    |
@@ -135,6 +135,7 @@ resource "kafka_acl" "test" {
 | `acl_principal`       | Principal that is being allowed or denied                          | `*`                                                              |
 | `resource_name`       | The name of the resource                                           | `*`                                                              |
 | `resource_type`       | The type of resource                                               | `Unknown`, `Any`, `Topic`, `Group`, `Cluster`, `TransactionalID` |
+| `resource_pattern_type_filter`       |                                                     | `Prefixed`, `Any`, `Match`, `Literal` |
 
 
 ## Requirements
@@ -145,4 +146,3 @@ resource "kafka_acl" "test" {
 [3]: https://cwiki.apache.org/confluence/display/KAFKA/KIP-117%3A+Add+a+public+AdminClient+API+for+Kafka+admin+operations
 [third-party-plugins]: https://www.terraform.io/docs/configuration/providers.html#third-party-plugins
 [install-go]: https://golang.org/doc/install#install
-
