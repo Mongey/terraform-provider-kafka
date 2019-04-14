@@ -19,6 +19,7 @@ type Config struct {
 	SkipTLSVerify    bool
 	SASLUsername     string
 	SASLPassword     string
+	SASLMechanism    string
 }
 
 func (c *Config) newKafkaConfig() (*sarama.Config, error) {
@@ -27,6 +28,17 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig.ClientID = "terraform-provider-kafka"
 
 	if c.saslEnabled() {
+		switch c.SASLMechanism {
+		case "scram-sha512":
+			kafkaConfig.Net.SASL.SCRAMClient = &XDGSCRAMClient{HashGeneratorFcn: SHA512}
+			kafkaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeSCRAMSHA512)
+		case "scram-sha256":
+			kafkaConfig.Net.SASL.SCRAMClient = &XDGSCRAMClient{HashGeneratorFcn: SHA256}
+			kafkaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeSCRAMSHA256)
+		case "plain":
+		default:
+			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\" or \"plain\"", c.SASLMechanism)
+		}
 		kafkaConfig.Net.SASL.Enable = true
 		kafkaConfig.Net.SASL.Password = c.SASLPassword
 		kafkaConfig.Net.SASL.User = c.SASLUsername

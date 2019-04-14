@@ -3,8 +3,8 @@ module github.com/Mongey/terraform-provider-kafka
 go 1.12
 
 require (
-	github.com/DataDog/zstd v1.3.5
-	github.com/Shopify/sarama v1.22.0
+	github.com/DataDog/zstd v1.3.6-0.20190409195224-796139022798
+	github.com/Shopify/sarama v1.22.1-0.20190412022128-c14cccae56fa
 	github.com/agext/levenshtein v1.2.1
 	github.com/apparentlymart/go-cidr v1.0.0
 	github.com/apparentlymart/go-textseg v1.0.0
