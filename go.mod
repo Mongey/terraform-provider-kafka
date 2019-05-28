@@ -3,7 +3,7 @@ module github.com/Mongey/terraform-provider-kafka
 go 1.12
 
 require (
-	github.com/Shopify/sarama v1.22.1-0.20190412022128-c14cccae56fa
+	github.com/Shopify/sarama v1.22.1
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/terraform v0.12.0
