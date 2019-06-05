@@ -30,6 +30,7 @@ jobs:
           KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
           KAFKA_ZOOKEEPER_CONNECT: localhost:2181
           KAFKA_LOG_SEGMENT_BYTES: 1234
+          KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
     steps:
       - checkout
       - restore_cache:
