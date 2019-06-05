@@ -31,6 +31,7 @@ jobs:
           KAFKA_ZOOKEEPER_CONNECT: localhost:2181
           KAFKA_LOG_SEGMENT_BYTES: 1234
           KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+          KAFKA_SUPER_USERS: "User:kafkacat.test.confluent.io;"
     steps:
       - checkout
       - restore_cache:
