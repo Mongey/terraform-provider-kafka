@@ -14,6 +14,8 @@ func kafkaACLResource() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		SchemaVersion: 1,
+		MigrateState:  migrateKafkaAclState,
 		Schema: map[string]*schema.Schema{
 			"resource_name": {
 				Type:        schema.TypeString,
