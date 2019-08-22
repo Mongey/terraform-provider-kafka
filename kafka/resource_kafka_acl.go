@@ -78,17 +78,31 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*Client)
 	a := aclInfo(d)
 
-	currentAcls, err := c.ListACLs()
+	currentACLs, err := c.ListACLs()
 	if err != nil {
 		return err
 	}
-	for _, c := range currentAcls {
-		if c.ResourceName == a.Resource.Name {
+
+	log.Printf("[INFO] current acls: %d", len(currentACLs))
+	for _, c := range currentACLs {
+		if c.ResourceName != a.Resource.Name {
+			continue
+		}
+		log.Printf("[INFO] Found ACL %v (%d)", c, len(c.Acls))
+
+		if len(c.Acls) != 1 {
 			return nil
 		}
 
+		d.Set("acl_principal", c.Acls[0].Principal)
+		d.Set("acl_host", c.Acls[0].Host)
+		d.Set("acl_operation", c.Acls[0].Operation)
+		d.Set("acl_permission_type", c.Acls[0].PermissionType)
+
+		return nil
 	}
-	//panic(fmt.Sprintf("ACL read not implmented: %v", d))
+	return nil
+
 	return nil
 }
 
