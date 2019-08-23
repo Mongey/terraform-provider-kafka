@@ -82,24 +82,42 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+	ACLnotFound := false
 
-	log.Printf("[INFO] current acls: %d", len(currentACLs))
-	for _, c := range currentACLs {
-		if c.ResourceName != a.Resource.Name {
+	for _, broker := range currentACLs {
+		if broker.ResourceName != a.Resource.Name {
 			continue
 		}
-		log.Printf("[INFO] Found ACL %v (%d)", c, len(c.Acls))
-
-		if len(c.Acls) != 1 {
-			return nil
+		if len(broker.Acls) < 1 {
+			break
 		}
+		ACLnotFound = true
+		log.Printf("[INFO] Found (%d) ACL(s) for Resource %s: %+v.", len(broker.Acls), broker.ResourceName, broker)
 
-		d.Set("acl_principal", c.Acls[0].Principal)
-		d.Set("acl_host", c.Acls[0].Host)
-		d.Set("acl_operation", c.Acls[0].Operation)
-		d.Set("acl_permission_type", c.Acls[0].PermissionType)
-
-		return nil
+		for _, acl := range broker.Acls {
+			aclID := stringlyTypedACL{
+				ACL: ACL{
+					Principal:      acl.Principal,
+					Host:           acl.Host,
+					Operation:      ACLOperationToString(acl.Operation),
+					PermissionType: ACLPermissionTypeToString(acl.PermissionType),
+				},
+				Resource: Resource{
+					Type: ACLResouceToString(broker.ResourceType),
+					Name: broker.ResourceName,
+				},
+			}
+			if a.String() == aclID.String() {
+				d.Set("acl_principal", acl.Principal)
+				d.Set("acl_host", acl.Host)
+				d.Set("acl_operation", acl.Operation)
+				d.Set("acl_permission_type", acl.PermissionType)
+				return nil
+			}
+		}
+	}
+	if ACLnotFound {
+		d.SetId("")
 	}
 	return nil
 }
