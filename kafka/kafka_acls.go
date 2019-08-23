@@ -276,6 +276,46 @@ func ACLPermissionTypeToString(in sarama.AclPermissionType) string {
 	return "unknownConversion"
 }
 
+// DescribeACLs get ResourceAcls for a specific resource
+func (c *Client) DescribeACLs(s stringlyTypedACL) ([]*sarama.ResourceAcls, error) {
+	aclFilter, err := tfToAclFilter(s)
+	if err != nil {
+		return nil, err
+	}
+
+	broker, err := c.availableBroker()
+	if err != nil {
+		return nil, err
+	}
+	err = c.client.RefreshMetadata()
+	if err != nil {
+		return nil, err
+	}
+
+	r := &sarama.DescribeAclsRequest{
+		AclFilter: aclFilter,
+	}
+
+	aclsR, err := broker.DescribeAcls(r)
+	if err != nil {
+		return nil, err
+	}
+
+	if err == nil {
+		if aclsR.Err != sarama.ErrNoError {
+			return nil, fmt.Errorf("%s", aclsR.Err)
+		}
+	}
+	res := []*sarama.ResourceAcls{}
+
+	for _, a := range aclsR.ResourceAcls {
+		res = append(res, a)
+	}
+
+	return res, err
+
+}
+
 func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	broker, err := c.availableBroker()
 	if err != nil {
