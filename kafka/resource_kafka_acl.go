@@ -102,8 +102,6 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 		return nil
 	}
 	return nil
-
-	return nil
 }
 
 func aclInfo(d *schema.ResourceData) stringlyTypedACL {
