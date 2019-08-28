@@ -89,8 +89,6 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 	a := aclInfo(d)
 	log.Printf("[INFO] Reading ACL %s", a)
 
-	// TODO: skipp getting all ACLs for each ACL
-	// implement DescribeACLs to only get ACL for a specific ResourceName
 	currentACLs, err := c.ListACLs()
 	if err != nil {
 		return err
@@ -99,6 +97,7 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 	aCLnotFound := true
 
 	for _, foundACLs := range currentACLs {
+		// find only ACLs where ResourceName matches
 		if foundACLs.ResourceName != a.Resource.Name {
 			continue
 		}
@@ -120,14 +119,25 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 					Name: foundACLs.ResourceName,
 				},
 			}
+			// exact match
 			if a.String() == aclID.String() {
 				aCLnotFound = false
 				return nil
 			}
+			// partial match -> update state
+			if a.ACL.Principal == aclID.ACL.Principal &&
+				a.ACL.Operation == aclID.ACL.Operation {
+				aCLnotFound = false
+				d.Set("acl_principal", acl.Principal)
+				d.Set("acl_host", acl.Host)
+				d.Set("acl_operation", acl.Operation)
+				d.Set("acl_permission_type", acl.PermissionType)
+				d.Set("resource_pattern_type_filter", foundACLs.ResoucePatternType)
+			}
 		}
 	}
 	if aCLnotFound {
-		log.Printf("[INFO] Did not find ACL %s: %+v.", a.String(), a)
+		log.Printf("[INFO] Did not find ACL %s", a.String())
 		d.SetId("")
 	}
 	return nil
