@@ -14,6 +14,8 @@ func kafkaACLResource() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
+		SchemaVersion: 1,
+		MigrateState:  migrateKafkaAclState,
 		Schema: map[string]*schema.Schema{
 			"resource_name": {
 				Type:        schema.TypeString,
@@ -24,6 +26,13 @@ func kafkaACLResource() *schema.Resource {
 			"resource_type": {
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
+			},
+			"resource_pattern_type_filter": {
+				Type:     schema.TypeString,
+				Required: false,
+				Optional: true,
+				Default:  "Literal",
 				ForceNew: true,
 			},
 			"acl_principal": {
@@ -70,18 +79,21 @@ func aclCreate(d *schema.ResourceData, meta interface{}) error {
 func aclDelete(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*Client)
 	a := aclInfo(d)
-	log.Printf("[INFO] Deleteing ACL %s", a)
+	log.Printf("[INFO] Deleting ACL %s", a)
 	return c.DeleteACL(a)
 }
 
 func aclRead(d *schema.ResourceData, meta interface{}) error {
+	log.Println("[INFO] Reading ACL")
 	c := meta.(*Client)
 	a := aclInfo(d)
+	log.Printf("[INFO] Reading ACL %s", a)
 
 	currentACLs, err := c.ListACLs()
 	if err != nil {
 		return err
 	}
+
 	aCLnotFound := true
 
 	for _, foundACLs := range currentACLs {
@@ -131,8 +143,9 @@ func aclInfo(d *schema.ResourceData) stringlyTypedACL {
 			PermissionType: d.Get("acl_permission_type").(string),
 		},
 		Resource: Resource{
-			Type: d.Get("resource_type").(string),
-			Name: d.Get("resource_name").(string),
+			Type:              d.Get("resource_type").(string),
+			Name:              d.Get("resource_name").(string),
+			PatternTypeFilter: d.Get("resource_pattern_type_filter").(string),
 		},
 	}
 	return s

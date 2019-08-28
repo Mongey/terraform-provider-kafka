@@ -81,7 +81,7 @@ func (ps *produceSet) add(msg *ProducerMessage) error {
 
 	if ps.parent.conf.Version.IsAtLeast(V0_11_0_0) {
 		if ps.parent.conf.Producer.Idempotent && msg.sequenceNumber < set.recordsToSend.RecordBatch.FirstSequence {
-			return errors.New("Assertion failed: Message out of sequence added to a batch")
+			return errors.New("assertion failed: message out of sequence added to a batch")
 		}
 		// We are being conservative here to avoid having to prep encode the record
 		size += maximumRecordOverhead
@@ -222,9 +222,8 @@ func (ps *produceSet) wouldOverflow(msg *ProducerMessage) bool {
 	// Would we overflow our maximum possible size-on-the-wire? 10KiB is arbitrary overhead for safety.
 	case ps.bufferBytes+msg.byteSize(version) >= int(MaxRequestSize-(10*1024)):
 		return true
-	// Would we overflow the size-limit of a compressed message-batch for this partition?
-	case ps.parent.conf.Producer.Compression != CompressionNone &&
-		ps.msgs[msg.Topic] != nil && ps.msgs[msg.Topic][msg.Partition] != nil &&
+	// Would we overflow the size-limit of a message-batch for this partition?
+	case ps.msgs[msg.Topic] != nil && ps.msgs[msg.Topic][msg.Partition] != nil &&
 		ps.msgs[msg.Topic][msg.Partition].bufferBytes+msg.byteSize(version) >= ps.parent.conf.Producer.MaxMessageBytes:
 		return true
 	// Would we overflow simply in number of messages?

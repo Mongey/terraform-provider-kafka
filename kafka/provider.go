@@ -47,6 +47,12 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_PASSWORD", ""),
 				Description: "Password for SASL authentication.",
 			},
+			"sasl_mechanism": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_MECHANISM", "plain"),
+				Description: "SASL mechanism, can be plain, scram-sha512, scram-sha256",
+			},
 			"skip_tls_verify": &schema.Schema{
 				Type:        schema.TypeBool,
 				Optional:    true,
@@ -83,6 +89,13 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	}
 	log.Printf("[DEBUG] configuring provider with Brokers @ %v", brokers)
 
+	saslMechanism := d.Get("sasl_mechanism").(string)
+	switch saslMechanism {
+	case "scram-sha512", "scram-sha256", "plain":
+	default:
+		return nil, fmt.Errorf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\" or \"plain\"", saslMechanism)
+	}
+
 	config := &Config{
 		BootstrapServers: brokers,
 		CACertFile:       d.Get("ca_cert_file").(string),
@@ -91,6 +104,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SkipTLSVerify:    d.Get("skip_tls_verify").(bool),
 		SASLUsername:     d.Get("sasl_username").(string),
 		SASLPassword:     d.Get("sasl_password").(string),
+		SASLMechanism:    saslMechanism,
 		TLSEnabled:       d.Get("tls_enabled").(bool),
 		Timeout:          d.Get("timeout").(int),
 	}

@@ -3,8 +3,22 @@ jobs:
   build:
     working_directory: /go/src/github.com/Mongey/terraform-provider-kafka
     docker:
+      - image: circleci/golang:1.12
+        environment:
+          GO111MODULE: "on"
+          TEST_RESULTS: /tmp/test-results
+    steps:
+      - checkout
+      - run: go build
+      - store_artifacts:
+          path: /go/src/github.com/Mongey/terraform-provider-kafka/terraform-provider-kafka
+          destination: terraform-provider-kafka
+  test:
+    working_directory: /go/src/github.com/Mongey/terraform-provider-kafka
+    docker:
       - image: circleci/golang:1.11
         environment:
+          GO111MODULE: "on"
           TEST_RESULTS: /tmp/test-results
       - image: confluentinc/cp-zookeeper:latest
         environment:
@@ -18,7 +32,14 @@ jobs:
           KAFKA_LOG_SEGMENT_BYTES: 1234
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - go-mod-v1-{{ checksum "go.sum" }}
       - run: go build
+      - save_cache:
+          key: go-mod-v1-{{ checksum "go.sum" }}
+          paths:
+            - "/go/pkg/mod"
       - store_artifacts:
           path: /go/src/github.com/Mongey/terraform-provider-kafka/terraform-provider-kafka
           destination: terraform-provider-kafka
@@ -35,6 +56,7 @@ jobs:
 
 workflows:
   version: 2
-  build:
+  build-and-test:
     jobs:
       - build
+      - test

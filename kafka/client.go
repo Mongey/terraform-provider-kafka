@@ -1,12 +1,10 @@
 package kafka
 
 import (
-	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -25,18 +23,6 @@ type Client struct {
 	supportedAPIs map[int]int
 }
 
-type Config struct {
-	BootstrapServers *[]string
-	Timeout          int
-	CACertFile       string
-	ClientCertFile   string
-	ClientCertKey    string
-	TLSEnabled       bool
-	SkipTLSVerify    bool
-	SASLUsername     string
-	SASLPassword     string
-}
-
 func NewClient(config *Config) (*Client, error) {
 	log.Printf("[INFO] configuring bootstrap_servers %v", config)
 	bootstrapServers := *(config.BootstrapServers)
@@ -52,6 +38,7 @@ func NewClient(config *Config) (*Client, error) {
 	}
 
 	c, err := sarama.NewClient(bootstrapServers, kc)
+	sarama.Logger = log.New(os.Stdout, "[TRACE] [Sarama]", log.LstdFlags)
 	if err != nil {
 		log.Println("[ERROR] Error connecting to kafka")
 		return nil, err
@@ -96,7 +83,6 @@ func (c *Client) populateAPIVersions() {
 
 func (c *Client) DeleteTopic(t string) error {
 	broker, err := c.client.Controller()
-
 	if err != nil {
 		return err
 	}
@@ -107,7 +93,6 @@ func (c *Client) DeleteTopic(t string) error {
 		Timeout: timeout,
 	}
 	res, err := broker.DeleteTopics(req)
-
 	if err == nil {
 		for k, e := range res.TopicErrorCodes {
 			if e != sarama.ErrNoError {
@@ -115,7 +100,7 @@ func (c *Client) DeleteTopic(t string) error {
 			}
 		}
 	} else {
-		log.Printf("[ERROR] Error deleting topic %s from Kafka\n", err)
+		log.Printf("[ERROR] Error deleting topic %s from Kafka: %s", t, err)
 		return err
 	}
 
@@ -126,7 +111,6 @@ func (c *Client) DeleteTopic(t string) error {
 
 func (c *Client) UpdateTopic(topic Topic) error {
 	broker, err := c.client.Controller()
-
 	if err != nil {
 		return err
 	}
@@ -155,9 +139,7 @@ func (c *Client) UpdateTopic(topic Topic) error {
 
 func (c *Client) CreateTopic(t Topic) error {
 	broker, err := c.client.Controller()
-
 	if err != nil {
-		log.Printf("[WARN] Could get an available broker %s", err)
 		return err
 	}
 
@@ -189,19 +171,17 @@ func (c *Client) CreateTopic(t Topic) error {
 
 func (c *Client) AddPartitions(t Topic) error {
 	broker, err := c.client.Controller()
-
 	if err != nil {
-		log.Printf("[WARN] DERP %s", err)
 		return err
 	}
+
 	timeout := time.Duration(c.config.Timeout) * time.Second
-	log.Printf("[DEBUG] b of size %d", 1)
 	tp := map[string]*sarama.TopicPartition{
 		t.Name: &sarama.TopicPartition{
 			Count: t.Partitions,
 		},
 	}
-	log.Printf("[DEBUG] b of size %d", 2)
+
 	req := &sarama.CreatePartitionsRequest{
 		TopicPartitions: tp,
 		Timeout:         timeout,
@@ -236,10 +216,11 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 		return topic, err
 	}
 
+	log.Printf("[INFO] There are %d topics", len(topics))
 	for _, t := range topics {
 		log.Printf("[DEBUG] Reading Topic %s from Kafka", t)
 		if name == t {
-			log.Printf("[DEBUG] FOUND %s from Kafka", t)
+			log.Printf("[DEBUG] Found %s from Kafka", t)
 			p, err := c.Partitions(t)
 			if err == nil {
 				partitionCount := int32(len(p))
@@ -268,10 +249,6 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 	return topic, err
 }
 
-func (c *Client) getDescribeConfigAPIVersion() int16 {
-	return int16(c.versionForKey(32, 1))
-}
-
 func (c *Client) versionForKey(apiKey, wantedMaxVersion int) int {
 	if maxSupportedVersion, ok := c.supportedAPIs[apiKey]; ok {
 		if maxSupportedVersion < wantedMaxVersion {
@@ -283,6 +260,7 @@ func (c *Client) versionForKey(apiKey, wantedMaxVersion int) int {
 	return 0
 }
 
+//topicConfig retrives the non-default config map for a topic
 func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	conf := map[string]*string{}
 	request := &sarama.DescribeConfigsRequest{
@@ -322,82 +300,17 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	return conf, nil
 }
 
-func (c *Client) availableBroker() (*sarama.Broker, error) {
-	var err error
-	brokers := *c.config.BootstrapServers
-	kc := c.kafkaConfig
-
-	log.Printf("[DEBUG] Looking for Brokers @ %v", brokers)
-	for _, b := range brokers {
-		broker := sarama.NewBroker(b)
-		err = broker.Open(kc)
-		if err == nil {
-			return broker, nil
-		}
-		log.Printf("[WARN] Broker @ %s cannot be reached\n", b)
-	}
-
-	return nil, fmt.Errorf("No Available Brokers @ %v", brokers)
+func (c *Client) getDescribeAclsRequestAPIVersion() int16 {
+	return int16(c.versionForKey(29, 1))
+}
+func (c *Client) getCreateAclsRequestAPIVersion() int16 {
+	return int16(c.versionForKey(30, 1))
 }
 
-func (c *Config) newKafkaConfig() (*sarama.Config, error) {
-	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V1_0_0_0
-
-	if c.saslEnabled() {
-		kafkaConfig.Net.SASL.Enable = true
-		kafkaConfig.Net.SASL.Password = c.SASLPassword
-		kafkaConfig.Net.SASL.User = c.SASLUsername
-	}
-
-	if c.TLSEnabled {
-		tlsConfig, err := newTLSConfig(
-			c.ClientCertFile,
-			c.ClientCertKey,
-			c.CACertFile)
-
-		if err != nil {
-			return kafkaConfig, err
-		}
-
-		kafkaConfig.Net.TLS.Enable = true
-		kafkaConfig.Net.TLS.Config = tlsConfig
-		kafkaConfig.Net.TLS.Config.InsecureSkipVerify = c.SkipTLSVerify
-	}
-
-	return kafkaConfig, nil
+func (c *Client) getDeleteAclsRequestAPIVersion() int16 {
+	return int16(c.versionForKey(31, 1))
 }
 
-func (c *Config) saslEnabled() bool {
-	return c.SASLUsername != "" || c.SASLPassword != ""
-}
-
-func newTLSConfig(clientCertFile, clientKeyFile, caCertFile string) (*tls.Config, error) {
-	tlsConfig := tls.Config{}
-
-	// Load client cert
-	if clientCertFile != "" && clientKeyFile != "" {
-		cert, err := tls.LoadX509KeyPair(clientCertFile, clientKeyFile)
-		if err != nil {
-			return &tlsConfig, err
-		}
-		tlsConfig.Certificates = []tls.Certificate{cert}
-	} else {
-		log.Println("[WARN] skipping TLS client config")
-	}
-
-	if caCertFile == "" {
-		log.Println("[WARN] no CA file set skipping")
-		return &tlsConfig, nil
-	}
-	// Load CA cert
-	caCert, err := ioutil.ReadFile(caCertFile)
-	if err != nil {
-		return &tlsConfig, err
-	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
-	tlsConfig.RootCAs = caCertPool
-	tlsConfig.BuildNameToCertificate()
-	return &tlsConfig, err
+func (c *Client) getDescribeConfigAPIVersion() int16 {
+	return int16(c.versionForKey(32, 1))
 }
