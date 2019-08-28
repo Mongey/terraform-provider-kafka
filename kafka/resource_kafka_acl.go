@@ -122,15 +122,12 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 			}
 			if a.String() == aclID.String() {
 				aCLnotFound = false
-				d.Set("acl_principal", acl.Principal)
-				d.Set("acl_host", acl.Host)
-				d.Set("acl_operation", acl.Operation)
-				d.Set("acl_permission_type", acl.PermissionType)
 				return nil
 			}
 		}
 	}
 	if aCLnotFound {
+		log.Printf("[INFO] Did not find ACL %s: %+v.", a.String(), a)
 		d.SetId("")
 	}
 	return nil
