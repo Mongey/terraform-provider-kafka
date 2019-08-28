@@ -89,6 +89,8 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 	a := aclInfo(d)
 	log.Printf("[INFO] Reading ACL %s", a)
 
+	// TODO: skipp getting all ACLs for each ACL
+	// implement DescribeACLs to only get ACL for a specific ResourceName
 	currentACLs, err := c.ListACLs()
 	if err != nil {
 		return err

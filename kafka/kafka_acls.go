@@ -329,7 +329,7 @@ func (c *Client) DescribeACLs(s stringlyTypedACL) ([]*sarama.ResourceAcls, error
 		return nil, err
 	}
 
-	broker, err := c.availableBroker()
+	broker, err := c.client.Controller()
 	if err != nil {
 		return nil, err
 	}
