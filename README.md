@@ -5,21 +5,13 @@ A [Terraform][1] plugin for managing [Apache Kafka][2].
 
 ## Contents
 
-- [`terraform-provider-kafka`](#terraform-provider-kafka)
-  - [Contents](#contents)
-  - [Installation](#installation)
-    - [Developing](#developing)
-  - [Provider Configuration](#provider-configuration)
-    - [Example](#example)
-  - [Resources](#resources)
-    - [`kafka_topic`](#kafkatopic)
-      - [Example](#example-1)
-      - [Properties](#properties)
-      - [Importing Existing Topics](#importing-existing-topics)
-    - [`kafka_acl`](#kafkaacl)
-      - [Example](#example-2)
-      - [Properties](#properties-1)
-  - [Requirements](#requirements)
+* [Installation](#installation)
+  * [Developing](#developing)
+* [`kafka` Provider](#provider-configuration)
+* [Resources](#resources)
+  * [`kafka_topic`](#kafka_topic)
+  * [`kafka_acl`](#kafka_acl)
+* [Requirements](#requirements)
 
 ## Installation
 
