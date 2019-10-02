@@ -5,13 +5,21 @@ A [Terraform][1] plugin for managing [Apache Kafka][2].
 
 ## Contents
 
-* [Installation](#installation)
-  * [Developing](#developing)
-* [`kafka` Provider](#provider-configuration)
-* [Resources](#resources)
-  * [`kafka_topic`](#kafka_topic)
-  * [`kafka_acl`](#kafka_acl)
-* [Requirements](#requirements)
+- [`terraform-provider-kafka`](#terraform-provider-kafka)
+  - [Contents](#contents)
+  - [Installation](#installation)
+    - [Developing](#developing)
+  - [Provider Configuration](#provider-configuration)
+    - [Example](#example)
+  - [Resources](#resources)
+    - [`kafka_topic`](#kafkatopic)
+      - [Example](#example-1)
+      - [Properties](#properties)
+      - [Importing Existing Topics](#importing-existing-topics)
+    - [`kafka_acl`](#kafkaacl)
+      - [Example](#example-2)
+      - [Properties](#properties-1)
+  - [Requirements](#requirements)
 
 ## Installation
 
@@ -40,24 +48,24 @@ Example provider with SSL client authentication.
 ```hcl
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
-  ca_cert_file      = "../secrets/snakeoil-ca-1.crt"
-  client_cert_file  = "../secrets/kafkacat-ca1-signed.pem"
-  client_key_file   = "../secrets/kafkacat-raw-private-key.pem"
+  ca_cert      = file("../secrets/snakeoil-ca-1.crt")
+  client_cert  = file("../secrets/kafkacat-ca1-signed.pem")
+  client_key   = file("../secrets/kafkacat-raw-private-key.pem")
   skip_tls_verify   = true
 }
 ```
 
-| Property            | Description                                                                                      | Default    |
-| ----------------    | -----------------------                                                                          | ---------- |
-| `bootstrap_servers` | A list of host:port addresses that will be used to discover the full set of alive brokers        | `Required` |
-| `ca_cert_file`      | The path to a CA certificate file to validate the server's certificate.                          | `""`       |
-| `client_cert_file`  | The path to a file containing the client certificate -- Use for Client authentication to Kafka.  | `""`       |
-| `client_key_file`   | Path to a file containing the private key that the client certificate was issued for.            | `""`       |
-| `skip_tls_verify`   | Skip TLS verification.                                                                           | `false`    |
-| `tls_enabled`       | Enable communication with the Kafka Cluster over TLS.                                            | `false`    |
-| `sasl_username`     | Username for SASL authentication.                                                                | `""`       |
-| `sasl_password`     | Password for SASL authentication.                                                                | `""`       |
-| `sasl_mechanism`    | Mechanism for SASL authentication. Allowed values are plain, scram-sha512 and scram-sha256       | `plain`    |
+| Property            | Description                                                                                                           | Default    |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `bootstrap_servers` | A list of host:port addresses that will be used to discover the full set of alive brokers                             | `Required` |
+| `ca_cert`           | The CA certificate or path to a CA certificate file to validate the server's certificate.                             | `""`       |
+| `client_cert`       | The client certificate or path to a file containing the client certificate -- Use for Client authentication to Kafka. | `""`       |
+| `client_key`        | The private key or path to a file containing the private key that the client certificate was issued for.              | `""`       |
+| `skip_tls_verify`   | Skip TLS verification.                                                                                                | `false`    |
+| `tls_enabled`       | Enable communication with the Kafka Cluster over TLS.                                                                 | `false`    |
+| `sasl_username`     | Username for SASL authentication.                                                                                     | `""`       |
+| `sasl_password`     | Password for SASL authentication.                                                                                     | `""`       |
+| `sasl_mechanism`    | Mechanism for SASL authentication. Allowed values are plain, scram-sha512 and scram-sha256                            | `plain`    |
 
 ## Resources
 ### `kafka_topic`
@@ -87,9 +95,9 @@ resource "kafka_topic" "logs" {
 #### Properties
 
 | Property             | Description                                    |
-| ----------------     | -----------------------                        |
+| -------------------- | ---------------------------------------------- |
 | `name`               | The name of the topic                          |
-| `partitions`          | The number of partitions the topic should have |
+| `partitions`         | The number of partitions the topic should have |
 | `replication_factor` | The number of replicas the topic should have   |
 | `config`             | A map of string k/v attributes                 |
 
@@ -110,9 +118,9 @@ A resource for managing Kafka ACLs.
 ```hcl
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
-  ca_cert_file      = "../secrets/snakeoil-ca-1.crt"
-  client_cert_file  = "../secrets/kafkacat-ca1-signed.pem"
-  client_key_file   = "../secrets/kafkacat-raw-private-key.pem"
+  ca_cert      = file("../secrets/snakeoil-ca-1.crt")
+  client_cert  = file("../secrets/kafkacat-ca1-signed.pem")
+  client_key   = file("../secrets/kafkacat-raw-private-key.pem")
   skip_tls_verify   = true
 }
 
@@ -128,15 +136,15 @@ resource "kafka_acl" "test" {
 
 #### Properties
 
-| Property              | Description                                                        | Valid values                                                     |
-| ----------------      | ----------------------                                             | --------------                                                   |
-| `acl_host`            | Host from which principal listed in acl_principal will have access | `*`                                                              |
-| `acl_operation`       | Operation that is being allowed or denied                          | `Unknown`, `Any`, `All`, `Read`, `Write`, `Create`, `Delete`, `Alter`, `Describe`, `ClusterAction`, `DescribeConfigs`, `AlterConfigs`, `IdempotentWrite` |
-| `acl_permission_type` | Type of permission                                                 | `Unknown`, `Any`, `Allow`, `Deny`                                |
-| `acl_principal`       | Principal that is being allowed or denied                          | `*`                                                              |
-| `resource_name`       | The name of the resource                                           | `*`                                                              |
-| `resource_type`       | The type of resource                                               | `Unknown`, `Any`, `Topic`, `Group`, `Cluster`, `TransactionalID` |
-| `resource_pattern_type_filter`       |                                                     | `Prefixed`, `Any`, `Match`, `Literal` |
+| Property                       | Description                                                        | Valid values                                                                                                                                             |
+| ------------------------------ | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `acl_host`                     | Host from which principal listed in acl_principal will have access | `*`                                                                                                                                                      |
+| `acl_operation`                | Operation that is being allowed or denied                          | `Unknown`, `Any`, `All`, `Read`, `Write`, `Create`, `Delete`, `Alter`, `Describe`, `ClusterAction`, `DescribeConfigs`, `AlterConfigs`, `IdempotentWrite` |
+| `acl_permission_type`          | Type of permission                                                 | `Unknown`, `Any`, `Allow`, `Deny`                                                                                                                        |
+| `acl_principal`                | Principal that is being allowed or denied                          | `*`                                                                                                                                                      |
+| `resource_name`                | The name of the resource                                           | `*`                                                                                                                                                      |
+| `resource_type`                | The type of resource                                               | `Unknown`, `Any`, `Topic`, `Group`, `Cluster`, `TransactionalID`                                                                                         |
+| `resource_pattern_type_filter` |                                                                    | `Prefixed`, `Any`, `Match`, `Literal`                                                                                                                    |
 
 
 ## Requirements

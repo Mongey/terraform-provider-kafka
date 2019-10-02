@@ -17,19 +17,19 @@ func Provider() terraform.ResourceProvider {
 				Required:    true,
 				Description: "A list of kafka brokers",
 			},
-			"ca_cert_file": &schema.Schema{
+			"ca_cert": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CA_CERT", ""),
 				Description: "Path to a CA certificate file to validate the server's certificate.",
 			},
-			"client_cert_file": &schema.Schema{
+			"client_cert": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_CERT", ""),
 				Description: "Path to a file containing the client certificate.",
 			},
-			"client_key_file": &schema.Schema{
+			"client_key": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY", ""),
@@ -98,9 +98,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 	config := &Config{
 		BootstrapServers: brokers,
-		CACertFile:       d.Get("ca_cert_file").(string),
-		ClientCertFile:   d.Get("client_cert_file").(string),
-		ClientCertKey:    d.Get("client_key_file").(string),
+		CACert:           d.Get("ca_cert").(string),
+		ClientCert:       d.Get("client_cert").(string),
+		ClientCertKey:    d.Get("client_key").(string),
 		SkipTLSVerify:    d.Get("skip_tls_verify").(bool),
 		SASLUsername:     d.Get("sasl_username").(string),
 		SASLPassword:     d.Get("sasl_password").(string),
