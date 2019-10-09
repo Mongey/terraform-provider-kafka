@@ -17,6 +17,27 @@ func Provider() terraform.ResourceProvider {
 				Required:    true,
 				Description: "A list of kafka brokers",
 			},
+			"ca_cert_file": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CA_CERT", ""),
+				Description: "Path to a CA certificate file to validate the server's certificate.",
+				Deprecated:  "This parameter is now deprecated and will be removed in a later release, please use `ca_cert` instead.",
+			},
+			"client_cert_file": &schema.Schema{
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_CERT", ""),
+				Description: "Path to a file containing the client certificate.",
+				Deprecated:  "This parameter is now deprecated and will be removed in a later release, please use `client_cert` instead.",
+			},
+			"client_key_file": &schema.Schema{
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY", ""),
+				Description: "Path to a file containing the private key that the certificate was issued for.",
+				Deprecated:  "This parameter is now deprecated and will be removed in a later release, please use `client_key` instead.",
+			},
 			"ca_cert": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -107,6 +128,16 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SASLMechanism:    saslMechanism,
 		TLSEnabled:       d.Get("tls_enabled").(bool),
 		Timeout:          d.Get("timeout").(int),
+	}
+
+	if config.CACert == "" {
+		config.CACert = d.Get("ca_cert_file").(string)
+	}
+	if config.ClientCert == "" {
+		config.ClientCert = d.Get("client_cert_file").(string)
+	}
+	if config.ClientCertKey == "" {
+		config.ClientCertKey = d.Get("client_key_file").(string)
 	}
 
 	log.Printf("[DEBUG] Config @ %v", config)
