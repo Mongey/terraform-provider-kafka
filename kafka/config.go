@@ -3,6 +3,7 @@ package kafka
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/pem"
 	"io/ioutil"
 	"log"
 
@@ -12,8 +13,8 @@ import (
 type Config struct {
 	BootstrapServers *[]string
 	Timeout          int
-	CACertFile       string
-	ClientCertFile   string
+	CACert           string
+	ClientCert       string
 	ClientCertKey    string
 	TLSEnabled       bool
 	SkipTLSVerify    bool
@@ -46,9 +47,9 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 
 	if c.TLSEnabled {
 		tlsConfig, err := newTLSConfig(
-			c.ClientCertFile,
+			c.ClientCert,
 			c.ClientCertKey,
-			c.CACertFile)
+			c.CACert)
 
 		if err != nil {
 			return kafkaConfig, err
@@ -66,32 +67,45 @@ func (c *Config) saslEnabled() bool {
 	return c.SASLUsername != "" || c.SASLPassword != ""
 }
 
-func newTLSConfig(clientCertFile, clientKeyFile, caCertFile string) (*tls.Config, error) {
+func newTLSConfig(clientCert, clientKey, caCert string) (*tls.Config, error) {
 	tlsConfig := tls.Config{}
 
 	// Load client cert
-	if clientCertFile != "" && clientKeyFile != "" {
-		cert, err := tls.LoadX509KeyPair(clientCertFile, clientKeyFile)
+	if clientCert != "" && clientKey != "" {
+		cert, err := tls.X509KeyPair([]byte(clientCert), []byte(clientKey))
 		if err != nil {
-			return &tlsConfig, err
+			// try from file
+			cert, err = tls.LoadX509KeyPair(clientCert, clientKey)
+			if err != nil {
+				log.Fatalf("[ERROR] Error creating client pair")
+				return &tlsConfig, err
+			}
 		}
 		tlsConfig.Certificates = []tls.Certificate{cert}
 	} else {
 		log.Println("[WARN] skipping TLS client config")
 	}
 
-	if caCertFile == "" {
+	if caCert == "" {
 		log.Println("[WARN] no CA file set skipping")
 		return &tlsConfig, nil
 	}
-	// Load CA cert
-	caCert, err := ioutil.ReadFile(caCertFile)
-	if err != nil {
-		return &tlsConfig, err
-	}
+
 	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
+	caPEM, _ := pem.Decode([]byte(caCert))
+	if caPEM == nil {
+		// try as file
+		caCert, err := ioutil.ReadFile(caCert)
+		if err != nil {
+			log.Fatalf("[ERROR] unable to read CA")
+			return &tlsConfig, err
+		}
+		caCertPool.AppendCertsFromPEM(caCert)
+	} else {
+		caCertPool.AppendCertsFromPEM(caPEM.Bytes)
+	}
+
 	tlsConfig.RootCAs = caCertPool
 	tlsConfig.BuildNameToCertificate()
-	return &tlsConfig, err
+	return &tlsConfig, nil
 }
