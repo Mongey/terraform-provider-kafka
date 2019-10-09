@@ -21,19 +21,19 @@ func Provider() terraform.ResourceProvider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CA_CERT", ""),
-				Description: "Path to a CA certificate file to validate the server's certificate.",
+				Description: "CA certificate file to validate the server's certificate.",
 			},
 			"client_cert": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_CERT", ""),
-				Description: "Path to a file containing the client certificate.",
+				Description: "The client certificate.",
 			},
 			"client_key": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY", ""),
-				Description: "Path to a file containing the private key that the certificate was issued for.",
+				Description: "The private key that the certificate was issued for.",
 			},
 			"sasl_username": &schema.Schema{
 				Type:        schema.TypeString,
