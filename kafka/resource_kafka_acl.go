@@ -3,7 +3,7 @@ package kafka
 import (
 	"log"
 
-	"github.com/hashicorp/terraform/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func kafkaACLResource() *schema.Resource {
