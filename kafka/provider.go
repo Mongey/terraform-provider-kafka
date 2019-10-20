@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func Provider() terraform.ResourceProvider {
@@ -105,10 +105,10 @@ func Provider() terraform.ResourceProvider {
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	brokers := dTos("bootstrap_servers", d)
 
+	log.Printf("[DEBUG] configuring provider with Brokers @ %v", brokers)
 	if brokers == nil {
 		return nil, fmt.Errorf("bootstrap_servers was not set")
 	}
-	log.Printf("[DEBUG] configuring provider with Brokers @ %v", brokers)
 
 	saslMechanism := d.Get("sasl_mechanism").(string)
 	switch saslMechanism {

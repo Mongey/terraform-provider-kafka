@@ -7,8 +7,8 @@ import (
 
 	"github.com/Shopify/sarama"
 	uuid "github.com/hashicorp/go-uuid"
-	r "github.com/hashicorp/terraform/helper/resource"
-	"github.com/hashicorp/terraform/terraform"
+	r "github.com/hashicorp/terraform-plugin-sdk/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 func TestAcc_ACLCreateAndUpdate(t *testing.T) {

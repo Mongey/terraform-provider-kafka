@@ -6,9 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform/config"
-	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/hashicorp/terraform/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
 var testProvider *schema.Provider
@@ -34,21 +33,31 @@ func testAccPreCheck(t *testing.T) {
 func accProvider() map[string]terraform.ResourceProvider {
 	log.Println("[INFO] Setting up override for a provider")
 	provider := Provider().(*schema.Provider)
+
 	bs := strings.Split(os.Getenv("KAFKA_BOOTSTRAP_SERVER"), ",")
-	bootstrapServers := []string{}
+	if len(bs) == 0 {
+		bs = []string{"localhost:9092"}
+	}
+
+	bootstrapServers := []interface{}{}
 
 	for _, v := range bs {
 		if v != "" {
 			bootstrapServers = append(bootstrapServers, v)
 		}
 	}
+
 	raw := map[string]interface{}{
 		"bootstrap_servers": bootstrapServers,
 	}
 
-	rawConfig, _ := config.NewRawConfig(raw)
-	_ = provider.Configure(terraform.NewResourceConfig(rawConfig))
+	err := provider.Configure(terraform.NewResourceConfigRaw(raw))
+	if err != nil {
+		log.Printf("[ERROR] Could note configure provider %v", err)
+	}
+
 	testProvider = provider
+
 	return map[string]terraform.ResourceProvider{
 		"kafka": provider,
 	}
