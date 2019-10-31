@@ -91,7 +91,7 @@ resource "kafka_topic" "logs" {
 | `name`               | The name of the topic                          |
 | `partitions`         | The number of partitions the topic should have |
 | `replication_factor` | The number of replicas the topic should have   |
-| `config`             | A map of string k/v attributes                 |
+| `config`             | A map of string k/v attributes   - see https://kafka.apache.org/documentation/#brokerconfigs              |
 
 
 #### Importing Existing Topics
