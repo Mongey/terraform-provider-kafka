@@ -9,7 +9,7 @@ jobs:
           TEST_RESULTS: /tmp/test-results
     steps:
       - checkout
-      - run: go build
+      - run: go build .
       - store_artifacts:
           path: /go/src/github.com/Mongey/terraform-provider-kafka/terraform-provider-kafka
           destination: terraform-provider-kafka
