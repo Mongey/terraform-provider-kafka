@@ -3,7 +3,7 @@ jobs:
   build:
     working_directory: /go/src/github.com/Mongey/terraform-provider-kafka
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.13
         environment:
           GO111MODULE: "on"
           TEST_RESULTS: /tmp/test-results
@@ -16,7 +16,7 @@ jobs:
   test:
     working_directory: /go/src/github.com/Mongey/terraform-provider-kafka
     docker:
-      - image: circleci/golang:1.11
+      - image: circleci/golang:1.13
         environment:
           GO111MODULE: "on"
           TEST_RESULTS: /tmp/test-results
