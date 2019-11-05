@@ -40,7 +40,7 @@ func NewClient(config *Config) (*Client, error) {
 	c, err := sarama.NewClient(bootstrapServers, kc)
 	sarama.Logger = log.New(os.Stdout, "[TRACE] [Sarama]", log.LstdFlags)
 	if err != nil {
-		log.Println("[ERROR] Error connecting to kafka")
+		log.Printf("[ERROR] Error connecting to kafka %s", err)
 		return nil, err
 	}
 

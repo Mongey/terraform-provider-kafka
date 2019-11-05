@@ -16,6 +16,6 @@ testacc:
 	KAFKA_SKIP_VERIFY=true \
 	KAFKA_ENABLE_TLS=true \
 	TF_LOG=DEBUG \
-	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m -count=1
+	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 9m -count=1
 
 .PHONY: build test testacc
