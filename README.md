@@ -140,7 +140,7 @@ resource "kafka_acl" "test" {
 
 
 ## Requirements
-* [Kafka 1.0.0][3]
+* [>= Kafka 1.0.0][3]
 
 [1]: https://www.terraform.io
 [2]: https://kafka.apache.org
