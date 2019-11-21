@@ -160,7 +160,6 @@ func dTos(key string, d *schema.ResourceData) *[]string {
 				log.Printf("[DEBUG] %d %v was nil", i, vv)
 				continue
 			}
-			log.Printf("[DEBUG] %d:Converting %v to string", i, vv)
 			b[i] = vv.(string)
 		}
 		r = &b

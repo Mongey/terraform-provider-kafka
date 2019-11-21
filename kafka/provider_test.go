@@ -53,7 +53,7 @@ func accProvider() map[string]terraform.ResourceProvider {
 
 	err := provider.Configure(terraform.NewResourceConfigRaw(raw))
 	if err != nil {
-		log.Printf("[ERROR] Could note configure provider %v", err)
+		log.Printf("[ERROR] Could not configure provider %v", err)
 	}
 
 	testProvider = provider

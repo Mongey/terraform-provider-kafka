@@ -26,10 +26,11 @@ do
   # Create keystores
   keytool -genkey -noprompt \
     -alias $i \
-    -dname "CN=$i.test.confluent.io, OU=TEST, O=CONFLUENT, L=PaloAlto, S=Ca, C=US" \
+    -dname "CN=localhost, OU=TEST, O=CONFLUENT, L=PaloAlto, S=Ca, C=US" \
     -keystore kafka.$i.keystore.jks \
     -keyalg RSA \
     -storepass confluent \
+    -ext SAN=dns:localhost \
     -keypass confluent
 
   # Create CSR, sign the key and import back into keystore
