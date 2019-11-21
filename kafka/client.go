@@ -210,6 +210,9 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 
 	err := c.RefreshMetadata(name)
 	if err != nil {
+		if err == sarama.ErrUnknownTopicOrPartition {
+			return topic, TopicMissingError{msg: fmt.Sprintf("%s", err)}
+		}
 		log.Printf("[ERROR] Error refreshing metadata %s", err)
 		return topic, err
 	}
