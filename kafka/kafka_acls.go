@@ -57,9 +57,9 @@ func tfToAclCreation(s stringlyTypedACL) (*sarama.AclCreation, error) {
 		PermissionType: pType,
 	}
 	acl.Resource = sarama.Resource{
-		ResourceType:       rType,
-		ResourceName:       s.Resource.Name,
-		ResoucePatternType: patternType,
+		ResourceType:        rType,
+		ResourceName:        s.Resource.Name,
+		ResourcePatternType: patternType,
 	}
 
 	return acl, nil

@@ -43,6 +43,9 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 		kafkaConfig.Net.SASL.Enable = true
 		kafkaConfig.Net.SASL.Password = c.SASLPassword
 		kafkaConfig.Net.SASL.User = c.SASLUsername
+		kafkaConfig.Net.SASL.Handshake = true
+	} else {
+		log.Println("[WARN] No SASL for you")
 	}
 
 	if c.TLSEnabled {
