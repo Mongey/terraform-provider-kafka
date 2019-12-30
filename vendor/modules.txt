@@ -6,9 +6,7 @@ cloud.google.com/go/internal/optional
 cloud.google.com/go/internal/trace
 cloud.google.com/go/internal/version
 cloud.google.com/go/storage
-# github.com/DataDog/zstd v1.3.6-0.20190409195224-796139022798
-github.com/DataDog/zstd
-# github.com/Shopify/sarama v1.22.1
+# github.com/Shopify/sarama v1.24.1
 github.com/Shopify/sarama
 # github.com/agext/levenshtein v1.2.2
 github.com/agext/levenshtein
@@ -181,8 +179,17 @@ github.com/hashicorp/terraform-plugin-sdk/plugin
 github.com/hashicorp/terraform-plugin-sdk/terraform
 # github.com/hashicorp/yamux v0.0.0-20181012175058-2f1d1f20f75d
 github.com/hashicorp/yamux
+# github.com/jcmturner/gofork v0.0.0-20190328161633-dc7c13fece03
+github.com/jcmturner/gofork/encoding/asn1
+github.com/jcmturner/gofork/x/crypto/pbkdf2
 # github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af
 github.com/jmespath/go-jmespath
+# github.com/klauspost/compress v1.8.2
+github.com/klauspost/compress/fse
+github.com/klauspost/compress/huff0
+github.com/klauspost/compress/snappy
+github.com/klauspost/compress/zstd
+github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/mattn/go-colorable v0.0.9
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.4
@@ -205,7 +212,7 @@ github.com/mitchellh/mapstructure
 github.com/mitchellh/reflectwalk
 # github.com/oklog/run v1.0.0
 github.com/oklog/run
-# github.com/pierrec/lz4 v2.0.5+incompatible
+# github.com/pierrec/lz4 v2.2.6+incompatible
 github.com/pierrec/lz4
 github.com/pierrec/lz4/internal/xxh32
 # github.com/posener/complete v1.2.1
@@ -262,6 +269,7 @@ go.opencensus.io/trace/tracestate
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
 golang.org/x/crypto/cast5
+golang.org/x/crypto/md4
 golang.org/x/crypto/openpgp
 golang.org/x/crypto/openpgp/armor
 golang.org/x/crypto/openpgp/elgamal
@@ -361,3 +369,41 @@ google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
 google.golang.org/grpc/test/bufconn
+# gopkg.in/jcmturner/aescts.v1 v1.0.1
+gopkg.in/jcmturner/aescts.v1
+# gopkg.in/jcmturner/dnsutils.v1 v1.0.1
+gopkg.in/jcmturner/dnsutils.v1
+# gopkg.in/jcmturner/gokrb5.v7 v7.2.3
+gopkg.in/jcmturner/gokrb5.v7/asn1tools
+gopkg.in/jcmturner/gokrb5.v7/client
+gopkg.in/jcmturner/gokrb5.v7/config
+gopkg.in/jcmturner/gokrb5.v7/credentials
+gopkg.in/jcmturner/gokrb5.v7/crypto
+gopkg.in/jcmturner/gokrb5.v7/crypto/common
+gopkg.in/jcmturner/gokrb5.v7/crypto/etype
+gopkg.in/jcmturner/gokrb5.v7/crypto/rfc3961
+gopkg.in/jcmturner/gokrb5.v7/crypto/rfc3962
+gopkg.in/jcmturner/gokrb5.v7/crypto/rfc4757
+gopkg.in/jcmturner/gokrb5.v7/crypto/rfc8009
+gopkg.in/jcmturner/gokrb5.v7/gssapi
+gopkg.in/jcmturner/gokrb5.v7/iana
+gopkg.in/jcmturner/gokrb5.v7/iana/addrtype
+gopkg.in/jcmturner/gokrb5.v7/iana/adtype
+gopkg.in/jcmturner/gokrb5.v7/iana/asnAppTag
+gopkg.in/jcmturner/gokrb5.v7/iana/chksumtype
+gopkg.in/jcmturner/gokrb5.v7/iana/errorcode
+gopkg.in/jcmturner/gokrb5.v7/iana/etypeID
+gopkg.in/jcmturner/gokrb5.v7/iana/flags
+gopkg.in/jcmturner/gokrb5.v7/iana/keyusage
+gopkg.in/jcmturner/gokrb5.v7/iana/msgtype
+gopkg.in/jcmturner/gokrb5.v7/iana/nametype
+gopkg.in/jcmturner/gokrb5.v7/iana/patype
+gopkg.in/jcmturner/gokrb5.v7/kadmin
+gopkg.in/jcmturner/gokrb5.v7/keytab
+gopkg.in/jcmturner/gokrb5.v7/krberror
+gopkg.in/jcmturner/gokrb5.v7/messages
+gopkg.in/jcmturner/gokrb5.v7/pac
+gopkg.in/jcmturner/gokrb5.v7/types
+# gopkg.in/jcmturner/rpc.v1 v1.1.0
+gopkg.in/jcmturner/rpc.v1/mstypes
+gopkg.in/jcmturner/rpc.v1/ndr
