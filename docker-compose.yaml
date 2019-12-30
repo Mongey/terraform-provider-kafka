@@ -12,7 +12,7 @@ services:
       - "moby:127.0.0.1"
 
   kafka:
-    build: .
+    image: mongey/kafka:5.0.1-new-certs
     ports:
       - "9092:9092"
     depends_on:
@@ -20,7 +20,5 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-    volumes:
-      - ./secrets:/etc/kafka/secrets
     extra_hosts:
       - "moby:127.0.0.1"
