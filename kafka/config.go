@@ -4,8 +4,10 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"time"
 
 	"github.com/Shopify/sarama"
 )
@@ -27,6 +29,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig := sarama.NewConfig()
 	kafkaConfig.Version = sarama.V2_1_0_0
 	kafkaConfig.ClientID = "terraform-provider-kafka"
+	kafkaConfig.Admin.Timeout = time.Duration(c.Timeout) * time.Second
 
 	if c.saslEnabled() {
 		switch c.SASLMechanism {
@@ -70,6 +73,10 @@ func (c *Config) saslEnabled() bool {
 	return c.SASLUsername != "" || c.SASLPassword != ""
 }
 
+func NewTLSConfig(clientCert, clientKey, caCert string) (*tls.Config, error) {
+	return newTLSConfig(clientCert, clientKey, caCert)
+}
+
 func newTLSConfig(clientCert, clientKey, caCert string) (*tls.Config, error) {
 	tlsConfig := tls.Config{}
 
@@ -80,7 +87,7 @@ func newTLSConfig(clientCert, clientKey, caCert string) (*tls.Config, error) {
 			// try from file
 			cert, err = tls.LoadX509KeyPair(clientCert, clientKey)
 			if err != nil {
-				log.Fatalf("[ERROR] Error creating client pair")
+				log.Printf("[ERROR] Error creating client pair \ncert:\n%s\n key\n%s\n", clientCert, clientKey)
 				return &tlsConfig, err
 			}
 		}
@@ -94,18 +101,28 @@ func newTLSConfig(clientCert, clientKey, caCert string) (*tls.Config, error) {
 		return &tlsConfig, nil
 	}
 
-	caCertPool := x509.NewCertPool()
+	caCertPool, _ := x509.SystemCertPool()
+	if caCertPool == nil {
+		caCertPool = x509.NewCertPool()
+	}
 	caPEM, _ := pem.Decode([]byte(caCert))
+	log.Println("[INFO] adding rootybou")
 	if caPEM == nil {
+		log.Println("[WARN] no caPem, checking from file")
 		// try as file
 		caCert, err := ioutil.ReadFile(caCert)
 		if err != nil {
-			log.Fatalf("[ERROR] unable to read CA")
+			log.Println("[ERROR] unable to read CA")
 			return &tlsConfig, err
 		}
+		log.Println("[WARN] Adding pem from file")
 		caCertPool.AppendCertsFromPEM(caCert)
 	} else {
-		caCertPool.AppendCertsFromPEM(caPEM.Bytes)
+		ok := caCertPool.AppendCertsFromPEM([]byte(caCert))
+		fmt.Printf("set cert pool %v", ok)
+		if !ok {
+			return &tlsConfig, fmt.Errorf("Couldn't add the caPem")
+		}
 	}
 
 	tlsConfig.RootCAs = caCertPool

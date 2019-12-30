@@ -103,8 +103,8 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func aclInfo(d *schema.ResourceData) stringlyTypedACL {
-	s := stringlyTypedACL{
+func aclInfo(d *schema.ResourceData) StringlyTypedACL {
+	s := StringlyTypedACL{
 		ACL: ACL{
 			Principal:      d.Get("acl_principal").(string),
 			Host:           d.Get("acl_host").(string),

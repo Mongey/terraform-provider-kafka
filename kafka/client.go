@@ -24,21 +24,21 @@ type Client struct {
 }
 
 func NewClient(config *Config) (*Client, error) {
+	sarama.Logger = log.New(os.Stdout, "[TRACE] [Sarama]", log.LstdFlags)
+
 	log.Printf("[INFO] configuring bootstrap_servers %v", config)
 	bootstrapServers := *(config.BootstrapServers)
-
 	if bootstrapServers == nil {
 		return nil, fmt.Errorf("No bootstrap_servers provided")
 	}
 
 	kc, err := config.newKafkaConfig()
 	if err != nil {
-		log.Println("[ERROR] Error creating kafka client")
+		log.Printf("[ERROR] Error creating kafka client %v", err)
 		return nil, err
 	}
 
 	c, err := sarama.NewClient(bootstrapServers, kc)
-	sarama.Logger = log.New(os.Stdout, "[TRACE] [Sarama]", log.LstdFlags)
 	if err != nil {
 		log.Printf("[ERROR] Error connecting to kafka %s", err)
 		return nil, err
@@ -59,8 +59,12 @@ func NewClient(config *Config) (*Client, error) {
 	return client, nil
 }
 
+func (c *Client) SaramaClient() sarama.Client {
+	return c.client
+}
+
 func (c *Client) populateAPIVersions() {
-	log.Printf("[DEBUG] retrieving supported APIs from broker")
+	log.Printf("[DEBUG] retrieving supported APIs from broker: %s", c.config.BootstrapServers)
 	broker, err := c.client.Controller()
 	if err != nil {
 		log.Printf("[ERROR] Unable to populate supported API versions. Error retrieving controller: %s", err)

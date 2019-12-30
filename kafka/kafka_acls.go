@@ -9,28 +9,28 @@ import (
 )
 
 type ACL struct {
-	Principal      string
-	Host           string
-	Operation      string
-	PermissionType string
+	Principal      string `json:"principal"`
+	Host           string `json:"host"`
+	Operation      string `json:"operation"`
+	PermissionType string `json:"permission_type"`
 }
 
 type Resource struct {
-	Type              string
-	Name              string
-	PatternTypeFilter string
+	Type              string `json:"type"`
+	Name              string `json:"name"`
+	PatternTypeFilter string `json:"pattern_type_filter"`
 }
 
-type stringlyTypedACL struct {
-	ACL ACL
-	Resource
+type StringlyTypedACL struct {
+	ACL      ACL `json:"acl"`
+	Resource `json:"resource"`
 }
 
-func (a stringlyTypedACL) String() string {
+func (a StringlyTypedACL) String() string {
 	return strings.Join([]string{a.ACL.Principal, a.ACL.Host, a.ACL.Operation, a.ACL.PermissionType, a.Resource.Type, a.Resource.Name, a.Resource.PatternTypeFilter}, "|")
 }
 
-func tfToAclCreation(s stringlyTypedACL) (*sarama.AclCreation, error) {
+func tfToAclCreation(s StringlyTypedACL) (*sarama.AclCreation, error) {
 	acl := &sarama.AclCreation{}
 
 	op := stringToOperation(s.ACL.Operation)
@@ -67,7 +67,7 @@ func tfToAclCreation(s stringlyTypedACL) (*sarama.AclCreation, error) {
 
 const unknownConversion = -1
 
-func tfToAclFilter(s stringlyTypedACL) (sarama.AclFilter, error) {
+func tfToAclFilter(s StringlyTypedACL) (sarama.AclFilter, error) {
 	f := sarama.AclFilter{
 		Principal:    &s.ACL.Principal,
 		Host:         &s.ACL.Host,
@@ -115,7 +115,7 @@ func stringToACLPrefix(s string) sarama.AclResourcePatternType {
 	return unknownConversion
 }
 
-func (c *Client) DeleteACL(s stringlyTypedACL) error {
+func (c *Client) DeleteACL(s StringlyTypedACL) error {
 	log.Printf("[INFO] Deleting ACL %v", s)
 	broker, err := c.client.Controller()
 	if err != nil {
@@ -161,7 +161,7 @@ func (c *Client) DeleteACL(s stringlyTypedACL) error {
 	return nil
 }
 
-func (c *Client) CreateACL(s stringlyTypedACL) error {
+func (c *Client) CreateACL(s StringlyTypedACL) error {
 	log.Printf("[DEBUG] Creating ACL %s", s)
 	broker, err := c.client.Controller()
 	if err != nil {
@@ -187,6 +187,7 @@ func (c *Client) CreateACL(s stringlyTypedACL) error {
 			return r.Err
 		}
 	}
+	log.Printf("[DEBUG] Created ACL %s", s)
 
 	return nil
 }
