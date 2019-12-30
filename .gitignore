@@ -1,3 +1,4 @@
 !/examples/main.tf
 /examples/*
 terraform-provider-kafka*
+dist
