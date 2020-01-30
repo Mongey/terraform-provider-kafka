@@ -54,7 +54,7 @@ provider "kafka" {
 | `client_cert`       | The client certificate or path to a file containing the client certificate -- Use for Client authentication to Kafka. | `""`       |
 | `client_key`        | The private key or path to a file containing the private key that the client certificate was issued for.              | `""`       |
 | `skip_tls_verify`   | Skip TLS verification.                                                                                                | `false`    |
-| `tls_enabled`       | Enable communication with the Kafka Cluster over TLS.                                                                 | `false`    |
+| `tls_enabled`       | Enable communication with the Kafka Cluster over TLS.                                                                 | `true`    |
 | `sasl_username`     | Username for SASL authentication.                                                                                     | `""`       |
 | `sasl_password`     | Password for SASL authentication.                                                                                     | `""`       |
 | `sasl_mechanism`    | Mechanism for SASL authentication. Allowed values are plain, scram-sha512 and scram-sha256                            | `plain`    |
