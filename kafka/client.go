@@ -232,10 +232,12 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 				topic.Partitions = partitionCount
 
 				r, err := ReplicaCount(c, name, p)
-				if err == nil {
-					log.Printf("[DEBUG] ReplicationFactor %d from Kafka", r)
-					topic.ReplicationFactor = int16(r)
+				if err != nil {
+					return topic, err
 				}
+
+				log.Printf("[DEBUG] ReplicationFactor %d from Kafka", r)
+				topic.ReplicationFactor = int16(r)
 
 				configToSave, err := client.topicConfig(t)
 				if err != nil {
