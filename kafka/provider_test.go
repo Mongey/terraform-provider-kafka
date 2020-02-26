@@ -24,7 +24,7 @@ func testAccPreCheck(t *testing.T) {
 	if meta == nil {
 		t.Fatal("Could not construct client")
 	}
-	client := meta.(*Client)
+	client := meta.(*LazyClient)
 	if client == nil {
 		t.Fatal("No client")
 	}

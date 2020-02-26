@@ -46,7 +46,7 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 		return fmt.Errorf("resource has no primary instance")
 	}
 
-	client := testProvider.Meta().(*Client)
+	client := testProvider.Meta().(*LazyClient)
 	acls, err := client.ListACLs()
 	if err != nil {
 		return err
@@ -79,7 +79,7 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 }
 
 func testResourceACL_updateCheck(s *terraform.State) error {
-	client := testProvider.Meta().(*Client)
+	client := testProvider.Meta().(*LazyClient)
 
 	acls, err := client.ListACLs()
 	if err != nil {

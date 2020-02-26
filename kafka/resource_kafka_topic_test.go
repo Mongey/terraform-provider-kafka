@@ -95,7 +95,7 @@ func testResourceTopic_noConfigCheck(s *terraform.State) error {
 	//return fmt.Errorf("unexpected topic name %s", name)
 	//}
 
-	client := testProvider.Meta().(*Client)
+	client := testProvider.Meta().(*LazyClient)
 	topic, err := client.ReadTopic(name)
 
 	if err != nil {
@@ -132,7 +132,7 @@ func testResourceTopic_initialCheck(s *terraform.State) error {
 	//return fmt.Errorf("unexpected topic name %s", name)
 	//}
 
-	client := testProvider.Meta().(*Client)
+	client := testProvider.Meta().(*LazyClient)
 	topic, err := client.ReadTopic(name)
 	if err != nil {
 		return err
@@ -151,7 +151,7 @@ func testResourceTopic_initialCheck(s *terraform.State) error {
 func testResourceTopic_updateCheck(s *terraform.State) error {
 	resourceState := s.Modules[0].Resources["kafka_topic.test"]
 	instanceState := resourceState.Primary
-	client := testProvider.Meta().(*Client)
+	client := testProvider.Meta().(*LazyClient)
 	name := instanceState.ID
 
 	if name != instanceState.Attributes["name"] {
@@ -180,7 +180,7 @@ func testResourceTopic_updateCheck(s *terraform.State) error {
 func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
 	resourceState := s.Modules[0].Resources["kafka_topic.test"]
 	instanceState := resourceState.Primary
-	client := testProvider.Meta().(*Client)
+	client := testProvider.Meta().(*LazyClient)
 	name := instanceState.ID
 	topic, err := client.ReadTopic(name)
 	if err != nil {
