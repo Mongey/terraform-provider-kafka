@@ -151,7 +151,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 	log.Printf("[DEBUG] Config @ %v", config)
 
-	return NewClient(config)
+	return &LazyClient{
+		Config: config,
+	}, nil
 }
 
 func dTos(key string, d *schema.ResourceData) *[]string {

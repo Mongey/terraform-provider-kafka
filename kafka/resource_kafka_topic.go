@@ -49,7 +49,7 @@ func kafkaTopicResource() *schema.Resource {
 }
 
 func topicCreate(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*Client)
+	c := meta.(*LazyClient)
 	t := metaToTopic(d, meta)
 
 	err := c.CreateTopic(t)
@@ -62,7 +62,7 @@ func topicCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func topicUpdate(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*Client)
+	c := meta.(*LazyClient)
 	t := metaToTopic(d, meta)
 
 	err := c.UpdateTopic(t)
@@ -82,7 +82,7 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 		}
 	}
 
-	timeout := time.Duration(c.config.Timeout) * time.Second
+	timeout := time.Duration(c.Config.Timeout) * time.Second
 	stateConf := &resource.StateChangeConf{
 		Pending:      []string{"Updating"},
 		Target:       []string{"Ready"},
@@ -104,7 +104,7 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 	return err
 }
 
-func topicRefreshFunc(client *Client, topic string, expected Topic) resource.StateRefreshFunc {
+func topicRefreshFunc(client *LazyClient, topic string, expected Topic) resource.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
 		log.Printf("[DEBUG] waiting for topic to update %s", topic)
 		actual, err := client.ReadTopic(topic)
@@ -122,7 +122,7 @@ func topicRefreshFunc(client *Client, topic string, expected Topic) resource.Sta
 }
 
 func topicDelete(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*Client)
+	c := meta.(*LazyClient)
 	t := metaToTopic(d, meta)
 
 	err := c.DeleteTopic(t.Name)
@@ -149,7 +149,7 @@ func topicDelete(d *schema.ResourceData, meta interface{}) error {
 	return err
 }
 
-func topicDeleteFunc(client *Client, id string, t Topic) resource.StateRefreshFunc {
+func topicDeleteFunc(client *LazyClient, id string, t Topic) resource.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
 		topic, err := client.ReadTopic(t.Name)
 
@@ -167,7 +167,7 @@ func topicDeleteFunc(client *Client, id string, t Topic) resource.StateRefreshFu
 
 func topicRead(d *schema.ResourceData, meta interface{}) error {
 	name := d.Id()
-	client := meta.(*Client)
+	client := meta.(*LazyClient)
 	topic, err := client.ReadTopic(name)
 
 	if err != nil {

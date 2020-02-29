@@ -60,7 +60,7 @@ func kafkaACLResource() *schema.Resource {
 }
 
 func aclCreate(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*Client)
+	c := meta.(*LazyClient)
 	a := aclInfo(d)
 
 	log.Printf("[INFO] Creating ACL %s", a)
@@ -77,7 +77,7 @@ func aclCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func aclDelete(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*Client)
+	c := meta.(*LazyClient)
 	a := aclInfo(d)
 	log.Printf("[INFO] Deleting ACL %s", a)
 	return c.DeleteACL(a)
@@ -85,7 +85,7 @@ func aclDelete(d *schema.ResourceData, meta interface{}) error {
 
 func aclRead(d *schema.ResourceData, meta interface{}) error {
 	log.Println("[INFO] Reading ACL")
-	c := meta.(*Client)
+	c := meta.(*LazyClient)
 	a := aclInfo(d)
 	log.Printf("[INFO] Reading ACL %s", a)
 
