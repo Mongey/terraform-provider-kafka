@@ -262,10 +262,6 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = c.client.RefreshMetadata()
-	if err != nil {
-		return nil, err
-	}
 
 	allResources := []*sarama.DescribeAclsRequest{
 		&sarama.DescribeAclsRequest{
@@ -307,8 +303,11 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	}
 	res := []*sarama.ResourceAcls{}
 
+	log.Printf("[TRACE] Asking Kafka for all the resources")
 	for _, r := range allResources {
+		log.Printf("[TRACE] Describe Acl Requst %v", r)
 		aclsR, err := broker.DescribeAcls(r)
+		log.Printf("[TRACE] ThrottleTime: %d", aclsR.ThrottleTime)
 		if err != nil {
 			return nil, err
 		}
