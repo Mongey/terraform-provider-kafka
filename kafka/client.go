@@ -212,7 +212,7 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 		Name: name,
 	}
 
-	err := c.RefreshMetadata()
+	err := c.RefreshMetadata(name)
 	if err != nil {
 		log.Printf("[ERROR] Error refreshing metadata %s", err)
 		return topic, err
