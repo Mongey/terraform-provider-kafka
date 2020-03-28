@@ -1,5 +1,5 @@
 ---
-version: '2'
+version: '3.2'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -12,13 +12,30 @@ services:
       - "moby:127.0.0.1"
 
   kafka:
-    image: mongey/kafka:5.0.1-new-certs
+    image: confluentinc/cp-kafka:5.3.3
     ports:
       - "9092:9092"
     depends_on:
       - zookeeper
+    volumes:
+      - type: bind
+        source: ./secrets
+        target: /etc/kafka/secrets
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: SSL://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_SSL_KEYSTORE_FILENAME: kafka.broker1.keystore.jks
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: broker1_keystore_creds
+      KAFKA_SSL_KEY_CREDENTIALS: broker1_sslkey_creds
+      KAFKA_SSL_TRUSTSTORE_FILENAME: kafka.broker1.truststore.jks
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: broker1_truststore_creds
+      KAFKA_SECURITY_INTER_BROKER_PROTOCOL: SSL
+      KAFKA_SSL_CLIENT_AUTH: required
+      KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
+      KAFKA_LISTENER_NAME_INTERNAL_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM: ""
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.auth.SimpleAclAuthorizer
     extra_hosts:
       - "moby:127.0.0.1"
