@@ -9,6 +9,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
+func positiveValue(val interface{}, key string) (warns []string, errs []error) {
+	v := val.(int)
+	if v < 1 {
+		errs = append(errs, fmt.Errorf("%q must be greater than 0, got: %d", key, v))
+	}
+	return
+}
+
 func kafkaTopicResource() *schema.Resource {
 	return &schema.Resource{
 		Create: topicCreate,
@@ -27,15 +35,17 @@ func kafkaTopicResource() *schema.Resource {
 				Description: "The name of the topic.",
 			},
 			"partitions": {
-				Type:        schema.TypeInt,
-				Required:    true,
-				Description: "Number of partitions.",
+				Type:         schema.TypeInt,
+				Required:     true,
+				Description:  "Number of partitions.",
+				ValidateFunc: positiveValue,
 			},
 			"replication_factor": {
-				Type:        schema.TypeInt,
-				Required:    true,
-				ForceNew:    true,
-				Description: "Number of replicas.",
+				Type:         schema.TypeInt,
+				Required:     true,
+				ForceNew:     true,
+				Description:  "Number of replicas.",
+				ValidateFunc: positiveValue,
 			},
 			"config": {
 				Type:        schema.TypeMap,
