@@ -20,7 +20,7 @@ func (c *LazyClient) init() error {
 		c.inner, err = NewClient(c.Config)
 	})
 
-	log.Printf("[DEBUG] lazy client init %s; config %v", err, c.Config)
+	log.Printf("[DEBUG] lazy client init %s; config %v", err, c.Config.copyWithMaskedSensitiveValues())
 	return err
 }
 

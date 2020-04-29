@@ -149,7 +149,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ClientCertKey = d.Get("client_key_file").(string)
 	}
 
-	log.Printf("[DEBUG] Config @ %v", config)
+	log.Printf("[DEBUG] Config @ %v", config.copyWithMaskedSensitiveValues())
 
 	return &LazyClient{
 		Config: config,

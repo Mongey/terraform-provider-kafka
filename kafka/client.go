@@ -26,7 +26,7 @@ type Client struct {
 func NewClient(config *Config) (*Client, error) {
 	sarama.Logger = log.New(os.Stdout, "[TRACE] [Sarama]", log.LstdFlags)
 
-	log.Printf("[INFO] configuring bootstrap_servers %v", config)
+	log.Printf("[INFO] configuring bootstrap_servers %v", config.copyWithMaskedSensitiveValues())
 	bootstrapServers := *(config.BootstrapServers)
 	if bootstrapServers == nil {
 		return nil, fmt.Errorf("No bootstrap_servers provided")

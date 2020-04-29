@@ -48,7 +48,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 		kafkaConfig.Net.SASL.User = c.SASLUsername
 		kafkaConfig.Net.SASL.Handshake = true
 	} else {
-		log.Printf("[WARN] SASL disabled username: '%s', password '%s'", c.SASLUsername, c.SASLPassword)
+		log.Printf("[WARN] SASL disabled username: '%s', password '%s'", c.SASLUsername, "****")
 	}
 
 	if c.TLSEnabled {
@@ -87,7 +87,7 @@ func newTLSConfig(clientCert, clientKey, caCert string) (*tls.Config, error) {
 			// try from file
 			cert, err = tls.LoadX509KeyPair(clientCert, clientKey)
 			if err != nil {
-				log.Printf("[ERROR] Error creating client pair \ncert:\n%s\n key\n%s\n", clientCert, clientKey)
+				log.Printf("[ERROR] Error creating client pair \ncert:\n%s\n key\n%s\n", clientCert, "****")
 				return &tlsConfig, err
 			}
 		}
@@ -128,4 +128,20 @@ func newTLSConfig(clientCert, clientKey, caCert string) (*tls.Config, error) {
 	tlsConfig.RootCAs = caCertPool
 	tlsConfig.BuildNameToCertificate()
 	return &tlsConfig, nil
+}
+
+func (config *Config) copyWithMaskedSensitiveValues() Config {
+	copy := Config{
+		config.BootstrapServers,
+		config.Timeout,
+		config.CACert,
+		config.ClientCert,
+		"*****",
+		config.TLSEnabled,
+		config.SkipTLSVerify,
+		config.SASLUsername,
+		"*****",
+		config.SASLMechanism,
+	}
+	return copy
 }
