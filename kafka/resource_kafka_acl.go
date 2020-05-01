@@ -21,7 +21,7 @@ func kafkaACLResource() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
-				Description: "The name of the resouce",
+				Description: "The name of the resource",
 			},
 			"resource_type": {
 				Type:     schema.TypeString,
@@ -94,7 +94,7 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	aCLnotFound := true
+	aclNotFound := true
 
 	for _, foundACLs := range currentACLs {
 		// find only ACLs where ResourceName matches
@@ -107,7 +107,7 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 		log.Printf("[INFO] Found (%d) ACL(s) for Resource %s: %+v.", len(foundACLs.Acls), foundACLs.ResourceName, foundACLs)
 
 		for _, acl := range foundACLs.Acls {
-			aclID := stringlyTypedACL{
+			aclID := StringlyTypedACL{
 				ACL: ACL{
 					Principal:      acl.Principal,
 					Host:           acl.Host,
@@ -115,28 +115,29 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 					PermissionType: ACLPermissionTypeToString(acl.PermissionType),
 				},
 				Resource: Resource{
-					Type: ACLResouceToString(foundACLs.ResourceType),
+					Type: ACLResourceToString(foundACLs.ResourceType),
 					Name: foundACLs.ResourceName,
 				},
 			}
 			// exact match
 			if a.String() == aclID.String() {
-				aCLnotFound = false
+				aclNotFound = false
 				return nil
 			}
+
 			// partial match -> update state
 			if a.ACL.Principal == aclID.ACL.Principal &&
 				a.ACL.Operation == aclID.ACL.Operation {
-				aCLnotFound = false
+				aclNotFound = false
 				d.Set("acl_principal", acl.Principal)
 				d.Set("acl_host", acl.Host)
 				d.Set("acl_operation", acl.Operation)
 				d.Set("acl_permission_type", acl.PermissionType)
-				d.Set("resource_pattern_type_filter", foundACLs.ResoucePatternType)
+				d.Set("resource_pattern_type_filter", foundACLs.ResourcePatternType)
 			}
 		}
 	}
-	if aCLnotFound {
+	if aclNotFound {
 		log.Printf("[INFO] Did not find ACL %s", a.String())
 		d.SetId("")
 	}

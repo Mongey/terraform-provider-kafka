@@ -41,7 +41,7 @@ func tfToAclCreation(s StringlyTypedACL) (*sarama.AclCreation, error) {
 	if pType == unknownConversion {
 		return acl, fmt.Errorf("Unknown permission type: %s", s.ACL.PermissionType)
 	}
-	rType := stringToACLResouce(s.Resource.Type)
+	rType := stringToACLResource(s.Resource.Type)
 	if rType == unknownConversion {
 		return acl, fmt.Errorf("Unknown resource type: %s", s.Resource.Type)
 	}
@@ -86,7 +86,7 @@ func tfToAclFilter(s StringlyTypedACL) (sarama.AclFilter, error) {
 	}
 	f.PermissionType = pType
 
-	rType := stringToACLResouce(s.Resource.Type)
+	rType := stringToACLResource(s.Resource.Type)
 	if rType == unknownConversion {
 		return f, fmt.Errorf("Unknown resource type: %s", s.Resource.Type)
 	}
@@ -192,7 +192,7 @@ func (c *Client) CreateACL(s StringlyTypedACL) error {
 	return nil
 }
 
-func stringToACLResouce(in string) sarama.AclResourceType {
+func stringToACLResource(in string) sarama.AclResourceType {
 	switch in {
 	case "Unknown":
 		return sarama.AclResourceUnknown
@@ -210,8 +210,7 @@ func stringToACLResouce(in string) sarama.AclResourceType {
 	return unknownConversion
 }
 
-// ACLResouceToString converts sarama.AclResourceTypes to Strings
-func ACLResouceToString(in sarama.AclResourceType) string {
+func ACLResourceToString(in sarama.AclResourceType) string {
 	switch in {
 	case sarama.AclResourceUnknown:
 		return "Unknown"
@@ -324,7 +323,7 @@ func ACLPermissionTypeToString(in sarama.AclPermissionType) string {
 }
 
 // DescribeACLs get ResourceAcls for a specific resource
-func (c *Client) DescribeACLs(s stringlyTypedACL) ([]*sarama.ResourceAcls, error) {
+func (c *Client) DescribeACLs(s StringlyTypedACL) ([]*sarama.ResourceAcls, error) {
 	aclFilter, err := tfToAclFilter(s)
 	if err != nil {
 		return nil, err
