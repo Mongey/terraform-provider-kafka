@@ -89,16 +89,56 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 	a := aclInfo(d)
 	log.Printf("[INFO] Reading ACL %s", a)
 
-	currentAcls, err := c.ListACLs()
+	currentACLs, err := c.ListACLs()
 	if err != nil {
 		return err
 	}
-	for _, c := range currentAcls {
-		if c.ResourceName == a.Resource.Name {
-			log.Printf("[INFO] Found ACL %v", c)
-			return nil
-		}
 
+	aCLnotFound := true
+
+	for _, foundACLs := range currentACLs {
+		// find only ACLs where ResourceName matches
+		if foundACLs.ResourceName != a.Resource.Name {
+			continue
+		}
+		if len(foundACLs.Acls) < 1 {
+			break
+		}
+		log.Printf("[INFO] Found (%d) ACL(s) for Resource %s: %+v.", len(foundACLs.Acls), foundACLs.ResourceName, foundACLs)
+
+		for _, acl := range foundACLs.Acls {
+			aclID := stringlyTypedACL{
+				ACL: ACL{
+					Principal:      acl.Principal,
+					Host:           acl.Host,
+					Operation:      ACLOperationToString(acl.Operation),
+					PermissionType: ACLPermissionTypeToString(acl.PermissionType),
+				},
+				Resource: Resource{
+					Type: ACLResouceToString(foundACLs.ResourceType),
+					Name: foundACLs.ResourceName,
+				},
+			}
+			// exact match
+			if a.String() == aclID.String() {
+				aCLnotFound = false
+				return nil
+			}
+			// partial match -> update state
+			if a.ACL.Principal == aclID.ACL.Principal &&
+				a.ACL.Operation == aclID.ACL.Operation {
+				aCLnotFound = false
+				d.Set("acl_principal", acl.Principal)
+				d.Set("acl_host", acl.Host)
+				d.Set("acl_operation", acl.Operation)
+				d.Set("acl_permission_type", acl.PermissionType)
+				d.Set("resource_pattern_type_filter", foundACLs.ResoucePatternType)
+			}
+		}
+	}
+	if aCLnotFound {
+		log.Printf("[INFO] Did not find ACL %s", a.String())
+		d.SetId("")
 	}
 	return nil
 }

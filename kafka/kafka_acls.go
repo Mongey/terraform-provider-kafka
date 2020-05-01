@@ -210,6 +210,25 @@ func stringToACLResouce(in string) sarama.AclResourceType {
 	return unknownConversion
 }
 
+// ACLResouceToString converts sarama.AclResourceTypes to Strings
+func ACLResouceToString(in sarama.AclResourceType) string {
+	switch in {
+	case sarama.AclResourceUnknown:
+		return "Unknown"
+	case sarama.AclResourceAny:
+		return "Any"
+	case sarama.AclResourceTopic:
+		return "Topic"
+	case sarama.AclResourceGroup:
+		return "Group"
+	case sarama.AclResourceCluster:
+		return "Cluster"
+	case sarama.AclResourceTransactionalID:
+		return "TransactionalID"
+	}
+	return "unknownConversion"
+}
+
 func stringToOperation(in string) sarama.AclOperation {
 	switch in {
 	case "Unknown":
@@ -242,6 +261,39 @@ func stringToOperation(in string) sarama.AclOperation {
 	return unknownConversion
 }
 
+// ACLOperationToString converts sarama.AclOperations to a String representation
+func ACLOperationToString(in sarama.AclOperation) string {
+	switch in {
+	case sarama.AclOperationUnknown:
+		return "Unknown"
+	case sarama.AclOperationAny:
+		return "Any"
+	case sarama.AclOperationAll:
+		return "All"
+	case sarama.AclOperationRead:
+		return "Read"
+	case sarama.AclOperationWrite:
+		return "Write"
+	case sarama.AclOperationCreate:
+		return "Create"
+	case sarama.AclOperationDelete:
+		return "Delete"
+	case sarama.AclOperationAlter:
+		return "Alter"
+	case sarama.AclOperationDescribe:
+		return "Describe"
+	case sarama.AclOperationClusterAction:
+		return "ClusterAction"
+	case sarama.AclOperationDescribeConfigs:
+		return "DescribeConfigs"
+	case sarama.AclOperationAlterConfigs:
+		return "AlterConfigs"
+	case sarama.AclOperationIdempotentWrite:
+		return "IdempotentWrite"
+	}
+	return "unknownConversion"
+}
+
 func stringToAclPermissionType(in string) sarama.AclPermissionType {
 	switch in {
 	case "Unknown":
@@ -254,6 +306,61 @@ func stringToAclPermissionType(in string) sarama.AclPermissionType {
 		return sarama.AclPermissionAllow
 	}
 	return unknownConversion
+}
+
+// ACLPermissionTypeToString converts sarama.AclPermissionTypes to Strings
+func ACLPermissionTypeToString(in sarama.AclPermissionType) string {
+	switch in {
+	case sarama.AclPermissionUnknown:
+		return "Unknown"
+	case sarama.AclPermissionAny:
+		return "Any"
+	case sarama.AclPermissionDeny:
+		return "Deny"
+	case sarama.AclPermissionAllow:
+		return "Allow"
+	}
+	return "unknownConversion"
+}
+
+// DescribeACLs get ResourceAcls for a specific resource
+func (c *Client) DescribeACLs(s stringlyTypedACL) ([]*sarama.ResourceAcls, error) {
+	aclFilter, err := tfToAclFilter(s)
+	if err != nil {
+		return nil, err
+	}
+
+	broker, err := c.client.Controller()
+	if err != nil {
+		return nil, err
+	}
+	err = c.client.RefreshMetadata()
+	if err != nil {
+		return nil, err
+	}
+
+	r := &sarama.DescribeAclsRequest{
+		AclFilter: aclFilter,
+	}
+
+	aclsR, err := broker.DescribeAcls(r)
+	if err != nil {
+		return nil, err
+	}
+
+	if err == nil {
+		if aclsR.Err != sarama.ErrNoError {
+			return nil, fmt.Errorf("%s", aclsR.Err)
+		}
+	}
+	res := []*sarama.ResourceAcls{}
+
+	for _, a := range aclsR.ResourceAcls {
+		res = append(res, a)
+	}
+
+	return res, err
+
 }
 
 func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
