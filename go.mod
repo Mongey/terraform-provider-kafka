@@ -11,6 +11,4 @@ require (
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c
 )
 
-replace (
-	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
-)
+replace git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
