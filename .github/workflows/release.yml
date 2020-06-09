@@ -35,6 +35,5 @@ jobs:
           key: ${{ secrets.YOUR_PRIVATE_KEY }}
         env:
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
-        env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
