@@ -12,7 +12,8 @@ testacc:
 	KAFKA_BOOTSTRAP_SERVER=localhost:9092 \
 	KAFKA_CA_CERT=../secrets/snakeoil-ca-1.crt \
 	KAFKA_CLIENT_CERT=../secrets/kafkacat-ca1-signed.pem \
-	KAFKA_CLIENT_KEY=../secrets/kafkacat-raw-private-key.pem \
+	KAFKA_CLIENT_KEY=../secrets/kafkacat-raw-private-key-passphrase.pem \
+	KAFKA_CLIENT_KEY_PASSPHRASE=confluent \
 	KAFKA_SKIP_VERIFY=false \
 	KAFKA_ENABLE_TLS=true \
 	TF_LOG=DEBUG \

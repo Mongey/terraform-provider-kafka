@@ -13,16 +13,17 @@ import (
 )
 
 type Config struct {
-	BootstrapServers *[]string
-	Timeout          int
-	CACert           string
-	ClientCert       string
-	ClientCertKey    string
-	TLSEnabled       bool
-	SkipTLSVerify    bool
-	SASLUsername     string
-	SASLPassword     string
-	SASLMechanism    string
+	BootstrapServers        *[]string
+	Timeout                 int
+	CACert                  string
+	ClientCert              string
+	ClientCertKey           string
+	ClientCertKeyPassphrase string
+	TLSEnabled              bool
+	SkipTLSVerify           bool
+	SASLUsername            string
+	SASLPassword            string
+	SASLMechanism           string
 }
 
 func (c *Config) newKafkaConfig() (*sarama.Config, error) {
@@ -55,7 +56,9 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 		tlsConfig, err := newTLSConfig(
 			c.ClientCert,
 			c.ClientCertKey,
-			c.CACert)
+			c.CACert,
+			c.ClientCertKeyPassphrase,
+		)
 
 		if err != nil {
 			return kafkaConfig, err
@@ -73,28 +76,65 @@ func (c *Config) saslEnabled() bool {
 	return c.SASLUsername != "" || c.SASLPassword != ""
 }
 
-func NewTLSConfig(clientCert, clientKey, caCert string) (*tls.Config, error) {
-	return newTLSConfig(clientCert, clientKey, caCert)
+func NewTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*tls.Config, error) {
+	return newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase)
 }
 
-func newTLSConfig(clientCert, clientKey, caCert string) (*tls.Config, error) {
+func parsePemOrLoadFromFile(input string) (*pem.Block, []byte, error) {
+	// attempt to parse
+	var inputBytes = []byte(input)
+	inputBlock, _ := pem.Decode(inputBytes)
+
+	if inputBlock == nil {
+		//attempt to load from file
+		log.Printf("[INFO] Attempting to load from file")
+		var err error
+		inputBytes, err = ioutil.ReadFile(input)
+		if err != nil {
+			return nil, nil, err
+		}
+		inputBlock, _ = pem.Decode(inputBytes)
+		if inputBlock == nil {
+			return nil, nil, fmt.Errorf("[ERROR] Error unable to decode pem")
+		}
+	}
+	return inputBlock, inputBytes, nil
+}
+
+func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*tls.Config, error) {
 	tlsConfig := tls.Config{}
 
-	// Load client cert
-	if clientCert != "" && clientKey != "" {
-		cert, err := tls.X509KeyPair([]byte(clientCert), []byte(clientKey))
-		if err != nil {
-			// try from file
-			cert, err = tls.LoadX509KeyPair(clientCert, clientKey)
-			if err != nil {
-				log.Printf("[ERROR] Error creating client pair \ncert:\n%s\n key\n%s\n", clientCert, "****")
-				return &tlsConfig, err
-			}
-		}
-		tlsConfig.Certificates = []tls.Certificate{cert}
-	} else {
-		log.Println("[WARN] skipping TLS client config")
+	_, certBytes, err := parsePemOrLoadFromFile(clientCert)
+	if err != nil {
+		log.Printf("[ERROR] Unable to read certificate %s", err)
+		return &tlsConfig, err
 	}
+
+	keyBlock, keyBytes, err := parsePemOrLoadFromFile(clientKey)
+	if err != nil {
+		log.Printf("[ERROR] Unable to read private key %s", err)
+		return &tlsConfig, err
+	}
+
+	if x509.IsEncryptedPEMBlock(keyBlock) {
+		log.Printf("[INFO] Using encrypted private key")
+		var err error
+		keyBytes, err = x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase))
+		if err != nil {
+			log.Printf("[ERROR] Error decrypting private key with passphrase %s", err)
+			return &tlsConfig, err
+		}
+		keyBytes = pem.EncodeToMemory(&pem.Block{
+			Type:  keyBlock.Type,
+			Bytes: keyBytes,
+		})
+	}
+	cert, err := tls.X509KeyPair(certBytes, keyBytes)
+	if err != nil {
+		log.Printf("[ERROR] Error creating X509KeyPair %s", err)
+		return &tlsConfig, err
+	}
+	tlsConfig.Certificates = []tls.Certificate{cert}
 
 	if caCert == "" {
 		log.Println("[WARN] no CA file set skipping")
@@ -105,24 +145,16 @@ func newTLSConfig(clientCert, clientKey, caCert string) (*tls.Config, error) {
 	if caCertPool == nil {
 		caCertPool = x509.NewCertPool()
 	}
-	caPEM, _ := pem.Decode([]byte(caCert))
-	log.Println("[INFO] adding rootybou")
-	if caPEM == nil {
-		log.Println("[WARN] no caPem, checking from file")
-		// try as file
-		caCert, err := ioutil.ReadFile(caCert)
-		if err != nil {
-			log.Println("[ERROR] unable to read CA")
-			return &tlsConfig, err
-		}
-		log.Println("[WARN] Adding pem from file")
-		caCertPool.AppendCertsFromPEM(caCert)
-	} else {
-		ok := caCertPool.AppendCertsFromPEM([]byte(caCert))
-		fmt.Printf("set cert pool %v", ok)
-		if !ok {
-			return &tlsConfig, fmt.Errorf("Couldn't add the caPem")
-		}
+
+	_, caBytes, err := parsePemOrLoadFromFile(caCert)
+	if err != nil {
+		log.Printf("[ERROR] Unable to read CA %s", err)
+		return &tlsConfig, err
+	}
+	ok := caCertPool.AppendCertsFromPEM(caBytes)
+	fmt.Printf("set cert pool %v", ok)
+	if !ok {
+		return &tlsConfig, fmt.Errorf("Couldn't add the caPem")
 	}
 
 	tlsConfig.RootCAs = caCertPool
@@ -136,6 +168,7 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.Timeout,
 		config.CACert,
 		config.ClientCert,
+		"*****",
 		"*****",
 		config.TLSEnabled,
 		config.SkipTLSVerify,
