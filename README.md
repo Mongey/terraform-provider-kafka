@@ -36,28 +36,29 @@ your [terraform plugin directory][third-party-plugins] (typically `~/.terraform.
 
 ### Example
 
-Example provider with SSL client authentication.
+Example provider with TLS client authentication.
 ```hcl
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
   ca_cert           = file("../secrets/snakeoil-ca-1.crt")
   client_cert       = file("../secrets/kafkacat-ca1-signed.pem")
   client_key        = file("../secrets/kafkacat-raw-private-key.pem")
-  skip_tls_verify   = true
+  tls_endabled      = true
 }
 ```
 
-| Property            | Description                                                                                                           | Default    |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------- | ---------- |
-| `bootstrap_servers` | A list of host:port addresses that will be used to discover the full set of alive brokers                             | `Required` |
-| `ca_cert`           | The CA certificate or path to a CA certificate file to validate the server's certificate.                             | `""`       |
-| `client_cert`       | The client certificate or path to a file containing the client certificate -- Use for Client authentication to Kafka. | `""`       |
-| `client_key`        | The private key or path to a file containing the private key that the client certificate was issued for.              | `""`       |
-| `skip_tls_verify`   | Skip TLS verification.                                                                                                | `false`    |
-| `tls_enabled`       | Enable communication with the Kafka Cluster over TLS.                                                                 | `true`    |
-| `sasl_username`     | Username for SASL authentication.                                                                                     | `""`       |
-| `sasl_password`     | Password for SASL authentication.                                                                                     | `""`       |
-| `sasl_mechanism`    | Mechanism for SASL authentication. Allowed values are plain, scram-sha512 and scram-sha256                            | `plain`    |
+| Property                | Description                                                                                                           | Default    |
+| -------------------     | --------------------------------------------------------------------------------------------------------------------- | ---------- |
+| `bootstrap_servers`     | A list of host:port addresses that will be used to discover the full set of alive brokers                             | `Required` |
+| `ca_cert`               | The CA certificate or path to a CA certificate file to validate the server's certificate.                             | `""`       |
+| `client_cert`           | The client certificate or path to a file containing the client certificate -- Use for Client authentication to Kafka. | `""`       |
+| `client_key`            | The private key or path to a file containing the private key that the client certificate was issued for.              | `""`       |
+| `client_key_passphrase` | The passphrase for the private key that the certificate was issued for.                                               | `""`       |
+| `tls_enabled`           | Enable communication with the Kafka Cluster over TLS.                                                                 | `true`     |
+| `skip_tls_verify`       | Skip TLS verification.                                                                                                | `false`    |
+| `sasl_username`         | Username for SASL authentication.                                                                                     | `""`       |
+| `sasl_password`         | Password for SASL authentication.                                                                                     | `""`       |
+| `sasl_mechanism`        | Mechanism for SASL authentication. Allowed values are plain, scram-sha512 and scram-sha256                            | `plain`    |
 
 ## Resources
 ### `kafka_topic`
@@ -91,7 +92,7 @@ resource "kafka_topic" "logs" {
 | `name`               | The name of the topic                          |
 | `partitions`         | The number of partitions the topic should have |
 | `replication_factor` | The number of replicas the topic should have   |
-| `config`             | A map of string k/v attributes - see https://kafka.apache.org/documentation/#topicconfigs |
+| `config`             | A map of string [K/V attributes][topic-config] |
 
 
 #### Importing Existing Topics
@@ -110,10 +111,9 @@ A resource for managing Kafka ACLs.
 ```hcl
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
-  ca_cert      = file("../secrets/snakeoil-ca-1.crt")
-  client_cert  = file("../secrets/kafkacat-ca1-signed.pem")
-  client_key   = file("../secrets/kafkacat-raw-private-key.pem")
-  skip_tls_verify   = true
+  ca_cert           = file("../secrets/snakeoil-ca-1.crt")
+  client_cert       = file("../secrets/kafkacat-ca1-signed.pem")
+  client_key        = file("../secrets/kafkacat-raw-private-key.pem")
 }
 
 resource "kafka_acl" "test" {
@@ -147,3 +147,4 @@ resource "kafka_acl" "test" {
 [3]: https://cwiki.apache.org/confluence/display/KAFKA/KIP-117%3A+Add+a+public+AdminClient+API+for+Kafka+admin+operations
 [third-party-plugins]: https://www.terraform.io/docs/configuration/providers.html#third-party-plugins
 [install-go]: https://golang.org/doc/install#install
+[topic-config]: https://kafka.apache.org/documentation/#topicconfigs 
