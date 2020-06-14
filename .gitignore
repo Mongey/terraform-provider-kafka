@@ -2,3 +2,4 @@
 /examples/*
 terraform-provider-kafka*
 dist
+.vscode/
