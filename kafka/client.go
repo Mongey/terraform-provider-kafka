@@ -55,26 +55,26 @@ func NewClient(config *Config) (*Client, error) {
 		return client, err
 	}
 
-	client.populateAPIVersions()
-	return client, nil
+	err = client.populateAPIVersions()
+	return client, err
 }
 
 func (c *Client) SaramaClient() sarama.Client {
 	return c.client
 }
 
-func (c *Client) populateAPIVersions() {
+func (c *Client) populateAPIVersions() error {
 	log.Printf("[DEBUG] retrieving supported APIs from broker: %s", c.config.BootstrapServers)
 	broker, err := c.client.Controller()
 	if err != nil {
 		log.Printf("[ERROR] Unable to populate supported API versions. Error retrieving controller: %s", err)
-		return
+		return err
 	}
 
 	resp, err := broker.ApiVersions(&sarama.ApiVersionsRequest{})
 	if err != nil {
 		log.Printf("[ERROR] Unable to populate supported API versions. %s", err)
-		return
+		return err
 	}
 
 	m := map[int]int{}
@@ -83,6 +83,8 @@ func (c *Client) populateAPIVersions() {
 		m[int(v.ApiKey)] = int(v.MaxVersion)
 	}
 	c.supportedAPIs = m
+
+	return nil
 }
 
 func (c *Client) DeleteTopic(t string) error {
