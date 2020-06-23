@@ -59,8 +59,8 @@ func testAccPreCheck(t *testing.T) {
 func accProvider() map[string]terraform.ResourceProvider {
 	log.Println("[INFO] Setting up override for a provider")
 	provider := Provider().(*schema.Provider)
-
-	bs := strings.Split(os.Getenv("KAFKA_BOOTSTRAP_SERVER"), ",")
+	log.Println("[INFO] env " + os.Getenv("KAFKA_BOOTSTRAP_SERVERS"))
+	bs := strings.Split(os.Getenv("KAFKA_BOOTSTRAP_SERVERS"), ",")
 	if len(bs) == 0 {
 		bs = []string{"localhost:9092"}
 	}
@@ -76,7 +76,6 @@ func accProvider() map[string]terraform.ResourceProvider {
 	raw := map[string]interface{}{
 		"bootstrap_servers": bootstrapServers,
 	}
-
 	err := provider.Configure(terraform.NewResourceConfigRaw(raw))
 	if err != nil {
 		log.Printf("[ERROR] Could not configure provider %v", err)
