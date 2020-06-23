@@ -14,7 +14,7 @@ func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"bootstrap_servers": {
-				Type:        schema.TypeList,
+				Type:        schema.TypeSet,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 				DefaultFunc: envDefaultListFunc("KAFKA_BOOTSTRAP_SERVERS", nil),
 				Required:    true,
