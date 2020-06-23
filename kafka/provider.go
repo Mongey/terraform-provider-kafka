@@ -3,6 +3,8 @@ package kafka
 import (
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
@@ -14,8 +16,9 @@ func Provider() terraform.ResourceProvider {
 			"bootstrap_servers": {
 				Type:        schema.TypeList,
 				Elem:        &schema.Schema{Type: schema.TypeString},
+				DefaultFunc: envDefaultListFunc("KAFKA_BOOTSTRAP_SERVERS", nil),
 				Required:    true,
-				Description: "A list of kafka brokers",
+				Description: "A list of Kafka brokers",
 			},
 			"ca_cert_file": &schema.Schema{
 				Type:        schema.TypeString,
@@ -114,6 +117,16 @@ func Provider() terraform.ResourceProvider {
 			"kafka_topic": kafkaTopicResource(),
 			"kafka_acl":   kafkaACLResource(),
 		},
+	}
+}
+
+func envDefaultListFunc(k string, dv interface{}) schema.SchemaDefaultFunc {
+	return func() (interface{}, error) {
+		if v := os.Getenv(k); v != "" {
+			return strings.Split(v, ","), nil
+		}
+
+		return dv, nil
 	}
 }
 
