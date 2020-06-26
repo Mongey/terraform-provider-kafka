@@ -357,7 +357,7 @@ resource "kafka_topic" "test" {
   config = {
     "retention.ms" = "11111"
 	"segment.ms" = "33333"
-	"claenup.policy" = "compact"
+	"cleanup.policy" = "compact"
   }
 }
 `
