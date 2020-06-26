@@ -87,7 +87,7 @@ func parsePemOrLoadFromFile(input string) (*pem.Block, []byte, error) {
 
 	if inputBlock == nil {
 		//attempt to load from file
-		log.Printf("[INFO] Attempting to load from file")
+		log.Printf("[INFO] Attempting to load from file '%s'", input)
 		var err error
 		inputBytes, err = ioutil.ReadFile(input)
 		if err != nil {
@@ -104,37 +104,40 @@ func parsePemOrLoadFromFile(input string) (*pem.Block, []byte, error) {
 func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*tls.Config, error) {
 	tlsConfig := tls.Config{}
 
-	_, certBytes, err := parsePemOrLoadFromFile(clientCert)
-	if err != nil {
-		log.Printf("[ERROR] Unable to read certificate %s", err)
-		return &tlsConfig, err
-	}
-
-	keyBlock, keyBytes, err := parsePemOrLoadFromFile(clientKey)
-	if err != nil {
-		log.Printf("[ERROR] Unable to read private key %s", err)
-		return &tlsConfig, err
-	}
-
-	if x509.IsEncryptedPEMBlock(keyBlock) {
-		log.Printf("[INFO] Using encrypted private key")
-		var err error
-		keyBytes, err = x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase))
+	if clientCert != "" && clientKey != "" {
+		_, certBytes, err := parsePemOrLoadFromFile(clientCert)
 		if err != nil {
-			log.Printf("[ERROR] Error decrypting private key with passphrase %s", err)
+			log.Printf("[ERROR] Unable to read certificate %s", err)
 			return &tlsConfig, err
 		}
-		keyBytes = pem.EncodeToMemory(&pem.Block{
-			Type:  keyBlock.Type,
-			Bytes: keyBytes,
-		})
+
+		keyBlock, keyBytes, err := parsePemOrLoadFromFile(clientKey)
+		if err != nil {
+			log.Printf("[ERROR] Unable to read private key %s", err)
+			return &tlsConfig, err
+		}
+
+		if x509.IsEncryptedPEMBlock(keyBlock) {
+			log.Printf("[INFO] Using encrypted private key")
+			var err error
+			keyBytes, err = x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase))
+			if err != nil {
+				log.Printf("[ERROR] Error decrypting private key with passphrase %s", err)
+				return &tlsConfig, err
+			}
+			keyBytes = pem.EncodeToMemory(&pem.Block{
+				Type:  keyBlock.Type,
+				Bytes: keyBytes,
+			})
+		}
+
+		cert, err := tls.X509KeyPair(certBytes, keyBytes)
+		if err != nil {
+			log.Printf("[ERROR] Error creating X509KeyPair %s", err)
+			return &tlsConfig, err
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
-	cert, err := tls.X509KeyPair(certBytes, keyBytes)
-	if err != nil {
-		log.Printf("[ERROR] Error creating X509KeyPair %s", err)
-		return &tlsConfig, err
-	}
-	tlsConfig.Certificates = []tls.Certificate{cert}
 
 	if caCert == "" {
 		log.Println("[WARN] no CA file set skipping")
