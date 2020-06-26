@@ -123,7 +123,15 @@ func Provider() terraform.ResourceProvider {
 func envDefaultListFunc(k string, dv interface{}) schema.SchemaDefaultFunc {
 	return func() (interface{}, error) {
 		if v := os.Getenv(k); v != "" {
-			return strings.Split(v, ","), nil
+			list := strings.Split(v, ",")
+			// Convert back to interface to prevent panic
+			//https://github.com/hashicorp/terraform-plugin-sdk/issues/480
+			res := []interface{}{}
+			for _, s := range list {
+				res = append(res, s)
+				log.Printf("[INFO] envSet %s", s)
+			}
+			return res, nil
 		}
 
 		return dv, nil
@@ -134,9 +142,6 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	brokers := dTos("bootstrap_servers", d)
 
 	log.Printf("[DEBUG] configuring provider with Brokers @ %v", brokers)
-	if brokers == nil {
-		return nil, fmt.Errorf("bootstrap_servers was not set")
-	}
 
 	saslMechanism := d.Get("sasl_mechanism").(string)
 	switch saslMechanism {
