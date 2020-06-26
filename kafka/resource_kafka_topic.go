@@ -26,7 +26,7 @@ func kafkaTopicResource() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-		CustomizeDiff: customPartitionDiff,
+		CustomizeDiff: customDiff,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
@@ -200,7 +200,7 @@ func topicRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func customPartitionDiff(diff *schema.ResourceDiff, v interface{}) error {
+func customDiff(diff *schema.ResourceDiff, v interface{}) error {
 	log.Printf("[INFO] Checking the diff!")
 	if diff.HasChange("partitions") {
 		log.Printf("[INFO] Partitions have changed!")
@@ -212,7 +212,19 @@ func customPartitionDiff(diff *schema.ResourceDiff, v interface{}) error {
 			log.Printf("Partitions decreased from %d to %d. Forcing new resource", oi, ni)
 			diff.ForceNew("partitions")
 		}
-
+	}
+	if diff.HasChange("config") {
+		log.Printf("[INFO] Config has changed!")
+		o, n := diff.GetChange("config")
+		om := o.(map[string]interface{})
+		nm := n.(map[string]interface{})
+		log.Printf("Config changed from %+v to %+v", om, nm)
+		if val, changed := nm["cleanup.policy"]; changed {
+			if val == "compact" {
+				log.Printf("Cleanup policy changed to `compact`. Forcing new resource")
+				diff.ForceNew("config")
+			}
+		}
 	}
 	return nil
 }

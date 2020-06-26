@@ -74,6 +74,56 @@ func TestAccTopicUpdatePartitions(t *testing.T) {
 	})
 }
 
+func TestAccTopicDecreasePartitions(t *testing.T) {
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	topicName := fmt.Sprintf("syslog-%s", u)
+
+	r.Test(t, r.TestCase{
+		Providers: accProvider(),
+		PreCheck:  func() { testAccPreCheck(t) },
+		Steps: []r.TestStep{
+			{
+				Config: fmt.Sprintf(testResourceTopic_initialConfig, topicName),
+				Check:  testResourceTopic_initialCheck,
+			},
+			{
+				Config: fmt.Sprintf(testResourceTopic_updatePartitions, topicName),
+				Check:  testResourceTopic_updatePartitionsCheck,
+			},
+			{
+				Config: fmt.Sprintf(testResourceTopic_initialConfig, topicName),
+				Check:  testResourceTopic_decreasePartitionsCheck,
+			},
+		},
+	})
+}
+
+func TestAccTopicUpdateCleanupPolicy(t *testing.T) {
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	topicName := fmt.Sprintf("syslog-%s", u)
+
+	r.Test(t, r.TestCase{
+		Providers: accProvider(),
+		PreCheck:  func() { testAccPreCheck(t) },
+		Steps: []r.TestStep{
+			{
+				Config: fmt.Sprintf(testResourceTopic_initialConfig, topicName),
+				Check:  testResourceTopic_initialCheck,
+			},
+			{
+				Config: fmt.Sprintf(testResourceTopic_updateCleanupPolicy, topicName),
+				Check:  testResourceTopic_updateCleanupPolicyCheck,
+			},
+		},
+	})
+}
+
 func testResourceTopic_noConfigCheck(s *terraform.State) error {
 	resourceState := s.Modules[0].Resources["kafka_topic.test"]
 	if resourceState == nil {
@@ -187,11 +237,46 @@ func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
 		return err
 	}
 	if topic.Partitions != 2 {
-		return fmt.Errorf("partitions did not get increated got: %d", topic.Partitions)
+		return fmt.Errorf("partitions did not get increased got: %d", topic.Partitions)
 	}
 
 	if v, ok := topic.Config["segment.ms"]; ok && *v != "33333" {
 		return fmt.Errorf("segment.ms !=  %v", topic)
+	}
+	return nil
+}
+
+func testResourceTopic_decreasePartitionsCheck(s *terraform.State) error {
+	resourceState := s.Modules[0].Resources["kafka_topic.test"]
+	instanceState := resourceState.Primary
+	client := testProvider.Meta().(*LazyClient)
+	name := instanceState.ID
+	topic, err := client.ReadTopic(name)
+	if err != nil {
+		return err
+	}
+	if topic.Partitions != 1 {
+		return fmt.Errorf("partitions did not get decreased got: %d", topic.Partitions)
+	}
+
+	if v, ok := topic.Config["segment.ms"]; ok && *v != "22222" {
+		return fmt.Errorf("segment.ms !=  %v", topic)
+	}
+	return nil
+}
+
+func testResourceTopic_updateCleanupPolicyCheck(s *terraform.State) error {
+	resourceState := s.Modules[0].Resources["kafka_topic.test"]
+	instanceState := resourceState.Primary
+	client := testProvider.Meta().(*LazyClient)
+	name := instanceState.ID
+	topic, err := client.ReadTopic(name)
+	if err != nil {
+		return err
+	}
+
+	if v, ok := topic.Config["cleanup.policy"]; ok && *v != "compact" {
+		return fmt.Errorf("cleanup.policy !=  %v", topic)
 	}
 	return nil
 }
@@ -255,6 +340,24 @@ resource "kafka_topic" "test" {
   config = {
     "retention.ms" = "11111"
     "segment.ms" = "33333"
+  }
+}
+`
+
+const testResourceTopic_updateCleanupPolicy = `
+provider "kafka" {
+  bootstrap_servers = ["localhost:9092"]
+}
+
+resource "kafka_topic" "test" {
+  name               = "%s"
+  replication_factor = 1
+  partitions         = 2
+
+  config = {
+    "retention.ms" = "11111"
+	"segment.ms" = "33333"
+	"claenup.policy" = "compact"
   }
 }
 `
