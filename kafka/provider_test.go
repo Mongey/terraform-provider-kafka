@@ -32,7 +32,11 @@ func Test_EnvDefaultListFunc(t *testing.T) {
 			t.Fatalf("err: %s", err)
 		}
 
-		res := f.([]string)
+		res := []string{}
+		for _, v := range f.([]interface{}) {
+			res = append(res, v.(string))
+		}
+
 		if reflect.DeepEqual(res, a.expected) != true {
 			t.Fatalf("got: %s, not: %s", res, a.expected)
 		}

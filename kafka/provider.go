@@ -14,7 +14,7 @@ func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"bootstrap_servers": {
-				Type:        schema.TypeSet,
+				Type:        schema.TypeList,
 				Elem:        &schema.Schema{Type: schema.TypeString},
 				DefaultFunc: envDefaultListFunc("KAFKA_BOOTSTRAP_SERVERS", nil),
 				Required:    true,
@@ -140,7 +140,6 @@ func envDefaultListFunc(k string, dv interface{}) schema.SchemaDefaultFunc {
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	brokers := dTos("bootstrap_servers", d)
-
 	log.Printf("[DEBUG] configuring provider with Brokers @ %v", brokers)
 
 	saslMechanism := d.Get("sasl_mechanism").(string)
