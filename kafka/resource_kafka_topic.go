@@ -203,6 +203,7 @@ func topicRead(d *schema.ResourceData, meta interface{}) error {
 
 func customDiff(diff *schema.ResourceDiff, meta interface{}) error {
 	log.Printf("[INFO] Checking the diff!")
+	log.Printf("[DEBUG] Resource Id = %s", diff.Id())
 	if diff.HasChange("partitions") {
 		log.Printf("[INFO] Partitions have changed!")
 		o, n := diff.GetChange("partitions")
@@ -216,14 +217,16 @@ func customDiff(diff *schema.ResourceDiff, meta interface{}) error {
 	}
 	if diff.HasChange("config") {
 		log.Printf("[INFO] Config has changed!")
-		topic := diffToTopic(diff, meta)
-		client := meta.(*LazyClient)
-		err := client.CheckConfigDiff(topic)
-		if err != nil {
-			if strings.Contains(err.Error(), "create a new topic") {
-				diff.ForceNew("config")
-			} else {
-				return err
+		if diff.Id() != "" {
+			topic := diffToTopic(diff, meta)
+			client := meta.(*LazyClient)
+			err := client.CheckConfigDiff(topic)
+			if err != nil {
+				if strings.Contains(err.Error(), "create a new topic") {
+					diff.ForceNew("config")
+				} else {
+					return err
+				}
 			}
 		}
 	}
