@@ -104,46 +104,52 @@ func parsePemOrLoadFromFile(input string) (*pem.Block, []byte, error) {
 func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*tls.Config, error) {
 	tlsConfig := tls.Config{}
 
-	_, certBytes, err := parsePemOrLoadFromFile(clientCert)
-	if err != nil {
-		log.Printf("[ERROR] Unable to read certificate %s", err)
-		return &tlsConfig, err
-	}
-
-	keyBlock, keyBytes, err := parsePemOrLoadFromFile(clientKey)
-	if err != nil {
-		log.Printf("[ERROR] Unable to read private key %s", err)
-		return &tlsConfig, err
-	}
-
-	if x509.IsEncryptedPEMBlock(keyBlock) {
-		log.Printf("[INFO] Using encrypted private key")
-		var err error
-		keyBytes, err = x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase))
+	if clientCert != "" {
+		_, certBytes, err := parsePemOrLoadFromFile(clientCert)
 		if err != nil {
-			log.Printf("[ERROR] Error decrypting private key with passphrase %s", err)
+			log.Printf("[ERROR] Unable to read certificate %s", err)
 			return &tlsConfig, err
 		}
-		keyBytes = pem.EncodeToMemory(&pem.Block{
-			Type:  keyBlock.Type,
-			Bytes: keyBytes,
-		})
-	}
-	cert, err := tls.X509KeyPair(certBytes, keyBytes)
-	if err != nil {
-		log.Printf("[ERROR] Error creating X509KeyPair %s", err)
-		return &tlsConfig, err
-	}
-	tlsConfig.Certificates = []tls.Certificate{cert}
 
-	if caCert == "" {
-		log.Println("[WARN] no CA file set skipping")
-		return &tlsConfig, nil
-	}
+		keyBlock, keyBytes, err := parsePemOrLoadFromFile(clientKey)
+		if err != nil {
+			log.Printf("[ERROR] Unable to read private key %s", err)
+			return &tlsConfig, err
+		}
 
+		if x509.IsEncryptedPEMBlock(keyBlock) {
+			log.Printf("[INFO] Using encrypted private key")
+			var err error
+			keyBytes, err = x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase))
+			if err != nil {
+				log.Printf("[ERROR] Error decrypting private key with passphrase %s", err)
+				return &tlsConfig, err
+			}
+			keyBytes = pem.EncodeToMemory(&pem.Block{
+				Type:  keyBlock.Type,
+				Bytes: keyBytes,
+			})
+		}
+
+		cert, err := tls.X509KeyPair(certBytes, keyBytes)
+		if err != nil {
+			log.Printf("[ERROR] Error creating X509KeyPair %s", err)
+			return &tlsConfig, err
+		}
+		tlsConfig.Certificates = []tls.Certificate{cert}
+	}
 	caCertPool, _ := x509.SystemCertPool()
 	if caCertPool == nil {
 		caCertPool = x509.NewCertPool()
+	}
+	tlsConfig.RootCAs = caCertPool
+
+	if caCert == "" {
+		log.Println("[WARN] no CA file set skipping")
+		if clientCert != "" {
+			tlsConfig.BuildNameToCertificate()
+		}
+		return &tlsConfig, nil
 	}
 
 	_, caBytes, err := parsePemOrLoadFromFile(caCert)
@@ -156,9 +162,9 @@ func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*t
 	if !ok {
 		return &tlsConfig, fmt.Errorf("Couldn't add the caPem")
 	}
-
-	tlsConfig.RootCAs = caCertPool
-	tlsConfig.BuildNameToCertificate()
+	if clientCert != "" {
+		tlsConfig.BuildNameToCertificate()
+	}
 	return &tlsConfig, nil
 }
 
