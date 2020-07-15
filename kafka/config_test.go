@@ -26,14 +26,14 @@ func Test_newTLSConfig(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "invalid input fails",
+			name: "no special certs",
 			args: args{
 				clientCert:          "",
 				clientKey:           "",
 				caCert:              "",
 				clientKeyPassphrase: "",
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "encrypted key files",
