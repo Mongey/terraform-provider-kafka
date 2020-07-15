@@ -121,9 +121,6 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	brokers := dTos("bootstrap_servers", d)
 
 	log.Printf("[DEBUG] configuring provider with Brokers @ %v", brokers)
-	if brokers == nil {
-		return nil, fmt.Errorf("bootstrap_servers was not set")
-	}
 
 	saslMechanism := d.Get("sasl_mechanism").(string)
 	switch saslMechanism {
