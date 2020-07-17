@@ -8,9 +8,10 @@ import (
 )
 
 type LazyClient struct {
-	once   sync.Once
-	inner  *Client
-	Config *Config
+	once    sync.Once
+	initErr error
+	inner   *Client
+	Config  *Config
 }
 
 func (c *LazyClient) init() error {
@@ -18,10 +19,14 @@ func (c *LazyClient) init() error {
 
 	c.once.Do(func() {
 		c.inner, err = NewClient(c.Config)
+		c.initErr = err
 	})
-
-	log.Printf("[DEBUG] lazy client init %s; config %v", err, c.Config.copyWithMaskedSensitiveValues())
-	return err
+	if c.Config != nil {
+		log.Printf("[DEBUG] lazy client init %s; config, %v", c.initErr, c.Config.copyWithMaskedSensitiveValues())
+	} else {
+		log.Printf("[DEBUG] lazy client init %s", c.initErr)
+	}
+	return c.initErr
 }
 
 func (c *LazyClient) CreateTopic(t Topic) error {
