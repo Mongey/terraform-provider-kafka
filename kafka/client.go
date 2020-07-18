@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -27,7 +26,6 @@ func NewClient(config *Config) (*Client, error) {
 	if config == nil {
 		return nil, errors.New("Cannot create client without kafka config")
 	}
-	sarama.Logger = log.New(os.Stdout, "[TRACE] [Sarama]", log.LstdFlags)
 
 	log.Printf("[INFO] configuring bootstrap_servers %v", config.copyWithMaskedSensitiveValues())
 	bootstrapServers := *(config.BootstrapServers)
