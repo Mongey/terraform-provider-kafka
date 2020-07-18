@@ -229,13 +229,13 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 
 	log.Printf("[INFO] There are %d topics", len(topics))
 	for _, t := range topics {
-		log.Printf("[DEBUG] Reading Topic %s from Kafka", t)
+		log.Printf("[TRACE] [%s] Reading Topicfrom Kafka", t)
 		if name == t {
-			log.Printf("[DEBUG] Found %s from Kafka", t)
+			log.Printf("[DEBUG] Found %s from Kafka", name)
 			p, err := c.Partitions(t)
 			if err == nil {
 				partitionCount := int32(len(p))
-				log.Printf("[DEBUG] %d Partitions Found: %v from Kafka", partitionCount, p)
+				log.Printf("[DEBUG] [%s] %d Partitions Found: %v from Kafka", name, partitionCount, p)
 				topic.Partitions = partitionCount
 
 				r, err := ReplicaCount(c, name, p)
@@ -243,16 +243,16 @@ func (client *Client) ReadTopic(name string) (Topic, error) {
 					return topic, err
 				}
 
-				log.Printf("[DEBUG] ReplicationFactor %d from Kafka", r)
+				log.Printf("[DEBUG] [%s] ReplicationFactor %d from Kafka", name, r)
 				topic.ReplicationFactor = int16(r)
 
 				configToSave, err := client.topicConfig(t)
 				if err != nil {
-					log.Printf("[ERROR] Could not get config for topic %s: %s", t, err)
+					log.Printf("[ERROR] [%s] Could not get config for topic %s", name, err)
 					return topic, err
 				}
 
-				log.Printf("[DEBUG] Config %v from Kafka", strPtrMapToStrMap(configToSave))
+				log.Printf("[TRACE] [%s] Config %v from Kafka", name, strPtrMapToStrMap(configToSave))
 				topic.Config = configToSave
 				return topic, nil
 			}
@@ -300,9 +300,10 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	if len(cr.Resources) > 0 && len(cr.Resources[0].Configs) > 0 {
 		for _, tConf := range cr.Resources[0].Configs {
 			v := tConf.Value
-			log.Printf("[INFO] Topic: %s. %s: %v. Default %v, Source %v, Version %d", topic, tConf.Name, v, tConf.Default, tConf.Source, cr.Version)
+			log.Printf("[TRACE] [%s] %s: %v. Default %v, Source %v, Version %d", topic, tConf.Name, v, tConf.Default, tConf.Source, cr.Version)
+
 			for _, s := range tConf.Synonyms {
-				log.Printf("[INFO] Syonyms: %v", s)
+				log.Printf("[TRACE] Syonyms: %v", s)
 			}
 
 			if isDefault(tConf, int(cr.Version)) {
