@@ -13,6 +13,9 @@ builds:
       - arm64
     goarm:
       - 7
+    ignore:
+      - goos: darwin
+        goarch: '386'
 checksum:
   name_template: '{{ .ProjectName }}_{{ .Version }}_SHA256SUMS'
   algorithm: sha256
