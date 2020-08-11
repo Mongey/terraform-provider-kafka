@@ -3,9 +3,10 @@ builds:
     env:
       - CGO_ENABLED=0
     goos:
-      - darwin
-      - linux
+      - freebsd
       - windows
+      - linux
+      - darwin
     goarch:
       - amd64
       - 386
