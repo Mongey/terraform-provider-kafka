@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"math/rand"
 
 	"github.com/Shopify/sarama"
 )
@@ -206,6 +207,113 @@ func (c *Client) AddPartitions(t Topic) error {
 	}
 
 	return err
+}
+
+func (c *Client) AlterReplicationFactor(t Topic) error {
+	admin, err := sarama.NewClusterAdminFromClient(c.client)
+	if err != nil {
+		return err
+	}
+
+	assignment, err := c.buildAssignment(t)
+	if err != nil {
+		return err
+	}
+
+	return admin.AlterPartitionReassignments(t.Name, *assignment)
+}
+
+func (c *Client) buildAssignment(t Topic) (*[][]int32, error) {
+	partitions, err := c.client.Partitions(t.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	allReplicas := c.allReplicas()
+	newRF := t.ReplicationFactor
+	rand.Seed(time.Now().UnixNano())
+
+	assignment := make([][]int32, len(partitions))
+	for _, p := range partitions {
+		oldReplicas, err := c.client.Replicas(t.Name, p)
+		if err != nil {
+			return &assignment, err
+		}
+
+		oldRF := int16(len(oldReplicas))
+		deltaRF := newRF - oldRF
+		newReplicas, err := buildNewReplicas(allReplicas, &oldReplicas, deltaRF)
+		if err != nil {
+			return &assignment, err
+		}
+
+		assignment[p] = *newReplicas
+	}
+
+	return &assignment, nil
+}
+
+func (c *Client) allReplicas() *[]int32 {
+	brokers := c.client.Brokers()
+	replicas := make([]int32, 0, len(brokers))
+
+	for _, b := range brokers {
+		id := b.ID()
+		if id != -1 {
+			replicas = append(replicas, id)
+		}
+	}
+
+	return &replicas
+}
+
+func buildNewReplicas(allReplicas *[]int32, usedReplicas *[]int32, deltaRF int16) (*[]int32, error)  {
+	usedCount := int16(len(*usedReplicas))
+
+	if deltaRF == 0 {
+		return usedReplicas, nil
+	} else if deltaRF < 0 {
+		end := usedCount + deltaRF
+		if end < 1 {
+			return nil, errors.New("dropping too many replicas")
+		}
+
+		head := (*usedReplicas)[:end]
+		return &head, nil
+	} else {
+		extraCount := int16(len(*allReplicas)) - usedCount
+		if extraCount < deltaRF {
+			return nil, errors.New("not enough brokers")
+		}
+
+		unusedReplicas := *findUnusedReplicas(allReplicas, usedReplicas, extraCount)
+		newReplicas := *usedReplicas
+		for i := int16(0); i < deltaRF; i++ {
+			j := rand.Intn(len(unusedReplicas))
+			newReplicas = append(newReplicas, unusedReplicas[j])
+			unusedReplicas[j] = unusedReplicas[len(unusedReplicas)-1]
+			unusedReplicas = unusedReplicas[:len(unusedReplicas)-1]
+		}
+
+		return &newReplicas, nil
+	}
+}
+
+func findUnusedReplicas(allReplicas *[]int32, usedReplicas *[]int32, extraCount int16) *[]int32 {
+	usedMap := make(map[int32]bool, len(*usedReplicas))
+	for _, r := range *usedReplicas {
+		usedMap[r] = true
+	}
+
+	unusedReplicas := make([]int32, 0, extraCount)
+	for _, r := range *allReplicas {
+		_, exists := usedMap[r]
+		if !exists {
+			unusedReplicas = append(unusedReplicas, r)
+		}
+	}
+
+	return &unusedReplicas
 }
 
 func (client *Client) ReadTopic(name string) (Topic, error) {

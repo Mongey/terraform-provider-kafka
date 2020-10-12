@@ -43,7 +43,7 @@ func kafkaTopicResource() *schema.Resource {
 			"replication_factor": {
 				Type:         schema.TypeInt,
 				Required:     true,
-				ForceNew:     true,
+				ForceNew:     false,
 				Description:  "Number of replicas.",
 				ValidateFunc: positiveValue,
 			},
@@ -87,6 +87,18 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 		log.Printf("[INFO] Updating partitions from %d to %d", oldPartitions, newPartitions)
 		t.Partitions = int32(newPartitions)
 		err = c.AddPartitions(t)
+		if err != nil {
+			return err
+		}
+	}
+
+	if d.HasChange("replication_factor") {
+		oi, ni := d.GetChange("replication_factor")
+		oldRF := oi.(int)
+		newRF := ni.(int)
+		log.Printf("[INFO] Updating replication_factor from %d to %d", oldRF, newRF)
+		t.ReplicationFactor = int16(newRF)
+		err = c.AlterReplicationFactor(t)
 		if err != nil {
 			return err
 		}
