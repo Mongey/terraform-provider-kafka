@@ -67,8 +67,35 @@ func topicCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
+	stateConf := &resource.StateChangeConf{
+		Pending: []string{"Pending"},
+		Target: []string{"Created"},
+		Refresh: topicCreateFunc(c, t),
+		Timeout: time.Duration(c.Config.Timeout) * time.Second,
+		Delay: 1 * time.Second,
+		PollInterval: 2 * time.Second,
+	}
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return fmt.Errorf("error waiting for topic (%s) to be created: %s", t.Name, err)
+	}
+
 	d.SetId(t.Name)
 	return nil
+}
+
+func topicCreateFunc(client *LazyClient, t Topic) resource.StateRefreshFunc {
+	return func() (result interface{}, s string, err error) {
+		topic, err := client.ReadTopic(t.Name)
+		switch e := err.(type) {
+		case TopicMissingError:
+			return topic, "Pending", nil
+		case nil:
+			return topic, "Created", nil
+		default:
+			return topic, "Error", e
+		}
+	}
 }
 
 func topicUpdate(d *schema.ResourceData, meta interface{}) error {

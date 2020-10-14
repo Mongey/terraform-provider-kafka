@@ -38,18 +38,18 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "encrypted key files",
 			args: args{
-				clientCert:          "../secrets/terraform-cert.pem",
-				clientKey:           "../secrets/terraform-with-passphrase.pem",
+				clientCert:          "../secrets/client.pem",
+				clientKey:           "../secrets/client.key",
 				caCert:              "../secrets/ca.crt",
-				clientKeyPassphrase: "confluent",
+				clientKeyPassphrase: "test-pass",
 			},
 			wantErr: false,
 		},
 		{
 			name: "unencrypted key files",
 			args: args{
-				clientCert:          "../secrets/terraform-cert.pem",
-				clientKey:           "../secrets/terraform.pem",
+				clientCert:          "../secrets/client.pem",
+				clientKey:           "../secrets/client-no-password.key",
 				caCert:              "../secrets/ca.crt",
 				clientKeyPassphrase: "",
 			},
@@ -58,8 +58,8 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "unencrypted key files without passphrase",
 			args: args{
-				clientCert:          "../secrets/terraform-cert.pem",
-				clientKey:           "../secrets/terraform.pem",
+				clientCert:          "../secrets/client.pem",
+				clientKey:           "../secrets/client-no-password.key",
 				caCert:              "../secrets/ca.crt",
 				clientKeyPassphrase: "wrong",
 			},
@@ -68,8 +68,8 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "unencrypted key content without passphrase",
 			args: args{
-				clientCert:          loadFile(t, "../secrets/terraform-cert.pem"),
-				clientKey:           loadFile(t, "../secrets/terraform.pem"),
+				clientCert:          loadFile(t, "../secrets/client.pem"),
+				clientKey:           loadFile(t, "../secrets/client-no-password.key"),
 				caCert:              loadFile(t, "../secrets/ca.crt"),
 				clientKeyPassphrase: "",
 			},
@@ -78,28 +78,28 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "encrypted key content with passphrase",
 			args: args{
-				clientCert:          loadFile(t, "../secrets/terraform-cert.pem"),
-				clientKey:           loadFile(t, "../secrets/terraform-with-passphrase.pem"),
+				clientCert:          loadFile(t, "../secrets/client.pem"),
+				clientKey:           loadFile(t, "../secrets/client.key"),
 				caCert:              loadFile(t, "../secrets/ca.crt"),
-				clientKeyPassphrase: "confluent",
+				clientKeyPassphrase: "test-pass",
 			},
 			wantErr: false,
 		},
 		{
 			name: "encrypted key content with passphrase and mixed file/content load",
 			args: args{
-				clientCert:          loadFile(t, "../secrets/terraform-cert.pem"),
-				clientKey:           "../secrets/terraform-with-passphrase.pem",
+				clientCert:          loadFile(t, "../secrets/client.pem"),
+				clientKey:           "../secrets/client.key",
 				caCert:              "../secrets/ca.crt",
-				clientKeyPassphrase: "confluent",
+				clientKeyPassphrase: "test-pass",
 			},
 			wantErr: false,
 		},
 		{
 			name: "encrypted cert content without passphrase and mixed file/content load",
 			args: args{
-				clientCert:          loadFile(t, "../secrets/terraform-cert.pem"),
-				clientKey:           "../secrets/terraform-with-passphrase.pem",
+				clientCert:          loadFile(t, "../secrets/client.pem"),
+				clientKey:           "../secrets/client.key",
 				caCert:              "../secrets/ca.crt",
 				clientKeyPassphrase: "",
 			},

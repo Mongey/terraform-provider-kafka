@@ -1,132 +1,148 @@
-#!/bin/bash
+#! /usr/bin/env bash
 
-set -o nounset \
-  -o errexit \
-  -o verbose
+set -euox pipefail
+IFS=$'\n\t'
 
-echo "Deleting older secrets"
-set +e
-rm ./*.key ./*.jks ./*.pem ./*.srl ./*.req ./*.crt ./*.csr ./*_creds
-set -e
+PASSWORD='test-pass'
+BROKERS=('kafka1' 'kafka2' 'kafka3')
+RSA_SIZE='4096'
 
-PASS=confluent
-
-# Generate CA key
-openssl req \
-  -new \
-  -x509 \
-  -keyout ca.key \
-  -out ca.crt \
-  -days 365 \
-  -subj '/CN=ca1.test.confluent.io/OU=TEST/O=CONFLUENT/L=PaloAlto/S=Ca/C=US' \
-  -passin pass:$PASS \
-  -passout pass:$PASS
-
-# Terraform
-# Private KEY
-openssl genrsa \
-  -des3 \
-  -passout "pass:$PASS" \
-  -out terraform.client.key \
-  1024
-
-# Signing Request
-openssl req \
-  -passin "pass:$PASS" \
-  -passout "pass:$PASS" \
-  -key terraform.client.key \
-  -new \
-  -out terraform.client.req \
-  -subj '/CN=terraform.test.confluent.io/OU=TEST/O=CONFLUENT/L=PaloAlto/S=Ca/C=US'
-
-# Signed Key
-openssl x509 -req \
-  -CA ca.crt \
-  -CAkey ca.key \
-  -in terraform.client.req \
-  -out terraform-cert.pem \
-  -days 9999 \
-  -CAcreateserial \
-  -passin "pass:$PASS"
+CN='localhost'
+OU='Kitchen'
+O='Krusty Krab'
+L='Bikini Bottom'
+ST='Bikini Atoll'
+C='MH'
 
 
-## generate for golang
+make_ca() {
+    local ca="$1"
+    local ca_key="$2"
 
-echo "generating a private key without passphrase"
-openssl rsa \
-  -in terraform.client.key \
-  -passin "pass:$PASS" \
-  -out terraform.pem
+    openssl req -x509 \
+        -newkey "rsa:$RSA_SIZE" \
+        -days '7300' \
+        -passin "pass:$PASSWORD" \
+        -passout "pass:$PASSWORD" \
+        -subj "/C=$C/ST=$ST/L=$L/O=$O/OU=$OU/CN=$CN" \
+        -keyout "$ca_key" \
+        -out "$ca"
+}
 
-echo "generating private key with passphrase"
-openssl rsa \
-  -aes256  \
-  -passout "pass:$PASS" \
-  -passin "pass:$PASS" \
-  -in terraform.client.key \
-  -out terraform-with-passphrase.pem
+make_keystore() {
+    local alias="$1"
+    local keystore="kafka.$alias.keystore.jks"
 
-for i in broker1
-do
-  echo $i
-  # Create keystores
-  keytool -genkey \
-    -noprompt \
-    -alias $i \
-    -dname "CN=localhost, OU=TEST, O=CONFLUENT, L=PaloAlto, S=Ca, C=US" \
-    -keystore kafka.$i.keystore.jks \
-    -keyalg RSA \
-    -ext SAN=dns:localhost \
-    -storepass $PASS \
-    -keypass $PASS
+    keytool -noprompt -genkey \
+            -keystore "$keystore" \
+            -alias "$alias" \
+            -validity '7300' \
+            -storepass "$PASSWORD" \
+            -keypass "$PASSWORD" \
+            -keyalg 'RSA' \
+            -keysize "$RSA_SIZE" \
+            -dname "CN=$CN, OU=$OU, O=$O, L=$L, ST=$ST, C=$C"
 
-  # Create CSR, sign the key and import back into keystore
-  keytool  \
-    -keystore kafka.$i.keystore.jks \
-    -alias $i \
-    -certreq \
-    -file $i.csr \
-    -storepass $PASS \
-    -noprompt \
-    -keypass $PASS
+    echo -n "$keystore"
+}
 
-  openssl x509 \
-    -req \
-    -CA ca.crt  \
-    -CAkey ca.key \
-    -in $i.csr \
-    -out $i-cert.crt \
-    -days 9999 \
-    -CAcreateserial \
-    -passin pass:$PASS
+import_into_store() {
+    local store="$1"
+    local alias="$2"
+    local file="$3"
 
-  keytool \
-    -keystore kafka.$i.keystore.jks \
-    -alias CARoot \
-    -import \
-    -file ca.crt \
-    -storepass $PASS \
-    -noprompt \
-    -keypass $PASS
+    keytool -noprompt -import \
+            -keystore "$store" \
+            -alias "$alias" \
+            -file "$file" \
+            -storepass "$PASSWORD" \
+            -keypass "$PASSWORD"
+}
 
-  keytool -keystore kafka.$i.keystore.jks \
-    -alias $i \
-    -import \
-    -file $i-cert.crt \
-    -storepass $PASS \
-    -noprompt \
-    -keypass $PASS
+export_csr() {
+    local keystore="$1"
+    local alias="$2"
+    local csr="$alias.csr"
 
-  # Create truststore and import the CA cert.
-  keytool -keystore kafka.$i.truststore.jks \
-    -alias CARoot \
-    -import \
-    -noprompt \
-    -file ca.crt \
-    -storepass $PASS \
-    -keypass $PASS
+    keytool -noprompt -certreq \
+            -keystore "$keystore" \
+            -alias "$alias" \
+            -file "$csr" \
+            -storepass "$PASSWORD" \
+            -keypass "$PASSWORD"
 
-  echo $PASS > ${i}_sslkey_creds
-  echo $PASS > ${i}_keystore_creds
-  echo $PASS > ${i}_truststore_creds
+    echo -n "$csr"
+}
+
+make_openssl_cnf() {
+    broker="$1"
+    cnf="$broker.cnf"
+
+    echo "subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = localhost
+DNS.2 = $broker" > "$cnf"
+
+    echo -n "$cnf"
+}
+
+sign_csr() {
+    local csr="$1"
+    local ca="$2"
+    local ca_key="$3"
+    local broker="$4"
+
+    local cnf=$(make_openssl_cnf "$broker")
+    local crt="$broker.crt"
+
+    openssl x509 -req -CAcreateserial \
+            -CA "$ca" \
+            -CAkey "$ca_key" \
+            -in "$csr" \
+            -out "$crt" \
+            -days '7300' \
+            -passin "pass:$PASSWORD" \
+            -extfile "$cnf"
+
+    rm "$cnf"
+    echo -n "$crt"
+}
+
+
+echo "$PASSWORD" > 'password'
+make_ca 'ca.crt' 'ca.key'
+
+import_into_store 'kafka.truststore.jks' 'CARoot' 'ca.crt'
+
+for broker in "${BROKERS[@]}"; do
+    keystore=$(make_keystore "$broker")
+
+    csr=$(export_csr "$keystore" "$broker")
+    crt=$(sign_csr "$csr" 'ca.crt' 'ca.key' "$broker")
+    rm "$csr"
+
+    import_into_store "$keystore" 'CARoot' 'ca.crt'
+    import_into_store "$keystore" "$broker" "$crt"
+    rm "$crt"
 done
+
+openssl genrsa -des3 -passout "pass:$PASSWORD" -out 'client.key' 4096
+openssl rsa -in 'client.key' -out 'client-no-password.key' -passin "pass:$PASSWORD"
+
+openssl req -new \
+        -key 'client.key' \
+        -out 'client.csr' \
+        -subj "/C=$C/ST=$ST/L=$L/O=$O/OU=$OU/CN=$CN" \
+        -passin "pass:$PASSWORD" \
+        -passout "pass:$PASSWORD"
+
+openssl x509 -req -CAcreateserial \
+        -CA 'ca.crt' \
+        -CAkey 'ca.key' \
+        -in 'client.csr' \
+        -out 'client.pem' \
+        -days '7300' \
+        -passin "pass:$PASSWORD"
+
+rm 'client.csr' 'ca.srl'

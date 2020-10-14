@@ -1,0 +1,15 @@
+---
+version: '3.2'
+services:
+  testacc:
+    build: .
+    environment:
+      KAFKA_BOOTSTRAP_SERVER: kafka1:9090,kafka2:9090,kafka3:9090
+    entrypoint:
+      - make
+      - testacc
+    depends_on:
+      - zookeeper
+      - kafka1
+      - kafka2
+      - kafka3

@@ -96,7 +96,7 @@ func fauxMain() error {
 		if err != nil {
 			return err
 		}
-		tlsConf, err := kafka.NewTLSConfig(string(clientCert), string(clientKey), string(caCert), "confluent")
+		tlsConf, err := kafka.NewTLSConfig(string(clientCert), string(clientKey), string(caCert), "test-pass")
 		if err != nil {
 			return err
 		}

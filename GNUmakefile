@@ -9,11 +9,10 @@ test:
 	 go test ./...
 
 testacc:
-	KAFKA_BOOTSTRAP_SERVER=localhost:9092 \
 	KAFKA_CA_CERT=../secrets/ca.crt \
-	KAFKA_CLIENT_CERT=../secrets/terraform-cert.pem \
-	KAFKA_CLIENT_KEY=../secrets/terraform-with-passphrase.pem \
-	KAFKA_CLIENT_KEY_PASSPHRASE=confluent \
+	KAFKA_CLIENT_CERT=../secrets/client.pem \
+	KAFKA_CLIENT_KEY=../secrets/client.key \
+	KAFKA_CLIENT_KEY_PASSPHRASE=test-pass \
 	KAFKA_SKIP_VERIFY=false \
 	KAFKA_ENABLE_TLS=true \
 	TF_LOG=DEBUG \
