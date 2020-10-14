@@ -15,7 +15,25 @@ A [Terraform][1] plugin for managing [Apache Kafka][2].
 
 ## Installation
 
-Download and extract the [latest
+`terraform-provider-kafka` is available on the terraform registry. To install, add
+the below into your `main.tf` and execute `terraform init`
+
+```
+terraform {
+  required_providers {
+    kafka = {
+      source = "Mongey/kafka"
+      version = "0.2.10"
+    }
+  }
+}
+
+provider "kafka" {
+  # Configuration options
+}
+```
+
+Otherwise, install by downloading and extracting the [latest
 release](https://github.com/Mongey/terraform-provider-kafka/releases/latest) to
 your [terraform plugin directory][third-party-plugins] (typically `~/.terraform.d/plugins/`)
 
