@@ -320,6 +320,39 @@ func findUnusedReplicas(allReplicas *[]int32, usedReplicas *[]int32, extraCount 
 	return &unusedReplicas
 }
 
+func (c *Client) IsReplicationFactorUpdating(topic string) (bool, error) {
+	if err := c.client.RefreshMetadata(); err != nil {
+		return false, err
+	}
+
+	partitions, err := c.client.Partitions(topic)
+	if err != nil {
+		return false, err
+	}
+
+	admin, err := sarama.NewClusterAdminFromClient(c.client)
+	if err != nil {
+		return false, err
+	}
+
+	statusMap, err := admin.ListPartitionReassignments(topic, partitions)
+	if err != nil {
+		return false, err
+	}
+
+	for _, status := range statusMap[topic] {
+		if isPartitionRFChanging(status) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func isPartitionRFChanging(status *sarama.PartitionReplicaReassignmentsStatus) bool {
+	return len(status.AddingReplicas) != 0 || len(status.RemovingReplicas) != 0
+}
+
 func (client *Client) ReadTopic(name string) (Topic, error) {
 	c := client.client
 

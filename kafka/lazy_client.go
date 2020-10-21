@@ -105,6 +105,14 @@ func (c *LazyClient) AlterReplicationFactor(t Topic) error {
 	return c.inner.AlterReplicationFactor(t)
 }
 
+func (c *LazyClient) IsReplicationFactorUpdating(topic string) (bool, error) {
+	err := c.init()
+	if err != nil {
+		return false, err
+	}
+	return c.inner.IsReplicationFactorUpdating(topic)
+}
+
 func (c *LazyClient) CreateACL(s StringlyTypedACL) error {
 	err := c.init()
 	if err != nil {

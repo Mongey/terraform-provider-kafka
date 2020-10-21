@@ -158,6 +158,13 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 func topicRefreshFunc(client *LazyClient, topic string, expected Topic) resource.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
 		log.Printf("[DEBUG] waiting for topic to update %s", topic)
+		isRFUpdating, err := client.IsReplicationFactorUpdating(topic)
+		if err != nil {
+			return nil, "Error", err
+		} else if isRFUpdating {
+			return nil, "Updating", nil
+		}
+
 		actual, err := client.ReadTopic(topic)
 		if err != nil {
 			log.Printf("[ERROR] could not read topic %s, %s", topic, err)
