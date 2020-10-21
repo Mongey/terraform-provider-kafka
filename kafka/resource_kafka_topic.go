@@ -106,6 +106,20 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	// update replica count of existing partitions before adding new ones
+	if d.HasChange("replication_factor") {
+		oi, ni := d.GetChange("replication_factor")
+		oldRF := oi.(int)
+		newRF := ni.(int)
+		log.Printf("[INFO] Updating replication_factor from %d to %d", oldRF, newRF)
+		t.ReplicationFactor = int16(newRF)
+		err = c.AlterReplicationFactor(t)
+		if err != nil {
+			return err
+		}
+	}
+
 	if d.HasChange("partitions") {
 		// update should only be called when we're increasing partitions
 		oi, ni := d.GetChange("partitions")
@@ -114,18 +128,6 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 		log.Printf("[INFO] Updating partitions from %d to %d", oldPartitions, newPartitions)
 		t.Partitions = int32(newPartitions)
 		err = c.AddPartitions(t)
-		if err != nil {
-			return err
-		}
-	}
-
-	if d.HasChange("replication_factor") {
-		oi, ni := d.GetChange("replication_factor")
-		oldRF := oi.(int)
-		newRF := ni.(int)
-		log.Printf("[INFO] Updating replication_factor from %d to %d", oldRF, newRF)
-		t.ReplicationFactor = int16(newRF)
-		err = c.AlterReplicationFactor(t)
 		if err != nil {
 			return err
 		}

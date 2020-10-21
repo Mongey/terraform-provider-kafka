@@ -210,6 +210,10 @@ func (c *Client) AddPartitions(t Topic) error {
 }
 
 func (c *Client) AlterReplicationFactor(t Topic) error {
+	if err := c.client.RefreshMetadata(); err != nil {
+		return err
+	}
+
 	admin, err := sarama.NewClusterAdminFromClient(c.client)
 	if err != nil {
 		return err
