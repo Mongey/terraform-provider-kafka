@@ -102,8 +102,7 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 	c := meta.(*LazyClient)
 	t := metaToTopic(d, meta)
 
-	err := c.UpdateTopic(t)
-	if err != nil {
+	if err := c.UpdateTopic(t); err != nil {
 		return err
 	}
 
@@ -114,8 +113,12 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 		newRF := ni.(int)
 		log.Printf("[INFO] Updating replication_factor from %d to %d", oldRF, newRF)
 		t.ReplicationFactor = int16(newRF)
-		err = c.AlterReplicationFactor(t)
-		if err != nil {
+
+		if err := c.AlterReplicationFactor(t); err != nil {
+			return err
+		}
+
+		if err := waitForRFUpdate(c, d.Id()); err != nil {
 			return err
 		}
 	}
@@ -127,44 +130,75 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 		newPartitions := ni.(int)
 		log.Printf("[INFO] Updating partitions from %d to %d", oldPartitions, newPartitions)
 		t.Partitions = int32(newPartitions)
-		err = c.AddPartitions(t)
-		if err != nil {
+
+		if err := c.AddPartitions(t); err != nil {
 			return err
 		}
 	}
 
-	timeout := time.Duration(c.Config.Timeout) * time.Second
+	if err := waitForTopicRefresh(c, d.Id(), t); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func waitForRFUpdate(client *LazyClient, topic string) error {
+	refresh := func() (interface{}, string, error) {
+		isRFUpdating, err := client.IsReplicationFactorUpdating(topic)
+		if err != nil {
+			return nil, "Error", err
+		} else if isRFUpdating {
+			return nil, "Updating", nil
+		} else {
+			return "not-nil", "Ready", nil
+		}
+	}
+
+	timeout := time.Duration(client.Config.Timeout) * time.Second
 	stateConf := &resource.StateChangeConf{
 		Pending:      []string{"Updating"},
 		Target:       []string{"Ready"},
-		Refresh:      topicRefreshFunc(c, d.Id(), t),
+		Refresh:      refresh,
 		Timeout:      timeout,
 		Delay:        1 * time.Second,
 		PollInterval: 1 * time.Second,
 		MinTimeout:   2 * time.Second,
 	}
 
-	_, err = stateConf.WaitForState()
-
-	if err != nil {
+	if _, err := stateConf.WaitForState(); err != nil {
 		return fmt.Errorf(
-			"Error waiting for topic (%s) to become ready: %s",
-			d.Id(), err)
+			"Error waiting for topic (%s) replication_factor to update: %s",
+			topic, err)
 	}
 
-	return err
+	return nil
+}
+
+func waitForTopicRefresh(client *LazyClient, topic string, expected Topic) error {
+	timeout := time.Duration(client.Config.Timeout) * time.Second
+	stateConf := &resource.StateChangeConf{
+		Pending:      []string{"Updating"},
+		Target:       []string{"Ready"},
+		Refresh:      topicRefreshFunc(client, topic, expected),
+		Timeout:      timeout,
+		Delay:        1 * time.Second,
+		PollInterval: 1 * time.Second,
+		MinTimeout:   2 * time.Second,
+	}
+
+	if _, err := stateConf.WaitForState(); err != nil {
+		return fmt.Errorf(
+			"Error waiting for topic (%s) to become ready: %s",
+			topic, err)
+	}
+
+	return nil
 }
 
 func topicRefreshFunc(client *LazyClient, topic string, expected Topic) resource.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
 		log.Printf("[DEBUG] waiting for topic to update %s", topic)
-		isRFUpdating, err := client.IsReplicationFactorUpdating(topic)
-		if err != nil {
-			return nil, "Error", err
-		} else if isRFUpdating {
-			return nil, "Updating", nil
-		}
-
 		actual, err := client.ReadTopic(topic)
 		if err != nil {
 			log.Printf("[ERROR] could not read topic %s, %s", topic, err)
