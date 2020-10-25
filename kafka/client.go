@@ -66,27 +66,86 @@ func (c *Client) SaramaClient() sarama.Client {
 }
 
 func (c *Client) populateAPIVersions() error {
-	log.Printf("[DEBUG] retrieving supported APIs from broker: %s", c.config.BootstrapServers)
-	broker, err := c.client.Controller()
-	if err != nil {
-		log.Printf("[ERROR] Unable to populate supported API versions. Error retrieving controller: %s", err)
-		return err
+	clusterApiVersions := make(map[int][2]int) // valid api version intervals across all brokers
+	for _, broker := range c.client.Brokers() {
+		brokerApiVersions, err := c.apiVersionsFromBroker(broker)
+		if err != nil {
+			return err
+		}
+
+		updateClusterApiVersions(&clusterApiVersions, brokerApiVersions)
 	}
+
+	c.supportedAPIs = make(map[int]int, len(clusterApiVersions))
+	for apiKey, versionMinMax := range clusterApiVersions {
+		versionMin := versionMinMax[0]
+		versionMax := versionMinMax[1]
+
+		if versionMax >= versionMin {
+			c.supportedAPIs[apiKey] = versionMax
+		}
+
+		// versionMax will be less than versionMin only when
+		// two or more brokers have disjoint version
+		// intervals...which means the api is not supported
+		// cluster-wide
+	}
+
+	return nil
+}
+
+func (c *Client) apiVersionsFromBroker(broker *sarama.Broker) ([]*sarama.ApiVersionsResponseBlock, error) {
+	if err := broker.Open(c.kafkaConfig); err != nil && err != sarama.ErrAlreadyConnected {
+		return nil, err
+	}
+
+	defer func() {
+		if err := broker.Close(); err != nil && err != sarama.ErrNotConnected {
+			log.Fatal(err)
+		}
+	}()
 
 	resp, err := broker.ApiVersions(&sarama.ApiVersionsRequest{})
 	if err != nil {
-		log.Printf("[ERROR] Unable to populate supported API versions. %s", err)
-		return err
+		return nil, err
 	}
 
-	m := map[int]int{}
-	for _, v := range resp.ApiVersions {
-		log.Printf("[TRACE] API key %d. Min %d, Max %d", v.ApiKey, v.MinVersion, v.MaxVersion)
-		m[int(v.ApiKey)] = int(v.MaxVersion)
+	if resp.Err != sarama.ErrNoError {
+		return nil, errors.New(resp.Err.Error())
 	}
-	c.supportedAPIs = m
 
-	return nil
+	return resp.ApiVersions, nil
+}
+
+func updateClusterApiVersions(clusterApiVersions *map[int][2]int, brokerApiVersions []*sarama.ApiVersionsResponseBlock) {
+	cluster := *clusterApiVersions
+
+	for _, apiBlock := range brokerApiVersions {
+		apiKey := int(apiBlock.ApiKey)
+		brokerMin := int(apiBlock.MinVersion)
+		brokerMax := int(apiBlock.MaxVersion)
+
+		clusterMinMax, exists := cluster[apiKey]
+		if !exists {
+			cluster[apiKey] = [2]int{brokerMin, brokerMax}
+		} else {
+			// shrink the cluster interval according to
+			// the broker interval
+
+			clusterMin := clusterMinMax[0]
+			clusterMax := clusterMinMax[1]
+
+			if brokerMin > clusterMin {
+				clusterMinMax[0] = brokerMin
+			}
+
+			if brokerMax < clusterMax {
+				clusterMinMax[1] = brokerMax
+			}
+
+			cluster[apiKey] = clusterMinMax
+		}
+	}
 }
 
 func (c *Client) DeleteTopic(t string) error {
@@ -207,6 +266,13 @@ func (c *Client) AddPartitions(t Topic) error {
 	}
 
 	return err
+}
+
+func (c *Client) CanAlterReplicationFactor() bool {
+	_, ok1 := c.supportedAPIs[45] // https://kafka.apache.org/protocol#The_Messages_AlterPartitionReassignments
+	_, ok2 := c.supportedAPIs[46] // https://kafka.apache.org/protocol#The_Messages_ListPartitionReassignments
+
+	return ok1 && ok2
 }
 
 func (c *Client) AlterReplicationFactor(t Topic) error {

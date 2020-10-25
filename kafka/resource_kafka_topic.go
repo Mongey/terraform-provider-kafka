@@ -26,7 +26,7 @@ func kafkaTopicResource() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
-		CustomizeDiff: customPartitionDiff,
+		CustomizeDiff: customDiff,
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
@@ -283,8 +283,10 @@ func topicRead(d *schema.ResourceData, meta interface{}) error {
 	return errSet.err
 }
 
-func customPartitionDiff(diff *schema.ResourceDiff, v interface{}) (err error) {
+func customDiff(diff *schema.ResourceDiff, v interface{}) error {
 	log.Printf("[INFO] Checking the diff!")
+	client := v.(*LazyClient)
+
 	if diff.HasChange("partitions") {
 		log.Printf("[INFO] Partitions have changed!")
 		o, n := diff.GetChange("partitions")
@@ -293,9 +295,25 @@ func customPartitionDiff(diff *schema.ResourceDiff, v interface{}) (err error) {
 		log.Printf("Partitions is changing from %d to %d", oi, ni)
 		if ni < oi {
 			log.Printf("Partitions decreased from %d to %d. Forcing new resource", oi, ni)
-			err = diff.ForceNew("partitions")
+			if err := diff.ForceNew("partitions"); err != nil {
+				return err
+			}
+		}
+	}
+
+	if diff.HasChange("replication_factor") {
+		canAlterRF, err := client.CanAlterReplicationFactor()
+		if err != nil {
+			return err
 		}
 
+		if !canAlterRF {
+			log.Println("[INFO] Need kafka >= 2.4.0 to update replication_factor in-place")
+			if err := diff.ForceNew("replication_factor"); err != nil {
+				return err
+			}
+		}
 	}
-	return err
+
+	return nil
 }
