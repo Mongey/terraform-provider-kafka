@@ -1,9 +1,10 @@
 package kafka
 
 import (
-	"log"
-
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"log"
+	"strings"
 )
 
 func kafkaACLResource() *schema.Resource {
@@ -12,7 +13,7 @@ func kafkaACLResource() *schema.Resource {
 		Read:   aclRead,
 		Delete: aclDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			State: ImportACL,
 		},
 		SchemaVersion: 1,
 		MigrateState:  migrateKafkaAclState,
@@ -142,6 +143,24 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 		d.SetId("")
 	}
 	return nil
+}
+
+func ImportACL(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	parts := strings.Split(d.Id(), "|")
+	if len(parts) == 7 {
+		// This is used mainly for imports.
+		d.Set("acl_principal", parts[0])
+		d.Set("acl_host", parts[1])
+		d.Set("acl_operation", parts[2])
+		d.Set("acl_permission_type", parts[3])
+		d.Set("resource_type", parts[4])
+		d.Set("resource_name", parts[5])
+		d.Set("resource_pattern_type_filter", parts[6])
+	} else {
+		return nil, fmt.Errorf("Failed importing resource; expected format is acl_principal|acl_host|acl_operation|acl_permission_type|resource_type|resource_name|resource_pattern_type_filter - got %v segments instead of 7", len(parts))
+	}
+
+	return []*schema.ResourceData{d}, nil
 }
 
 func aclInfo(d *schema.ResourceData) StringlyTypedACL {
