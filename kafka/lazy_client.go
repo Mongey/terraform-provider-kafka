@@ -1,6 +1,9 @@
 package kafka
 
 import (
+	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 	"log"
 	"sync"
 
@@ -26,7 +29,36 @@ func (c *LazyClient) init() error {
 	} else {
 		log.Printf("[DEBUG] lazy client init %s", c.initErr)
 	}
+	if c.initErr == sarama.ErrBrokerNotAvailable || c.initErr == sarama.ErrOutOfBrokers {
+		if c.Config.TLSEnabled {
+			tlsError := c.checkTLSConfig()
+			if tlsError != nil {
+				return tlsError
+			}
+		}
+	}
+
 	return c.initErr
+}
+func (c *LazyClient) checkTLSConfig() error {
+	kafkaConfig, err := c.Config.newKafkaConfig()
+	if err != nil {
+		return err
+	}
+
+	brokers := *(c.Config.BootstrapServers)
+	broker := brokers[0]
+	tlsConf := kafkaConfig.Net.TLS.Config
+	conn, err := tls.Dial("tcp", broker, tlsConf)
+
+	if serr, ok := err.(x509.CertificateInvalidError); ok {
+		fmt.Printf("2rrrroorr %v, %d\n", serr.Cert.PermittedDNSDomains, serr.Reason)
+	}
+	if err != nil {
+		return err
+	}
+	err = conn.Handshake()
+	return err
 }
 
 func (c *LazyClient) CreateTopic(t Topic) error {
