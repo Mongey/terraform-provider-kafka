@@ -1,9 +1,9 @@
 package kafka
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"log"
-	"strings"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func kafkaACLResource() *schema.Resource {
@@ -145,17 +145,17 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 }
 
 func aclInfo(d *schema.ResourceData) StringlyTypedACL {
-	parts := strings.Split(d.Id(), "|")
-	if len(parts) == 7 {
-		// This is used mainly for imports.
-		d.Set("acl_principal", parts[0])
-		d.Set("acl_host", parts[1])
-		d.Set("acl_operation", parts[2])
-		d.Set("acl_permission_type", parts[3])
-		d.Set("resource_type", parts[4])
-		d.Set("resource_name", parts[5])
-		d.Set("resource_pattern_type_filter", parts[6])
-	}
+	//parts := strings.Split(d.Id(), "|")
+	//if len(parts) == 7 {
+	//This is used mainly for imports.
+	//d.Set("acl_principal", parts[0])
+	//d.Set("acl_host", parts[1])
+	//d.Set("acl_operation", parts[2])
+	//d.Set("acl_permission_type", parts[3])
+	//d.Set("resource_type", parts[4])
+	//d.Set("resource_name", parts[5])
+	//d.Set("resource_pattern_type_filter", parts[6])
+	//}
 
 	s := StringlyTypedACL{
 		ACL: ACL{
