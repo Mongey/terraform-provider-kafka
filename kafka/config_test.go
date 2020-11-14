@@ -38,9 +38,9 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "encrypted key files",
 			args: args{
-				clientCert:          "../secrets/terraform-ca1-signed.pem",
-				clientKey:           "../secrets/terraform-raw-private-key-passphrase.pem",
-				caCert:              "../secrets/snakeoil-ca-1.crt",
+				clientCert:          "../secrets/terraform-cert.pem",
+				clientKey:           "../secrets/terraform-with-passphrase.pem",
+				caCert:              "../secrets/ca.crt",
 				clientKeyPassphrase: "confluent",
 			},
 			wantErr: false,
@@ -48,9 +48,9 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "unencrypted key files",
 			args: args{
-				clientCert:          "../secrets/terraform-ca1-signed.pem",
-				clientKey:           "../secrets/terraform-raw-private-key.pem",
-				caCert:              "../secrets/snakeoil-ca-1.crt",
+				clientCert:          "../secrets/terraform-cert.pem",
+				clientKey:           "../secrets/terraform.pem",
+				caCert:              "../secrets/ca.crt",
 				clientKeyPassphrase: "",
 			},
 			wantErr: false,
@@ -58,9 +58,9 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "unencrypted key files without passphrase",
 			args: args{
-				clientCert:          "../secrets/terraform-ca1-signed.pem",
-				clientKey:           "../secrets/terraform-raw-private-key.pem",
-				caCert:              "../secrets/snakeoil-ca-1.crt",
+				clientCert:          "../secrets/terraform-cert.pem",
+				clientKey:           "../secrets/terraform.pem",
+				caCert:              "../secrets/ca.crt",
 				clientKeyPassphrase: "wrong",
 			},
 			wantErr: false,
@@ -68,9 +68,9 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "unencrypted key content without passphrase",
 			args: args{
-				clientCert:          loadFile(t, "../secrets/terraform-ca1-signed.pem"),
-				clientKey:           loadFile(t, "../secrets/terraform-raw-private-key.pem"),
-				caCert:              loadFile(t, "../secrets/snakeoil-ca-1.crt"),
+				clientCert:          loadFile(t, "../secrets/terraform-cert.pem"),
+				clientKey:           loadFile(t, "../secrets/terraform.pem"),
+				caCert:              loadFile(t, "../secrets/ca.crt"),
 				clientKeyPassphrase: "",
 			},
 			wantErr: false,
@@ -78,9 +78,9 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "encrypted key content with passphrase",
 			args: args{
-				clientCert:          loadFile(t, "../secrets/terraform-ca1-signed.pem"),
-				clientKey:           loadFile(t, "../secrets/terraform-raw-private-key-passphrase.pem"),
-				caCert:              loadFile(t, "../secrets/snakeoil-ca-1.crt"),
+				clientCert:          loadFile(t, "../secrets/terraform-cert.pem"),
+				clientKey:           loadFile(t, "../secrets/terraform-with-passphrase.pem"),
+				caCert:              loadFile(t, "../secrets/ca.crt"),
 				clientKeyPassphrase: "confluent",
 			},
 			wantErr: false,
@@ -88,9 +88,9 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "encrypted key content with passphrase and mixed file/content load",
 			args: args{
-				clientCert:          loadFile(t, "../secrets/terraform-ca1-signed.pem"),
-				clientKey:           "../secrets/terraform-raw-private-key-passphrase.pem",
-				caCert:              "../secrets/snakeoil-ca-1.crt",
+				clientCert:          loadFile(t, "../secrets/terraform-cert.pem"),
+				clientKey:           "../secrets/terraform-with-passphrase.pem",
+				caCert:              "../secrets/ca.crt",
 				clientKeyPassphrase: "confluent",
 			},
 			wantErr: false,
@@ -98,9 +98,9 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "encrypted cert content without passphrase and mixed file/content load",
 			args: args{
-				clientCert:          loadFile(t, "../secrets/terraform-ca1-signed.pem"),
-				clientKey:           "../secrets/terraform-raw-private-key-passphrase.pem",
-				caCert:              "../secrets/snakeoil-ca-1.crt",
+				clientCert:          loadFile(t, "../secrets/terraform-cert.pem"),
+				clientKey:           "../secrets/terraform-with-passphrase.pem",
+				caCert:              "../secrets/ca.crt",
 				clientKeyPassphrase: "",
 			},
 			wantErr: true,

@@ -15,8 +15,8 @@ PASS=confluent
 openssl req \
   -new \
   -x509 \
-  -keyout snakeoil-ca-1.key \
-  -out snakeoil-ca-1.crt \
+  -keyout ca.key \
+  -out ca.crt \
   -days 365 \
   -subj '/CN=ca1.test.confluent.io/OU=TEST/O=CONFLUENT/L=PaloAlto/S=Ca/C=US' \
   -passin pass:$PASS \
@@ -41,10 +41,10 @@ openssl req \
 
 # Signed Key
 openssl x509 -req \
-  -CA snakeoil-ca-1.crt \
-  -CAkey snakeoil-ca-1.key \
+  -CA ca.crt \
+  -CAkey ca.key \
   -in terraform.client.req \
-  -out terraform-ca1-signed.pem \
+  -out terraform-cert.pem \
   -days 9999 \
   -CAcreateserial \
   -passin "pass:$PASS"
@@ -56,7 +56,7 @@ echo "generating a private key without passphrase"
 openssl rsa \
   -in terraform.client.key \
   -passin "pass:$PASS" \
-  -out terraform-raw-private-key.pem
+  -out terraform.pem
 
 echo "generating private key with passphrase"
 openssl rsa \
@@ -64,7 +64,7 @@ openssl rsa \
   -passout "pass:$PASS" \
   -passin "pass:$PASS" \
   -in terraform.client.key \
-  -out terraform-raw-private-key-passphrase.pem
+  -out terraform-with-passphrase.pem
 
 for i in broker1
 do
@@ -92,10 +92,10 @@ do
 
   openssl x509 \
     -req \
-    -CA snakeoil-ca-1.crt  \
-    -CAkey snakeoil-ca-1.key \
+    -CA ca.crt  \
+    -CAkey ca.key \
     -in $i.csr \
-    -out $i-ca1-signed.crt \
+    -out $i-cert.crt \
     -days 9999 \
     -CAcreateserial \
     -passin pass:$PASS
@@ -104,7 +104,7 @@ do
     -keystore kafka.$i.keystore.jks \
     -alias CARoot \
     -import \
-    -file snakeoil-ca-1.crt \
+    -file ca.crt \
     -storepass $PASS \
     -noprompt \
     -keypass $PASS
@@ -112,7 +112,7 @@ do
   keytool -keystore kafka.$i.keystore.jks \
     -alias $i \
     -import \
-    -file $i-ca1-signed.crt \
+    -file $i-cert.crt \
     -storepass $PASS \
     -noprompt \
     -keypass $PASS
@@ -122,7 +122,7 @@ do
     -alias CARoot \
     -import \
     -noprompt \
-    -file snakeoil-ca-1.crt \
+    -file ca.crt \
     -storepass $PASS \
     -keypass $PASS
 
