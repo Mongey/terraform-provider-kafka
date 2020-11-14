@@ -51,11 +51,13 @@ openssl x509 -req \
 echo "generating a private key without passphrase"
 openssl rsa \
   -in kafkacat.client.key \
+  -passin "pass:$PASS" \
   -out kafkacat-raw-private-key.pem
 
 echo "generating private key with passphrase"
-openssl rsa
+openssl rsa \
   -aes256  \
+  -passout "pass:$PASS" \
   -passin "pass:$PASS" \
   -in kafkacat.client.key \
   -out kafkacat-raw-private-key-passphrase.pem
@@ -64,7 +66,8 @@ for i in broker1
 do
   echo $i
   # Create keystores
-  keytool -genkey -noprompt \
+  keytool -genkey \
+    -noprompt \
     -alias $i \
     -dname "CN=localhost, OU=TEST, O=CONFLUENT, L=PaloAlto, S=Ca, C=US" \
     -keystore kafka.$i.keystore.jks \
@@ -80,6 +83,7 @@ do
     -certreq \
     -file $i.csr \
     -storepass $PASS \
+    -noprompt \
     -keypass $PASS
 
   openssl x509 \
@@ -98,6 +102,7 @@ do
     -import \
     -file snakeoil-ca-1.crt \
     -storepass $PASS \
+    -noprompt \
     -keypass $PASS
 
   keytool -keystore kafka.$i.keystore.jks \
@@ -105,12 +110,14 @@ do
     -import \
     -file $i-ca1-signed.crt \
     -storepass $PASS \
+    -noprompt \
     -keypass $PASS
 
   # Create truststore and import the CA cert.
   keytool -keystore kafka.$i.truststore.jks \
     -alias CARoot \
     -import \
+    -noprompt \
     -file snakeoil-ca-1.crt \
     -storepass $PASS \
     -keypass $PASS
