@@ -38,8 +38,8 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "encrypted key files",
 			args: args{
-				clientCert:          "../secrets/kafkacat-ca1-signed.pem",
-				clientKey:           "../secrets/kafkacat-raw-private-key-passphrase.pem",
+				clientCert:          "../secrets/terraform-ca1-signed.pem",
+				clientKey:           "../secrets/terraform-raw-private-key-passphrase.pem",
 				caCert:              "../secrets/snakeoil-ca-1.crt",
 				clientKeyPassphrase: "confluent",
 			},
@@ -48,8 +48,8 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "unencrypted key files",
 			args: args{
-				clientCert:          "../secrets/kafkacat-ca1-signed.pem",
-				clientKey:           "../secrets/kafkacat-raw-private-key.pem",
+				clientCert:          "../secrets/terraform-ca1-signed.pem",
+				clientKey:           "../secrets/terraform-raw-private-key.pem",
 				caCert:              "../secrets/snakeoil-ca-1.crt",
 				clientKeyPassphrase: "",
 			},
@@ -58,8 +58,8 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "unencrypted key files without passphrase",
 			args: args{
-				clientCert:          "../secrets/kafkacat-ca1-signed.pem",
-				clientKey:           "../secrets/kafkacat-raw-private-key.pem",
+				clientCert:          "../secrets/terraform-ca1-signed.pem",
+				clientKey:           "../secrets/terraform-raw-private-key.pem",
 				caCert:              "../secrets/snakeoil-ca-1.crt",
 				clientKeyPassphrase: "wrong",
 			},
@@ -68,8 +68,8 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "unencrypted key content without passphrase",
 			args: args{
-				clientCert:          loadFile(t, "../secrets/kafkacat-ca1-signed.pem"),
-				clientKey:           loadFile(t, "../secrets/kafkacat-raw-private-key.pem"),
+				clientCert:          loadFile(t, "../secrets/terraform-ca1-signed.pem"),
+				clientKey:           loadFile(t, "../secrets/terraform-raw-private-key.pem"),
 				caCert:              loadFile(t, "../secrets/snakeoil-ca-1.crt"),
 				clientKeyPassphrase: "",
 			},
@@ -78,8 +78,8 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "encrypted key content with passphrase",
 			args: args{
-				clientCert:          loadFile(t, "../secrets/kafkacat-ca1-signed.pem"),
-				clientKey:           loadFile(t, "../secrets/kafkacat-raw-private-key-passphrase.pem"),
+				clientCert:          loadFile(t, "../secrets/terraform-ca1-signed.pem"),
+				clientKey:           loadFile(t, "../secrets/terraform-raw-private-key-passphrase.pem"),
 				caCert:              loadFile(t, "../secrets/snakeoil-ca-1.crt"),
 				clientKeyPassphrase: "confluent",
 			},
@@ -88,8 +88,8 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "encrypted key content with passphrase and mixed file/content load",
 			args: args{
-				clientCert:          loadFile(t, "../secrets/kafkacat-ca1-signed.pem"),
-				clientKey:           "../secrets/kafkacat-raw-private-key-passphrase.pem",
+				clientCert:          loadFile(t, "../secrets/terraform-ca1-signed.pem"),
+				clientKey:           "../secrets/terraform-raw-private-key-passphrase.pem",
 				caCert:              "../secrets/snakeoil-ca-1.crt",
 				clientKeyPassphrase: "confluent",
 			},
@@ -98,8 +98,8 @@ func Test_newTLSConfig(t *testing.T) {
 		{
 			name: "encrypted cert content without passphrase and mixed file/content load",
 			args: args{
-				clientCert:          loadFile(t, "../secrets/kafkacat-ca1-signed.pem"),
-				clientKey:           "../secrets/kafkacat-raw-private-key-passphrase.pem",
+				clientCert:          loadFile(t, "../secrets/terraform-ca1-signed.pem"),
+				clientKey:           "../secrets/terraform-raw-private-key-passphrase.pem",
 				caCert:              "../secrets/snakeoil-ca-1.crt",
 				clientKeyPassphrase: "",
 			},

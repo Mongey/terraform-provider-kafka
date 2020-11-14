@@ -59,8 +59,8 @@ Example provider with TLS client authentication.
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
   ca_cert           = file("../secrets/snakeoil-ca-1.crt")
-  client_cert       = file("../secrets/kafkacat-ca1-signed.pem")
-  client_key        = file("../secrets/kafkacat-raw-private-key.pem")
+  client_cert       = file("../secrets/terraform-ca1-signed.pem")
+  client_key        = file("../secrets/terraform-raw-private-key.pem")
   tls_enabled       = true
 }
 ```
@@ -130,8 +130,8 @@ A resource for managing Kafka ACLs.
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
   ca_cert           = file("../secrets/snakeoil-ca-1.crt")
-  client_cert       = file("../secrets/kafkacat-ca1-signed.pem")
-  client_key        = file("../secrets/kafkacat-raw-private-key.pem")
+  client_cert       = file("../secrets/terraform-ca1-signed.pem")
+  client_key        = file("../secrets/terraform-raw-private-key.pem")
 }
 
 resource "kafka_acl" "test" {

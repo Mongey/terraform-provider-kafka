@@ -2,8 +2,12 @@
 
 set -o nounset \
   -o errexit \
-  -o verbose \
-  -o xtrace
+  -o verbose
+
+echo "Deleting older secrets"
+set +e
+rm ./*.key ./*.jks ./*.pem ./*.srl ./*.req ./*.crt ./*.csr ./*_creds
+set -e
 
 PASS=confluent
 
@@ -18,29 +22,29 @@ openssl req \
   -passin pass:$PASS \
   -passout pass:$PASS
 
-# Kafkacat
+# Terraform
 # Private KEY
 openssl genrsa \
   -des3 \
   -passout "pass:$PASS" \
-  -out kafkacat.client.key \
+  -out terraform.client.key \
   1024
 
 # Signing Request
 openssl req \
   -passin "pass:$PASS" \
   -passout "pass:$PASS" \
-  -key kafkacat.client.key \
+  -key terraform.client.key \
   -new \
-  -out kafkacat.client.req \
-  -subj '/CN=kafkacat.test.confluent.io/OU=TEST/O=CONFLUENT/L=PaloAlto/S=Ca/C=US'
+  -out terraform.client.req \
+  -subj '/CN=terraform.test.confluent.io/OU=TEST/O=CONFLUENT/L=PaloAlto/S=Ca/C=US'
 
 # Signed Key
 openssl x509 -req \
   -CA snakeoil-ca-1.crt \
   -CAkey snakeoil-ca-1.key \
-  -in kafkacat.client.req \
-  -out kafkacat-ca1-signed.pem \
+  -in terraform.client.req \
+  -out terraform-ca1-signed.pem \
   -days 9999 \
   -CAcreateserial \
   -passin "pass:$PASS"
@@ -50,17 +54,17 @@ openssl x509 -req \
 
 echo "generating a private key without passphrase"
 openssl rsa \
-  -in kafkacat.client.key \
+  -in terraform.client.key \
   -passin "pass:$PASS" \
-  -out kafkacat-raw-private-key.pem
+  -out terraform-raw-private-key.pem
 
 echo "generating private key with passphrase"
 openssl rsa \
   -aes256  \
   -passout "pass:$PASS" \
   -passin "pass:$PASS" \
-  -in kafkacat.client.key \
-  -out kafkacat-raw-private-key-passphrase.pem
+  -in terraform.client.key \
+  -out terraform-raw-private-key-passphrase.pem
 
 for i in broker1
 do
