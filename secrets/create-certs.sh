@@ -51,8 +51,14 @@ openssl x509 -req \
 echo "generating a private key without passphrase"
 openssl rsa \
   -in kafkacat.client.key \
-  -passin "pass:$PASS" \
   -out kafkacat-raw-private-key.pem
+
+echo "generating private key with passphrase"
+openssl rsa
+  -aes256  \
+  -passin "pass:$PASS" \
+  -in kafkacat.client.key \
+  -out kafkacat-raw-private-key-passphrase.pem
 
 for i in broker1
 do
