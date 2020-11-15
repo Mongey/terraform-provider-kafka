@@ -164,19 +164,19 @@ resource "kafka_acl" "test" {
 
 const testResourceACL_updateConfig = `
 provider "kafka" {
-  bootstrap_servers = ["localhost:9092"]
+	bootstrap_servers = ["localhost:9092"]
 	ca_cert           = file("../secrets/ca.crt")
 	client_cert       = file("../secrets/terraform-cert.pem")
 	client_key        = file("../secrets/terraform.pem")
 }
 
 resource "kafka_acl" "test" {
-	resource_name       = "%s"
-	resource_type       = "Topic"
+	resource_name                = "%s"
+	resource_type                = "Topic"
 	resource_pattern_type_filter = "Prefixed"
-	acl_principal       = "User:Alice"
-	acl_host            = "*"
-	acl_operation       = "Write"
-	acl_permission_type = "Deny"
+	acl_principal                = "User:Alice"
+	acl_host                     = "*"
+	acl_operation                = "Write"
+	acl_permission_type          = "Deny"
 }
 `
