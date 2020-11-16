@@ -2,8 +2,12 @@
 
 set -o nounset \
   -o errexit \
-  -o verbose \
-  -o xtrace
+  -o verbose
+
+echo "Deleting older secrets"
+set +e
+rm ./*.key ./*.jks ./*.pem ./*.srl ./*.req ./*.crt ./*.csr ./*_creds
+set -e
 
 PASS=confluent
 
@@ -11,36 +15,36 @@ PASS=confluent
 openssl req \
   -new \
   -x509 \
-  -keyout snakeoil-ca-1.key \
-  -out snakeoil-ca-1.crt \
+  -keyout ca.key \
+  -out ca.crt \
   -days 365 \
   -subj '/CN=ca1.test.confluent.io/OU=TEST/O=CONFLUENT/L=PaloAlto/S=Ca/C=US' \
   -passin pass:$PASS \
   -passout pass:$PASS
 
-# Kafkacat
+# Terraform
 # Private KEY
 openssl genrsa \
   -des3 \
   -passout "pass:$PASS" \
-  -out kafkacat.client.key \
+  -out terraform.client.key \
   1024
 
 # Signing Request
 openssl req \
   -passin "pass:$PASS" \
   -passout "pass:$PASS" \
-  -key kafkacat.client.key \
+  -key terraform.client.key \
   -new \
-  -out kafkacat.client.req \
-  -subj '/CN=kafkacat.test.confluent.io/OU=TEST/O=CONFLUENT/L=PaloAlto/S=Ca/C=US'
+  -out terraform.client.req \
+  -subj '/CN=terraform.test.confluent.io/OU=TEST/O=CONFLUENT/L=PaloAlto/S=Ca/C=US'
 
 # Signed Key
 openssl x509 -req \
-  -CA snakeoil-ca-1.crt \
-  -CAkey snakeoil-ca-1.key \
-  -in kafkacat.client.req \
-  -out kafkacat-ca1-signed.pem \
+  -CA ca.crt \
+  -CAkey ca.key \
+  -in terraform.client.req \
+  -out terraform-cert.pem \
   -days 9999 \
   -CAcreateserial \
   -passin "pass:$PASS"
@@ -50,15 +54,24 @@ openssl x509 -req \
 
 echo "generating a private key without passphrase"
 openssl rsa \
-  -in kafkacat.client.key \
+  -in terraform.client.key \
   -passin "pass:$PASS" \
-  -out kafkacat-raw-private-key.pem
+  -out terraform.pem
+
+echo "generating private key with passphrase"
+openssl rsa \
+  -aes256  \
+  -passout "pass:$PASS" \
+  -passin "pass:$PASS" \
+  -in terraform.client.key \
+  -out terraform-with-passphrase.pem
 
 for i in broker1
 do
   echo $i
   # Create keystores
-  keytool -genkey -noprompt \
+  keytool -genkey \
+    -noprompt \
     -alias $i \
     -dname "CN=localhost, OU=TEST, O=CONFLUENT, L=PaloAlto, S=Ca, C=US" \
     -keystore kafka.$i.keystore.jks \
@@ -74,14 +87,15 @@ do
     -certreq \
     -file $i.csr \
     -storepass $PASS \
+    -noprompt \
     -keypass $PASS
 
   openssl x509 \
     -req \
-    -CA snakeoil-ca-1.crt  \
-    -CAkey snakeoil-ca-1.key \
+    -CA ca.crt  \
+    -CAkey ca.key \
     -in $i.csr \
-    -out $i-ca1-signed.crt \
+    -out $i-cert.crt \
     -days 9999 \
     -CAcreateserial \
     -passin pass:$PASS
@@ -90,22 +104,25 @@ do
     -keystore kafka.$i.keystore.jks \
     -alias CARoot \
     -import \
-    -file snakeoil-ca-1.crt \
+    -file ca.crt \
     -storepass $PASS \
+    -noprompt \
     -keypass $PASS
 
   keytool -keystore kafka.$i.keystore.jks \
     -alias $i \
     -import \
-    -file $i-ca1-signed.crt \
+    -file $i-cert.crt \
     -storepass $PASS \
+    -noprompt \
     -keypass $PASS
 
   # Create truststore and import the CA cert.
   keytool -keystore kafka.$i.truststore.jks \
     -alias CARoot \
     -import \
-    -file snakeoil-ca-1.crt \
+    -noprompt \
+    -file ca.crt \
     -storepass $PASS \
     -keypass $PASS
 

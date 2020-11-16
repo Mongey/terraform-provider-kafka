@@ -1,6 +1,8 @@
 package kafka
 
 import (
+	"crypto/tls"
+	"fmt"
 	"log"
 	"sync"
 
@@ -26,7 +28,33 @@ func (c *LazyClient) init() error {
 	} else {
 		log.Printf("[DEBUG] lazy client init %s", c.initErr)
 	}
+	if c.initErr == sarama.ErrBrokerNotAvailable || c.initErr == sarama.ErrOutOfBrokers {
+		if c.Config.TLSEnabled {
+			tlsError := c.checkTLSConfig()
+			if tlsError != nil {
+				return fmt.Errorf("%w\n%s", tlsError, c.initErr)
+			}
+		}
+	}
+
 	return c.initErr
+}
+
+func (c *LazyClient) checkTLSConfig() error {
+	kafkaConfig, err := c.Config.newKafkaConfig()
+	if err != nil {
+		return err
+	}
+
+	brokers := *(c.Config.BootstrapServers)
+	broker := brokers[0]
+	tlsConf := kafkaConfig.Net.TLS.Config
+	conn, err := tls.Dial("tcp", broker, tlsConf)
+	if err != nil {
+		return err
+	}
+
+	return conn.Handshake()
 }
 
 func (c *LazyClient) CreateTopic(t Topic) error {

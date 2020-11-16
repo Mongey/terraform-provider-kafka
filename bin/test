@@ -8,4 +8,4 @@ cd examples
 terraform init
 TF_LOG=debug terraform refresh
 TF_LOG=debug terraform plan -out plan
-#TF_LOG=debug terraform apply plan
+TF_LOG=debug terraform apply plan
