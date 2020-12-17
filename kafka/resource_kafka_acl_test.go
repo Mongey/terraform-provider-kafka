@@ -158,6 +158,7 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 	return nil
 }
 
+//lintignore:AT004
 const testResourceACL_initialConfig = `
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
@@ -177,6 +178,7 @@ resource "kafka_acl" "test" {
 }
 `
 
+//lintignore:AT004
 const testResourceACL_updateConfig = `
 provider "kafka" {
 	bootstrap_servers = ["localhost:9092"]

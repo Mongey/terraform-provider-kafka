@@ -219,6 +219,7 @@ func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
 	return nil
 }
 
+//lintignore:AT004
 const testResourceTopic_noConfig = `
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
@@ -231,6 +232,7 @@ resource "kafka_topic" "test" {
 }
 `
 
+//lintignore:AT004
 const testResourceTopic_initialConfig = `
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
@@ -248,6 +250,7 @@ resource "kafka_topic" "test" {
 }
 `
 
+//lintignore:AT004
 const testResourceTopic_updateConfig = `
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
@@ -265,6 +268,7 @@ resource "kafka_topic" "test" {
 }
 `
 
+//lintignore:AT004
 const testResourceTopic_updatePartitions = `
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]

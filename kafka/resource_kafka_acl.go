@@ -7,6 +7,7 @@ import (
 )
 
 func kafkaACLResource() *schema.Resource {
+	//lintignore:R011
 	return &schema.Resource{
 		Create: aclCreate,
 		Read:   aclRead,
