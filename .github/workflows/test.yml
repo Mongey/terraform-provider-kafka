@@ -20,6 +20,14 @@ jobs:
           go-version: 1.13.x
       - run: make test
 
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2.0.0
+      - uses: bflad/tfproviderlint-github-action@master
+        with:
+          args: ./...
+
   acctest:
     runs-on: ubuntu-latest
 
