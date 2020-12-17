@@ -119,9 +119,9 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 					Name: foundACLs.ResourceName,
 				},
 			}
+
 			// exact match
 			if a.String() == aclID.String() {
-				aclNotFound = false
 				return nil
 			}
 
@@ -129,19 +129,38 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 			if a.ACL.Principal == aclID.ACL.Principal &&
 				a.ACL.Operation == aclID.ACL.Operation {
 				aclNotFound = false
-				d.Set("acl_principal", acl.Principal)
-				d.Set("acl_host", acl.Host)
-				d.Set("acl_operation", acl.Operation)
-				d.Set("acl_permission_type", acl.PermissionType)
-				d.Set("resource_pattern_type_filter", foundACLs.ResourcePatternType)
+				errSet := errSetter{d: d}
+				errSet.Set("acl_principal", acl.Principal)
+				errSet.Set("acl_host", acl.Host)
+				errSet.Set("acl_operation", acl.Operation)
+				errSet.Set("acl_permission_type", acl.PermissionType)
+				errSet.Set("resource_pattern_type_filter", foundACLs.ResourcePatternType)
+				if errSet.err != nil {
+					return err
+				}
 			}
 		}
 	}
+
 	if aclNotFound {
 		log.Printf("[INFO] Did not find ACL %s", a.String())
 		d.SetId("")
 	}
+
 	return nil
+}
+
+type errSetter struct {
+	err error
+	d   *schema.ResourceData
+}
+
+func (es *errSetter) Set(key string, value interface{}) {
+	if es.err != nil {
+		return
+	}
+	//lintignore:R001
+	es.err = es.d.Set(key, value)
 }
 
 func aclInfo(d *schema.ResourceData) StringlyTypedACL {

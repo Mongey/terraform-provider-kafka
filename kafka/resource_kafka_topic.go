@@ -192,15 +192,16 @@ func topicRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	log.Printf("[DEBUG] Setting the state from Kafka %v", topic)
-	d.Set("name", topic.Name)
-	d.Set("partitions", topic.Partitions)
-	d.Set("replication_factor", topic.ReplicationFactor)
-	d.Set("config", topic.Config)
+	errSet := errSetter{d: d}
+	errSet.Set("name", topic.Name)
+	errSet.Set("partitions", topic.Partitions)
+	errSet.Set("replication_factor", topic.ReplicationFactor)
+	errSet.Set("config", topic.Config)
 
-	return nil
+	return errSet.err
 }
 
-func customPartitionDiff(diff *schema.ResourceDiff, v interface{}) error {
+func customPartitionDiff(diff *schema.ResourceDiff, v interface{}) (err error) {
 	log.Printf("[INFO] Checking the diff!")
 	if diff.HasChange("partitions") {
 		log.Printf("[INFO] Partitions have changed!")
@@ -210,9 +211,9 @@ func customPartitionDiff(diff *schema.ResourceDiff, v interface{}) error {
 		log.Printf("Partitions is changing from %d to %d", oi, ni)
 		if ni < oi {
 			log.Printf("Partitions decreased from %d to %d. Forcing new resource", oi, ni)
-			diff.ForceNew("partitions")
+			err = diff.ForceNew("partitions")
 		}
 
 	}
-	return nil
+	return err
 }

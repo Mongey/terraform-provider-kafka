@@ -352,14 +352,8 @@ func (c *Client) DescribeACLs(s StringlyTypedACL) ([]*sarama.ResourceAcls, error
 			return nil, fmt.Errorf("%s", aclsR.Err)
 		}
 	}
-	res := []*sarama.ResourceAcls{}
 
-	for _, a := range aclsR.ResourceAcls {
-		res = append(res, a)
-	}
-
-	return res, err
-
+	return aclsR.ResourceAcls, err
 }
 
 func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
@@ -424,9 +418,8 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 			}
 		}
 
-		for _, a := range aclsR.ResourceAcls {
-			res = append(res, a)
-		}
+		res = append(res, aclsR.ResourceAcls...)
 	}
+
 	return res, err
 }

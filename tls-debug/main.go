@@ -108,7 +108,8 @@ func fauxMain() error {
 		if err != nil {
 			return err
 		}
-		err = c.Handshake()
+
+		return c.Handshake()
 	}
 
 	return nil

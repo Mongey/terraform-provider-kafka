@@ -11,7 +11,6 @@ import (
 )
 
 var testProvider *schema.Provider
-var testProviders map[string]terraform.ResourceProvider
 
 func TestProvider(t *testing.T) {
 	if err := Provider().(*schema.Provider).InternalValidate(); err != nil {
