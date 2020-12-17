@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"fmt"
-	"log"
 	"testing"
 
 	uuid "github.com/hashicorp/go-uuid"
@@ -10,15 +9,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/terraform"
 )
 
-func TestAccBasicTopic(t *testing.T) {
+func TestAcc_BasicTopic(t *testing.T) {
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)
 	}
 	topicName := fmt.Sprintf("syslog-%s", u)
 	r.Test(t, r.TestCase{
-		Providers: accProvider(),
-		PreCheck:  func() { testAccPreCheck(t) },
+		Providers:    accProvider(),
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccCheckTopicDestroy,
 		Steps: []r.TestStep{
 			{
 				Config: fmt.Sprintf(testResourceTopic_noConfig, topicName),
@@ -28,7 +28,7 @@ func TestAccBasicTopic(t *testing.T) {
 	})
 }
 
-func TestAccTopicConfigUpdate(t *testing.T) {
+func TestAcc_TopicConfigUpdate(t *testing.T) {
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)
@@ -36,8 +36,9 @@ func TestAccTopicConfigUpdate(t *testing.T) {
 	topicName := fmt.Sprintf("syslog-%s", u)
 
 	r.Test(t, r.TestCase{
-		Providers: accProvider(),
-		PreCheck:  func() { testAccPreCheck(t) },
+		Providers:    accProvider(),
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccCheckTopicDestroy,
 		Steps: []r.TestStep{
 			{
 				Config: fmt.Sprintf(testResourceTopic_initialConfig, topicName),
@@ -51,7 +52,34 @@ func TestAccTopicConfigUpdate(t *testing.T) {
 	})
 }
 
-func TestAccTopicUpdatePartitions(t *testing.T) {
+func testAccCheckTopicDestroy(s *terraform.State) error {
+	resourceState := s.Modules[0].Resources["kafka_topic.test"]
+	if resourceState == nil {
+		return fmt.Errorf("resource not found in state")
+	}
+
+	instanceState := resourceState.Primary
+	if instanceState == nil {
+		return fmt.Errorf("resource has no primary instance")
+	}
+
+	name := instanceState.ID
+
+	if name != instanceState.Attributes["name"] {
+		return fmt.Errorf("id doesn't match name")
+	}
+
+	client := testProvider.Meta().(*LazyClient)
+	_, err := client.ReadTopic(name)
+
+	if _, ok := err.(TopicMissingError); !ok {
+		return err
+	}
+
+	return nil
+}
+
+func TestAcc_TopicUpdatePartitions(t *testing.T) {
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)
@@ -59,8 +87,9 @@ func TestAccTopicUpdatePartitions(t *testing.T) {
 	topicName := fmt.Sprintf("syslog-%s", u)
 
 	r.Test(t, r.TestCase{
-		Providers: accProvider(),
-		PreCheck:  func() { testAccPreCheck(t) },
+		Providers:    accProvider(),
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccCheckTopicDestroy,
 		Steps: []r.TestStep{
 			{
 				Config: fmt.Sprintf(testResourceTopic_initialConfig, topicName),
@@ -91,18 +120,12 @@ func testResourceTopic_noConfigCheck(s *terraform.State) error {
 		return fmt.Errorf("id doesn't match name")
 	}
 
-	//if name != "syslog" {
-	//return fmt.Errorf("unexpected topic name %s", name)
-	//}
-
 	client := testProvider.Meta().(*LazyClient)
 	topic, err := client.ReadTopic(name)
 
 	if err != nil {
 		return err
 	}
-
-	log.Println("[INFO] Hello from tests")
 
 	if len(topic.Config) != 0 {
 		return fmt.Errorf("expected no configs for %s, got %v", name, topic.Config)

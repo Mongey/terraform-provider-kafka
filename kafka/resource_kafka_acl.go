@@ -30,9 +30,8 @@ func kafkaACLResource() *schema.Resource {
 			},
 			"resource_pattern_type_filter": {
 				Type:     schema.TypeString,
-				Required: false,
-				Optional: true,
 				Default:  "Literal",
+				Optional: true,
 				ForceNew: true,
 			},
 			"acl_principal": {
