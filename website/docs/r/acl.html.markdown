@@ -15,9 +15,9 @@ A resource for managing Kafka ACLs.
 ```hcl
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
-  ca_cert      = file("../secrets/snakeoil-ca-1.crt")
-  client_cert  = file("../secrets/kafkacat-ca1-signed.pem")
-  client_key   = file("../secrets/kafkacat-raw-private-key.pem")
+  ca_cert      = file("../secrets/ca.crt")
+  client_cert  = file("../secrets/terraform-cert.pem")
+  client_key   = file("../secrets/terraform.pem")
   skip_tls_verify   = true
 }
 

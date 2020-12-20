@@ -161,7 +161,6 @@ func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*t
 	}
 
 	tlsConfig.RootCAs = caCertPool
-	tlsConfig.BuildNameToCertificate()
 	return &tlsConfig, nil
 }
 

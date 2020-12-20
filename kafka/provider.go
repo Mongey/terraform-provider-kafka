@@ -19,7 +19,6 @@ func Provider() terraform.ResourceProvider {
 			},
 			"ca_cert_file": &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    false,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CA_CERT", nil),
 				Description: "Path to a CA certificate file to validate the server's certificate.",
@@ -27,7 +26,6 @@ func Provider() terraform.ResourceProvider {
 			},
 			"client_cert_file": &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    false,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_CERT", nil),
 				Description: "Path to a file containing the client certificate.",
@@ -35,7 +33,6 @@ func Provider() terraform.ResourceProvider {
 			},
 			"client_key_file": &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    false,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY", nil),
 				Description: "Path to a file containing the private key that the certificate was issued for.",
@@ -44,13 +41,11 @@ func Provider() terraform.ResourceProvider {
 			"ca_cert": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
-				Required:    false,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CA_CERT", nil),
 				Description: "CA certificate file to validate the server's certificate.",
 			},
 			"client_cert": &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    false,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_CERT", nil),
 				Description: "The client certificate.",
@@ -58,7 +53,6 @@ func Provider() terraform.ResourceProvider {
 			"client_key": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
-				Required:    false,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY", nil),
 				Description: "The private key that the certificate was issued for.",
 			},
@@ -71,21 +65,18 @@ func Provider() terraform.ResourceProvider {
 			"sasl_username": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
-				Required:    false,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_USERNAME", nil),
 				Description: "Username for SASL authentication.",
 			},
 			"sasl_password": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
-				Required:    false,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_PASSWORD", nil),
 				Description: "Password for SASL authentication.",
 			},
 			"sasl_mechanism": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
-				Required:    false,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_MECHANISM", "plain"),
 				Description: "SASL mechanism, can be plain, scram-sha512, scram-sha256",
 			},

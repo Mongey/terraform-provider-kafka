@@ -19,9 +19,10 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 	aclResourceName := fmt.Sprintf("syslog-%s", u)
 
 	r.Test(t, r.TestCase{
-		Providers:  accProvider(),
-		IsUnitTest: false,
-		PreCheck:   func() { testAccPreCheck(t) },
+		Providers:    accProvider(),
+		IsUnitTest:   false,
+		PreCheck:     func() { testAccPreCheck(t) },
+		CheckDestroy: testAccCheckAclDestroy,
 		Steps: []r.TestStep{
 			{
 				Config: fmt.Sprintf(testResourceACL_initialConfig, aclResourceName),
@@ -38,6 +39,20 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 			},
 		},
 	})
+}
+
+func testAccCheckAclDestroy(s *terraform.State) error {
+	client := testProvider.Meta().(*LazyClient)
+	acls, err := client.ListACLs()
+	if err != nil {
+		return err
+	}
+
+	if len(acls) > 1 {
+		return fmt.Errorf("There should be one acls %v %s", acls, err)
+	}
+
+	return nil
 }
 
 func testResourceACL_initialCheck(s *terraform.State) error {
@@ -148,12 +163,13 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 	return nil
 }
 
+//lintignore:AT004
 const testResourceACL_initialConfig = `
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
-	ca_cert           = file("../secrets/snakeoil-ca-1.crt")
-	client_cert       = file("../secrets/kafkacat-ca1-signed.pem")
-	client_key        = file("../secrets/kafkacat-raw-private-key.pem")
+	ca_cert           = file("../secrets/ca.crt")
+	client_cert       = file("../secrets/terraform-cert.pem")
+	client_key        = file("../secrets/terraform.pem")
 }
 
 resource "kafka_acl" "test" {
@@ -167,21 +183,22 @@ resource "kafka_acl" "test" {
 }
 `
 
+//lintignore:AT004
 const testResourceACL_updateConfig = `
 provider "kafka" {
-  bootstrap_servers = ["localhost:9092"]
-	ca_cert           = file("../secrets/snakeoil-ca-1.crt")
-	client_cert       = file("../secrets/kafkacat-ca1-signed.pem")
-	client_key        = file("../secrets/kafkacat-raw-private-key.pem")
+	bootstrap_servers = ["localhost:9092"]
+	ca_cert           = file("../secrets/ca.crt")
+	client_cert       = file("../secrets/terraform-cert.pem")
+	client_key        = file("../secrets/terraform.pem")
 }
 
 resource "kafka_acl" "test" {
-	resource_name       = "%s"
-	resource_type       = "Topic"
+	resource_name                = "%s"
+	resource_type                = "Topic"
 	resource_pattern_type_filter = "Prefixed"
-	acl_principal       = "User:Alice"
-	acl_host            = "*"
-	acl_operation       = "Write"
-	acl_permission_type = "Deny"
+	acl_principal                = "User:Alice"
+	acl_host                     = "*"
+	acl_operation                = "Write"
+	acl_permission_type          = "Deny"
 }
 `

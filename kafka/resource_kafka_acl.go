@@ -2,12 +2,14 @@ package kafka
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"log"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 )
 
 func kafkaACLResource() *schema.Resource {
+	//lintignore:R011
 	return &schema.Resource{
 		Create: aclCreate,
 		Read:   aclRead,
@@ -31,9 +33,8 @@ func kafkaACLResource() *schema.Resource {
 			},
 			"resource_pattern_type_filter": {
 				Type:     schema.TypeString,
-				Required: false,
-				Optional: true,
 				Default:  "Literal",
+				Optional: true,
 				ForceNew: true,
 			},
 			"acl_principal": {
@@ -120,9 +121,9 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 					Name: foundACLs.ResourceName,
 				},
 			}
+
 			// exact match
 			if a.String() == aclID.String() {
-				aclNotFound = false
 				return nil
 			}
 
@@ -130,37 +131,59 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 			if a.ACL.Principal == aclID.ACL.Principal &&
 				a.ACL.Operation == aclID.ACL.Operation {
 				aclNotFound = false
-				d.Set("acl_principal", acl.Principal)
-				d.Set("acl_host", acl.Host)
-				d.Set("acl_operation", acl.Operation)
-				d.Set("acl_permission_type", acl.PermissionType)
-				d.Set("resource_pattern_type_filter", foundACLs.ResourcePatternType)
+				errSet := errSetter{d: d}
+				errSet.Set("acl_principal", acl.Principal)
+				errSet.Set("acl_host", acl.Host)
+				errSet.Set("acl_operation", acl.Operation)
+				errSet.Set("acl_permission_type", acl.PermissionType)
+				errSet.Set("resource_pattern_type_filter", foundACLs.ResourcePatternType)
+				if errSet.err != nil {
+					return err
+				}
 			}
 		}
 	}
+
 	if aclNotFound {
 		log.Printf("[INFO] Did not find ACL %s", a.String())
 		d.SetId("")
 	}
+
 	return nil
 }
 
 func ImportACL(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	parts := strings.Split(d.Id(), "|")
 	if len(parts) == 7 {
-		// This is used mainly for imports.
-		d.Set("acl_principal", parts[0])
-		d.Set("acl_host", parts[1])
-		d.Set("acl_operation", parts[2])
-		d.Set("acl_permission_type", parts[3])
-		d.Set("resource_type", parts[4])
-		d.Set("resource_name", parts[5])
-		d.Set("resource_pattern_type_filter", parts[6])
+		errSet := errSetter{d: d}
+		errSet.Set("acl_principal", parts[0])
+		errSet.Set("acl_host", parts[1])
+		errSet.Set("acl_operation", parts[2])
+		errSet.Set("acl_permission_type", parts[3])
+		errSet.Set("resource_type", parts[4])
+		errSet.Set("resource_name", parts[5])
+		errSet.Set("resource_pattern_type_filter", parts[6])
+		if errSet.err != nil {
+			return nil, errSet.err
+		}
 	} else {
 		return nil, fmt.Errorf("Failed importing resource; expected format is acl_principal|acl_host|acl_operation|acl_permission_type|resource_type|resource_name|resource_pattern_type_filter - got %v segments instead of 7", len(parts))
 	}
 
 	return []*schema.ResourceData{d}, nil
+}
+
+type errSetter struct {
+	err error
+	d   *schema.ResourceData
+}
+
+func (es *errSetter) Set(key string, value interface{}) {
+	if es.err != nil {
+		return
+	}
+	//lintignore:R001
+	es.err = es.d.Set(key, value)
 }
 
 func aclInfo(d *schema.ResourceData) StringlyTypedACL {
