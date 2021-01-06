@@ -148,14 +148,23 @@ resource "kafka_acl" "test" {
 
 | Property                       | Description                                                        | Valid values                                                                                                                                             |
 | ------------------------------ | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `acl_principal`                | Principal that is being allowed or denied                          | `*`                                                                                                                                                      |
 | `acl_host`                     | Host from which principal listed in acl_principal will have access | `*`                                                                                                                                                      |
 | `acl_operation`                | Operation that is being allowed or denied                          | `Unknown`, `Any`, `All`, `Read`, `Write`, `Create`, `Delete`, `Alter`, `Describe`, `ClusterAction`, `DescribeConfigs`, `AlterConfigs`, `IdempotentWrite` |
 | `acl_permission_type`          | Type of permission                                                 | `Unknown`, `Any`, `Allow`, `Deny`                                                                                                                        |
-| `acl_principal`                | Principal that is being allowed or denied                          | `*`                                                                                                                                                      |
 | `resource_name`                | The name of the resource                                           | `*`                                                                                                                                                      |
 | `resource_type`                | The type of resource                                               | `Unknown`, `Any`, `Topic`, `Group`, `Cluster`, `TransactionalID`                                                                                         |
 | `resource_pattern_type_filter` |                                                                    | `Prefixed`, `Any`, `Match`, `Literal`                                                                                                                    |
 
+
+#### Importing Existing ACLs
+For import, use as a parameter the items separated by `|` character. Quote it to avoid shell expansion.
+
+```sh
+# Fields in shell notation are
+# ${acl_principal}|${acl_host}|${acl_operation}|${acl_permission_type}|${resource_type}|${resource_name}|${resource_pattern_type_filter}
+terraform import kafka_acl.admin 'User:12345|*|Describe|Allow|Topic|experimental-topic|Prefixed'
+```
 
 ## Requirements
 * [>= Kafka 1.0.0][3]
