@@ -18,7 +18,7 @@ A [Terraform][1] plugin for managing [Apache Kafka][2].
 `terraform-provider-kafka` is available on the terraform registry. To install, add
 the below into your `main.tf` and execute `terraform init`
 
-```
+```tf
 terraform {
   required_providers {
     kafka = {
