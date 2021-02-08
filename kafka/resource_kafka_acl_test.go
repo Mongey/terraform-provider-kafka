@@ -33,11 +33,6 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 				Config: fmt.Sprintf(testResourceACL_updateConfig, bs, aclResourceName),
 				Check:  testResourceACL_updateCheck,
 			},
-			{
-				ResourceName:      "kafka_acl.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
 		},
 	})
 }
