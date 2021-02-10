@@ -58,8 +58,4 @@ jobs:
       - name: Bring up kafka + zk
         run: docker-compose up -d
       - name: "Run tests"
-        run: |
-          export PATH=$PATH:$(go env GOPATH)/bin # temporary fix. See https://github.com/actions/setup-go/issues/14
-          go install github.com/jstemmer/go-junit-report
-          trap "go-junit-report < go-test.out > go-test-report.xml" EXIT
-          make testacc
+        run: make testacc
