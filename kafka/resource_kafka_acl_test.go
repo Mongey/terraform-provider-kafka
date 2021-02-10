@@ -58,7 +58,7 @@ func testAccCheckAclDestroy(name string) error {
 			aclCount++
 		}
 	}
-	if aclCount > 0 {
+	if aclCount != 0 {
 		return fmt.Errorf("Expected 0 acls for ACL %s, got %d", name, aclCount)
 	}
 	return nil
@@ -140,10 +140,6 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 			aclCount++
 		}
 	}
-
-	//if acl.ResourceName != "syslog" {
-	//return fmt.Errorf("The expected ACL should be for syslog")
-	//}
 
 	if len(acl.Acls) != 1 {
 		return fmt.Errorf("There are %d ACLs when there should be 1: %v", len(acl.Acls), acl.Acls)
