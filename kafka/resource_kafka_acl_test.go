@@ -22,7 +22,7 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 		Providers:    accProvider(),
 		IsUnitTest:   false,
 		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccCheckAclDestroy,
+		CheckDestroy: func(s *terraform.State) error { return testAccCheckAclDestroy(aclResourceName) },
 		Steps: []r.TestStep{
 			{
 				Config: fmt.Sprintf(testResourceACL_initialConfig, aclResourceName),
@@ -36,22 +36,31 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 				ResourceName:      "kafka_acl.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+				Config:            fmt.Sprintf(testResourceACL_updateConfig, aclResourceName),
 			},
 		},
 	})
 }
 
-func testAccCheckAclDestroy(s *terraform.State) error {
+func testAccCheckAclDestroy(name string) error {
 	client := testProvider.Meta().(*LazyClient)
 	acls, err := client.ListACLs()
 	if err != nil {
 		return err
 	}
 
-	if len(acls) > 1 {
-		return fmt.Errorf("There should be one acls %v %s", acls, err)
-	}
+	log.Printf("[INFO] Searching for the ACL with resource_name %s", name)
 
+	aclCount := 0
+	for _, searchACL := range acls {
+		if searchACL.ResourceName == name {
+			log.Printf("[INFO] Found acl with resource_name %s : %v", name, searchACL)
+			aclCount++
+		}
+	}
+	if aclCount != 0 {
+		return fmt.Errorf("Expected 0 acls for ACL %s, got %d", name, aclCount)
+	}
 	return nil
 }
 
@@ -73,7 +82,7 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 	}
 
 	if len(acls) < 1 {
-		return fmt.Errorf("There should be one acls %v %s", acls, err)
+		return fmt.Errorf("There should be one acl, got %d, %v %s", len(acls), acls, err)
 	}
 
 	name := instanceState.Attributes["resource_name"]
@@ -131,10 +140,6 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 			aclCount++
 		}
 	}
-
-	//if acl.ResourceName != "syslog" {
-	//return fmt.Errorf("The expected ACL should be for syslog")
-	//}
 
 	if len(acl.Acls) != 1 {
 		return fmt.Errorf("There are %d ACLs when there should be 1: %v", len(acl.Acls), acl.Acls)
