@@ -62,11 +62,4 @@ jobs:
           export PATH=$PATH:$(go env GOPATH)/bin # temporary fix. See https://github.com/actions/setup-go/issues/14
           go install github.com/jstemmer/go-junit-report
           trap "go-junit-report < go-test.out > go-test-report.xml" EXIT
-          make testacc | tee go-test.out
-      - name: Upload test results
-        uses: actions/upload-artifact@v1
-        with:
-          name: acc-test-results.xml
-          path: go-test-report.xml
-        # Use always() to always run this step to publish test results when there are test failures
-        if: always()
+          make testacc
