@@ -79,7 +79,7 @@ func aclCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func aclDelete(d *schema.ResourceData, meta interface{}) error {
-	c := meta.(*LazyClient)
+	//c := meta.(*LazyClient)
 	a := aclInfo(d)
 	log.Printf("[INFO] Deleting ACL %s", a)
 	//return c.DeleteACL(a)
