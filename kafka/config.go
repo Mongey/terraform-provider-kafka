@@ -155,7 +155,7 @@ func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*t
 		return &tlsConfig, err
 	}
 	ok := caCertPool.AppendCertsFromPEM(caBytes)
-	fmt.Printf("set cert pool %v", ok)
+	log.Printf("[INFO] set cert pool %v", ok)
 	if !ok {
 		return &tlsConfig, fmt.Errorf("Couldn't add the caPem")
 	}
