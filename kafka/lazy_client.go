@@ -97,6 +97,30 @@ func (c *LazyClient) AddPartitions(t Topic) error {
 	return c.inner.AddPartitions(t)
 }
 
+func (c *LazyClient) CanAlterReplicationFactor() (bool, error) {
+	err := c.init()
+	if err != nil {
+		return false, err
+	}
+	return c.inner.CanAlterReplicationFactor(), nil
+}
+
+func (c *LazyClient) AlterReplicationFactor(t Topic) error {
+	err := c.init()
+	if err != nil {
+		return err
+	}
+	return c.inner.AlterReplicationFactor(t)
+}
+
+func (c *LazyClient) IsReplicationFactorUpdating(topic string) (bool, error) {
+	err := c.init()
+	if err != nil {
+		return false, err
+	}
+	return c.inner.IsReplicationFactorUpdating(topic)
+}
+
 func (c *LazyClient) CreateACL(s StringlyTypedACL) error {
 	err := c.init()
 	if err != nil {

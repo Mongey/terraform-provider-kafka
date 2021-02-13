@@ -1,0 +1,32 @@
+FROM confluentinc/cp-kafka:5.4.1
+
+ARG broker_id
+ARG zookeeper_connect
+ARG listener_host
+ARG listener_port
+
+COPY secrets/ /etc/kafka/secrets
+
+ENV KAFKA_BROKER_ID=$broker_id
+ENV KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+ENV KAFKA_ZOOKEEPER_CONNECT=$zookeeper_connect
+
+# confluent's bash script looks for an 'SSL' suffix in listener names:
+# https://github.com/confluentinc/cp-docker-images/blob/76d786d0243ea16626b8b46dba34ec0b1066de84/debian/kafka/include/etc/confluent/docker/configure#L65
+ENV KAFKA_LISTENERS=INTERNAL_SSL://$listener_host:9090,EXTERNAL_SSL://$listener_host:9092
+ENV KAFKA_ADVERTISED_LISTENERS=INTERNAL_SSL://$listener_host:9090,EXTERNAL_SSL://localhost:$listener_port
+ENV KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL_SSL:SSL,EXTERNAL_SSL:SSL
+ENV KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL_SSL
+
+ENV KAFKA_SSL_KEYSTORE_FILENAME=kafka.$listener_host.keystore.jks
+ENV KAFKA_SSL_KEYSTORE_CREDENTIALS=password
+
+ENV KAFKA_SSL_TRUSTSTORE_FILENAME=kafka.truststore.jks
+ENV KAFKA_SSL_TRUSTSTORE_CREDENTIALS=password
+
+ENV KAFKA_SSL_KEY_CREDENTIALS=password
+ENV KAFKA_SSL_CLIENT_AUTH=required
+ENV KAFKA_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM=
+ENV KAFKA_LISTENER_NAME_INTERNAL_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM=
+ENV KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND=true
+ENV KAFKA_AUTHORIZER_CLASS_NAME=kafka.security.auth.SimpleAclAuthorizer

@@ -17,6 +17,7 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 	aclResourceName := fmt.Sprintf("syslog-%s", u)
+	bs := testBootstrapServers[0]
 
 	r.Test(t, r.TestCase{
 		Providers:    accProvider(),
@@ -25,18 +26,18 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 		CheckDestroy: func(s *terraform.State) error { return testAccCheckAclDestroy(aclResourceName) },
 		Steps: []r.TestStep{
 			{
-				Config: fmt.Sprintf(testResourceACL_initialConfig, aclResourceName),
+				Config: fmt.Sprintf(testResourceACL_initialConfig, bs, aclResourceName),
 				Check:  testResourceACL_initialCheck,
 			},
 			{
-				Config: fmt.Sprintf(testResourceACL_updateConfig, aclResourceName),
+				Config: fmt.Sprintf(testResourceACL_updateConfig, bs, aclResourceName),
 				Check:  testResourceACL_updateCheck,
 			},
 			{
 				ResourceName:      "kafka_acl.test",
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            fmt.Sprintf(testResourceACL_updateConfig, aclResourceName),
+				Config:            fmt.Sprintf(testResourceACL_updateConfig, bs, aclResourceName),
 			},
 		},
 	})
@@ -171,10 +172,10 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 //lintignore:AT004
 const testResourceACL_initialConfig = `
 provider "kafka" {
-  bootstrap_servers = ["localhost:9092"]
+  bootstrap_servers = ["%s"]
 	ca_cert           = file("../secrets/ca.crt")
-	client_cert       = file("../secrets/terraform-cert.pem")
-	client_key        = file("../secrets/terraform.pem")
+	client_cert       = file("../secrets/client.pem")
+	client_key        = file("../secrets/client.key")
 }
 
 resource "kafka_acl" "test" {
@@ -191,10 +192,10 @@ resource "kafka_acl" "test" {
 //lintignore:AT004
 const testResourceACL_updateConfig = `
 provider "kafka" {
-	bootstrap_servers = ["localhost:9092"]
+  bootstrap_servers = ["%s"]
 	ca_cert           = file("../secrets/ca.crt")
-	client_cert       = file("../secrets/terraform-cert.pem")
-	client_key        = file("../secrets/terraform.pem")
+	client_cert       = file("../secrets/client.pem")
+	client_key        = file("../secrets/client.key")
 }
 
 resource "kafka_acl" "test" {

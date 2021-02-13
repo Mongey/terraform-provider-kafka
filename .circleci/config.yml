@@ -19,18 +19,9 @@ jobs:
       - image: circleci/golang:1.13
         environment:
           TEST_RESULTS: /tmp/test-results
-      - image: confluentinc/cp-zookeeper:latest
-        environment:
-          ZOOKEEPER_CLIENT_PORT: 2181
-          ZOOKEEPER_TICK_TIME: 2000
-      - image: mongey/kafka:5.3.3-new-certs
-        environment:
-          KAFKA_BROKER_ID: 1
-          KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-          KAFKA_ZOOKEEPER_CONNECT: localhost:2181
-          KAFKA_LOG_SEGMENT_BYTES: 1234
     steps:
       - checkout
+      - setup_remote_docker
       - run: make test
       - run: go get github.com/jstemmer/go-junit-report
       - run: mkdir -p $TEST_RESULTS
@@ -38,7 +29,8 @@ jobs:
           name: Run Tests
           command: |
             trap "go-junit-report <${TEST_RESULTS}/go-test.out > ${TEST_RESULTS}/go-test-report.xml" EXIT
-            make testacc| tee ${TEST_RESULTS}/go-test.out
+            docker-compose -f docker-compose.yaml -f docker-compose.testacc.yaml up \
+              --abort-on-container-exit testacc | tee ${TEST_RESULTS}/go-test.out
       - store_test_results:
           path: /tmp/test-results
 

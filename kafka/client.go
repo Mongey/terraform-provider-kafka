@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"math/rand"
 
 	"github.com/Shopify/sarama"
 )
@@ -65,27 +66,103 @@ func (c *Client) SaramaClient() sarama.Client {
 }
 
 func (c *Client) populateAPIVersions() error {
-	log.Printf("[DEBUG] retrieving supported APIs from broker: %s", c.config.BootstrapServers)
-	broker, err := c.client.Controller()
-	if err != nil {
-		log.Printf("[ERROR] Unable to populate supported API versions. Error retrieving controller: %s", err)
-		return err
+	ch := make(chan []*sarama.ApiVersionsResponseBlock)
+	errCh := make(chan error)
+
+	brokers := c.client.Brokers()
+	kafkaConfig := c.kafkaConfig
+	for _, broker := range brokers {
+		go apiVersionsFromBroker(broker, kafkaConfig, ch, errCh)
 	}
 
-	resp, err := broker.ApiVersions(&sarama.ApiVersionsRequest{})
-	if err != nil {
-		log.Printf("[ERROR] Unable to populate supported API versions. %s", err)
-		return err
+	clusterApiVersions := make(map[int][2]int) // valid api version intervals across all brokers
+	errs := make([]error, 0)
+	for i := 0; i < len(brokers); i++ {
+		select {
+		case brokerApiVersions := <-ch:
+			updateClusterApiVersions(&clusterApiVersions, brokerApiVersions)
+		case err := <-errCh:
+			errs = append(errs, err)
+		}
 	}
 
-	m := map[int]int{}
-	for _, v := range resp.ApiVersions {
-		log.Printf("[TRACE] API key %d. Min %d, Max %d", v.ApiKey, v.MinVersion, v.MaxVersion)
-		m[int(v.ApiKey)] = int(v.MaxVersion)
+	if len(errs) != 0 {
+		return errors.New(sarama.MultiError{Errors: &errs}.PrettyError())
 	}
-	c.supportedAPIs = m
+
+	c.supportedAPIs = make(map[int]int, len(clusterApiVersions))
+	for apiKey, versionMinMax := range clusterApiVersions {
+		versionMin := versionMinMax[0]
+		versionMax := versionMinMax[1]
+
+		if versionMax >= versionMin {
+			c.supportedAPIs[apiKey] = versionMax
+		}
+
+		// versionMax will be less than versionMin only when
+		// two or more brokers have disjoint version
+		// intervals...which means the api is not supported
+		// cluster-wide
+	}
 
 	return nil
+}
+
+func apiVersionsFromBroker(broker *sarama.Broker, config *sarama.Config, ch chan <- []*sarama.ApiVersionsResponseBlock, errCh chan <- error) {
+	resp, err := rawApiVersionsRequest(broker, config)
+
+	if err != nil {
+		errCh <- err
+	} else if (resp.Err != sarama.ErrNoError) {
+		errCh <- errors.New(resp.Err.Error())
+	} else {
+		ch <- resp.ApiVersions
+	}
+}
+
+func rawApiVersionsRequest(broker *sarama.Broker, config *sarama.Config) (*sarama.ApiVersionsResponse, error) {
+	if err := broker.Open(config); err != nil && err != sarama.ErrAlreadyConnected {
+		return nil, err
+	}
+
+	defer func() {
+		if err := broker.Close(); err != nil && err != sarama.ErrNotConnected {
+			log.Fatal(err)
+		}
+	}()
+
+	return broker.ApiVersions(&sarama.ApiVersionsRequest{})
+}
+
+func updateClusterApiVersions(clusterApiVersions *map[int][2]int, brokerApiVersions []*sarama.ApiVersionsResponseBlock) {
+	cluster := *clusterApiVersions
+
+	for _, apiBlock := range brokerApiVersions {
+		apiKey := int(apiBlock.ApiKey)
+		brokerMin := int(apiBlock.MinVersion)
+		brokerMax := int(apiBlock.MaxVersion)
+
+		clusterMinMax, exists := cluster[apiKey]
+		if !exists {
+			cluster[apiKey] = [2]int{brokerMin, brokerMax}
+		} else {
+			// shrink the cluster interval according to
+			// the broker interval
+
+			clusterMin := clusterMinMax[0]
+			clusterMax := clusterMinMax[1]
+
+			if brokerMin > clusterMin {
+				clusterMinMax[0] = brokerMin
+			}
+
+			if brokerMax < clusterMax {
+				clusterMinMax[1] = brokerMax
+			}
+
+			cluster[apiKey] = clusterMinMax
+		}
+	}
 }
 
 func (c *Client) DeleteTopic(t string) error {
@@ -206,6 +283,157 @@ func (c *Client) AddPartitions(t Topic) error {
 	}
 
 	return err
+}
+
+func (c *Client) CanAlterReplicationFactor() bool {
+	_, ok1 := c.supportedAPIs[45] // https://kafka.apache.org/protocol#The_Messages_AlterPartitionReassignments
+	_, ok2 := c.supportedAPIs[46] // https://kafka.apache.org/protocol#The_Messages_ListPartitionReassignments
+
+	return ok1 && ok2
+}
+
+func (c *Client) AlterReplicationFactor(t Topic) error {
+	if err := c.client.RefreshMetadata(); err != nil {
+		return err
+	}
+
+	admin, err := sarama.NewClusterAdminFromClient(c.client)
+	if err != nil {
+		return err
+	}
+
+	assignment, err := c.buildAssignment(t)
+	if err != nil {
+		return err
+	}
+
+	return admin.AlterPartitionReassignments(t.Name, *assignment)
+}
+
+func (c *Client) buildAssignment(t Topic) (*[][]int32, error) {
+	partitions, err := c.client.Partitions(t.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	allReplicas := c.allReplicas()
+	newRF := t.ReplicationFactor
+	rand.Seed(time.Now().UnixNano())
+
+	assignment := make([][]int32, len(partitions))
+	for _, p := range partitions {
+		oldReplicas, err := c.client.Replicas(t.Name, p)
+		if err != nil {
+			return &assignment, err
+		}
+
+		oldRF := int16(len(oldReplicas))
+		deltaRF := newRF - oldRF
+		newReplicas, err := buildNewReplicas(allReplicas, &oldReplicas, deltaRF)
+		if err != nil {
+			return &assignment, err
+		}
+
+		assignment[p] = *newReplicas
+	}
+
+	return &assignment, nil
+}
+
+func (c *Client) allReplicas() *[]int32 {
+	brokers := c.client.Brokers()
+	replicas := make([]int32, 0, len(brokers))
+
+	for _, b := range brokers {
+		id := b.ID()
+		if id != -1 {
+			replicas = append(replicas, id)
+		}
+	}
+
+	return &replicas
+}
+
+func buildNewReplicas(allReplicas *[]int32, usedReplicas *[]int32, deltaRF int16) (*[]int32, error)  {
+	usedCount := int16(len(*usedReplicas))
+
+	if deltaRF == 0 {
+		return usedReplicas, nil
+	} else if deltaRF < 0 {
+		end := usedCount + deltaRF
+		if end < 1 {
+			return nil, errors.New("dropping too many replicas")
+		}
+
+		head := (*usedReplicas)[:end]
+		return &head, nil
+	} else {
+		extraCount := int16(len(*allReplicas)) - usedCount
+		if extraCount < deltaRF {
+			return nil, errors.New("not enough brokers")
+		}
+
+		unusedReplicas := *findUnusedReplicas(allReplicas, usedReplicas, extraCount)
+		newReplicas := *usedReplicas
+		for i := int16(0); i < deltaRF; i++ {
+			j := rand.Intn(len(unusedReplicas))
+			newReplicas = append(newReplicas, unusedReplicas[j])
+			unusedReplicas[j] = unusedReplicas[len(unusedReplicas)-1]
+			unusedReplicas = unusedReplicas[:len(unusedReplicas)-1]
+		}
+
+		return &newReplicas, nil
+	}
+}
+
+func findUnusedReplicas(allReplicas *[]int32, usedReplicas *[]int32, extraCount int16) *[]int32 {
+	usedMap := make(map[int32]bool, len(*usedReplicas))
+	for _, r := range *usedReplicas {
+		usedMap[r] = true
+	}
+
+	unusedReplicas := make([]int32, 0, extraCount)
+	for _, r := range *allReplicas {
+		_, exists := usedMap[r]
+		if !exists {
+			unusedReplicas = append(unusedReplicas, r)
+		}
+	}
+
+	return &unusedReplicas
+}
+
+func (c *Client) IsReplicationFactorUpdating(topic string) (bool, error) {
+	if err := c.client.RefreshMetadata(); err != nil {
+		return false, err
+	}
+
+	partitions, err := c.client.Partitions(topic)
+	if err != nil {
+		return false, err
+	}
+
+	admin, err := sarama.NewClusterAdminFromClient(c.client)
+	if err != nil {
+		return false, err
+	}
+
+	statusMap, err := admin.ListPartitionReassignments(topic, partitions)
+	if err != nil {
+		return false, err
+	}
+
+	for _, status := range statusMap[topic] {
+		if isPartitionRFChanging(status) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func isPartitionRFChanging(status *sarama.PartitionReplicaReassignmentsStatus) bool {
+	return len(status.AddingReplicas) != 0 || len(status.RemovingReplicas) != 0
 }
 
 func (client *Client) ReadTopic(name string) (Topic, error) {
