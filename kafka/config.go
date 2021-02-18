@@ -13,17 +13,18 @@ import (
 )
 
 type Config struct {
-	BootstrapServers        *[]string
-	Timeout                 int
-	CACert                  string
-	ClientCert              string
-	ClientCertKey           string
-	ClientCertKeyPassphrase string
-	TLSEnabled              bool
-	SkipTLSVerify           bool
-	SASLUsername            string
-	SASLPassword            string
-	SASLMechanism           string
+	BootstrapServers             *[]string
+	Timeout                      int
+	CACert                       string
+	ClientCert                   string
+	ClientCertKey                string
+	ClientCertKeyPassphrase      string
+	DisableDestructiveOperations bool
+	TLSEnabled                   bool
+	SkipTLSVerify                bool
+	SASLUsername                 string
+	SASLPassword                 string
+	SASLMechanism                string
 }
 
 func (c *Config) newKafkaConfig() (*sarama.Config, error) {
@@ -172,6 +173,7 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.ClientCert,
 		"*****",
 		"*****",
+		config.DisableDestructiveOperations,
 		config.TLSEnabled,
 		config.SkipTLSVerify,
 		config.SASLUsername,

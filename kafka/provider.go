@@ -62,6 +62,12 @@ func Provider() terraform.ResourceProvider {
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY_PASSPHRASE", nil),
 				Description: "The passphrase for the private key that the certificate was issued for.",
 			},
+			"disable_destructive_operations": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_DISABLE_DESTRUCTIVE_OPERATIONS", "false"),
+				Description: "Do not allow deletion of topics or acls.",
+			},
 			"sasl_username": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -121,17 +127,18 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	}
 
 	config := &Config{
-		BootstrapServers:        brokers,
-		CACert:                  d.Get("ca_cert").(string),
-		ClientCert:              d.Get("client_cert").(string),
-		ClientCertKey:           d.Get("client_key").(string),
-		ClientCertKeyPassphrase: d.Get("client_key_passphrase").(string),
-		SkipTLSVerify:           d.Get("skip_tls_verify").(bool),
-		SASLUsername:            d.Get("sasl_username").(string),
-		SASLPassword:            d.Get("sasl_password").(string),
-		SASLMechanism:           saslMechanism,
-		TLSEnabled:              d.Get("tls_enabled").(bool),
-		Timeout:                 d.Get("timeout").(int),
+		BootstrapServers:             brokers,
+		CACert:                       d.Get("ca_cert").(string),
+		ClientCert:                   d.Get("client_cert").(string),
+		ClientCertKey:                d.Get("client_key").(string),
+		ClientCertKeyPassphrase:      d.Get("client_key_passphrase").(string),
+		DisableDestructiveOperations: d.Get("disable_destructive_operations").(bool),
+		SkipTLSVerify:                d.Get("skip_tls_verify").(bool),
+		SASLUsername:                 d.Get("sasl_username").(string),
+		SASLPassword:                 d.Get("sasl_password").(string),
+		SASLMechanism:                saslMechanism,
+		TLSEnabled:                   d.Get("tls_enabled").(bool),
+		Timeout:                      d.Get("timeout").(int),
 	}
 
 	if config.CACert == "" {

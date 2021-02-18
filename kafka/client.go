@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"time"
 	"math/rand"
+	"time"
 
 	"github.com/Shopify/sarama"
 )
@@ -108,12 +108,12 @@ func (c *Client) populateAPIVersions() error {
 	return nil
 }
 
-func apiVersionsFromBroker(broker *sarama.Broker, config *sarama.Config, ch chan <- []*sarama.ApiVersionsResponseBlock, errCh chan <- error) {
+func apiVersionsFromBroker(broker *sarama.Broker, config *sarama.Config, ch chan<- []*sarama.ApiVersionsResponseBlock, errCh chan<- error) {
 	resp, err := rawApiVersionsRequest(broker, config)
 
 	if err != nil {
 		errCh <- err
-	} else if (resp.Err != sarama.ErrNoError) {
+	} else if resp.Err != sarama.ErrNoError {
 		errCh <- errors.New(resp.Err.Error())
 	} else {
 		ch <- resp.ApiVersions
@@ -166,6 +166,10 @@ func updateClusterApiVersions(clusterApiVersions *map[int][2]int, brokerApiVersi
 }
 
 func (c *Client) DeleteTopic(t string) error {
+	if c.config.DisableDestructiveOperations {
+		return fmt.Errorf("destructive operations are disabled -- will not delete topic #{t}")
+	}
+
 	broker, err := c.client.Controller()
 	if err != nil {
 		return err
@@ -354,7 +358,7 @@ func (c *Client) allReplicas() *[]int32 {
 	return &replicas
 }
 
-func buildNewReplicas(allReplicas *[]int32, usedReplicas *[]int32, deltaRF int16) (*[]int32, error)  {
+func buildNewReplicas(allReplicas *[]int32, usedReplicas *[]int32, deltaRF int16) (*[]int32, error) {
 	usedCount := int16(len(*usedReplicas))
 
 	if deltaRF == 0 {

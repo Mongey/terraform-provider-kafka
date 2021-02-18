@@ -116,6 +116,10 @@ func stringToACLPrefix(s string) sarama.AclResourcePatternType {
 }
 
 func (c *Client) DeleteACL(s StringlyTypedACL) error {
+	if c.config.DisableDestructiveOperations {
+		return fmt.Errorf("destructive operations are disabled -- will not delete acl #{s}")
+	}
+
 	log.Printf("[INFO] Deleting ACL %v", s)
 	broker, err := c.client.Controller()
 	if err != nil {
