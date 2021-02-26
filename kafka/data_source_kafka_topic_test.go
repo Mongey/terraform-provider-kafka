@@ -9,22 +9,23 @@ import (
 	r "github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 )
 
-func TestAccTopicData(t *testing.T) {
+func TestAcc_TopicData(t *testing.T) {
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)
 	}
 	topicName := fmt.Sprintf("syslog-%s", u)
+	bs := testBootstrapServers[0]
 	r.Test(t, r.TestCase{
 		Providers: accProvider(),
 		PreCheck:  func() { testAccPreCheck(t) },
 		Steps: []r.TestStep{
 			{
-				Config: fmt.Sprintf(testDataSourceTopic_readMissingTopic, topicName),
+				Config: fmt.Sprintf(testDataSourceTopic_readMissingTopic, bs, topicName),
 				Check:  testDataSourceTopic_missingTopicCheck,
 			},
 			{
-				Config: fmt.Sprintf(testDataSourceTopic_readExistingTopic, topicName),
+				Config: fmt.Sprintf(testDataSourceTopic_readExistingTopic, bs, topicName),
 				Check:  testDataSourceTopic_existingTopicCheck,
 			},
 		},
@@ -81,11 +82,11 @@ func testDataSourceTopic_existingTopicCheck(s *terraform.State) error {
 
 const testDataSourceTopic_readExistingTopic = `
 provider "kafka" {
-  bootstrap_servers = ["localhost:9092"]
+  bootstrap_servers = ["%[1]s"]
 }
 
 resource "kafka_topic" "test" {
-  name               = "%[1]s"
+  name               = "%[2]s"
   replication_factor = 1
   partitions         = 1
 
@@ -95,16 +96,16 @@ resource "kafka_topic" "test" {
 }
 
 data "kafka_topic" "test" {
-  name               = "%[1]s"
+  name               = "%[2]s"
 }
 `
 
 const testDataSourceTopic_readMissingTopic = `
 provider "kafka" {
-  bootstrap_servers = ["localhost:9092"]
+  bootstrap_servers = ["%[1]s"]
 }
 
 data "kafka_topic" "test" {
-  name               = "%[1]s"
+  name               = "%[2]s"
 }
 `
