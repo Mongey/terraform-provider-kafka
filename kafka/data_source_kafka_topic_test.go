@@ -20,14 +20,11 @@ func TestAccTopicData(t *testing.T) {
 		PreCheck:  func() { testAccPreCheck(t) },
 		Steps: []r.TestStep{
 			{
-				Config: fmt.Sprintf(testDataSourceTopic_readTopic, topicName),
+				Config: fmt.Sprintf(testDataSourceTopic_readMissingTopic, topicName),
 				Check:  testDataSourceTopic_missingTopicCheck,
 			},
 			{
-				Config: fmt.Sprintf(testDataSourceTopic_createTopic, topicName),
-			},
-			{
-				Config: fmt.Sprintf(testDataSourceTopic_readTopic, topicName),
+				Config: fmt.Sprintf(testDataSourceTopic_readExistingTopic, topicName),
 				Check:  testDataSourceTopic_existingTopicCheck,
 			},
 		},
@@ -35,7 +32,7 @@ func TestAccTopicData(t *testing.T) {
 }
 
 func testDataSourceTopic_missingTopicCheck(s *terraform.State) error {
-	resourceState := s.Modules[0].Resources["data.kafka_topic_config.test"]
+	resourceState := s.Modules[0].Resources["data.kafka_topic.test"]
 	if resourceState == nil {
 		return fmt.Errorf("resource not found in state")
 	}
@@ -53,7 +50,7 @@ func testDataSourceTopic_missingTopicCheck(s *terraform.State) error {
 }
 
 func testDataSourceTopic_existingTopicCheck(s *terraform.State) error {
-	resourceState := s.Modules[0].Resources["data.kafka_topic_config.test"]
+	resourceState := s.Modules[0].Resources["data.kafka_topic.test"]
 	if resourceState == nil {
 		return fmt.Errorf("resource not found in state")
 	}
@@ -82,13 +79,13 @@ func testDataSourceTopic_existingTopicCheck(s *terraform.State) error {
 	return nil
 }
 
-const testDataSourceTopic_createTopic = `
+const testDataSourceTopic_readExistingTopic = `
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
 }
 
 resource "kafka_topic" "test" {
-  name               = "%s"
+  name               = "%[1]s"
   replication_factor = 1
   partitions         = 1
 
@@ -96,14 +93,18 @@ resource "kafka_topic" "test" {
     "segment.ms" = "22222"
   }
 }
+
+data "kafka_topic" "test" {
+  name               = "%[1]s"
+}
 `
 
-const testDataSourceTopic_readTopic = `
+const testDataSourceTopic_readMissingTopic = `
 provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
 }
 
 data "kafka_topic" "test" {
-  name               = "%s"
+  name               = "%[1]s"
 }
 `

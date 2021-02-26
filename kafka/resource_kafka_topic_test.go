@@ -77,7 +77,7 @@ func testAccCheckTopicDestroy(s *terraform.State) error {
 	}
 
 	client := testProvider.Meta().(*LazyClient)
-	_, err := client.ReadTopic(name)
+	_, err := client.ReadTopic(name, true)
 
 	if _, ok := err.(TopicMissingError); !ok {
 		return err
@@ -189,7 +189,7 @@ func testResourceTopic_noConfigCheck(s *terraform.State) error {
 	}
 
 	client := testProvider.Meta().(*LazyClient)
-	topic, err := client.ReadTopic(name)
+	topic, err := client.ReadTopic(name, true)
 
 	if err != nil {
 		return err
@@ -224,7 +224,7 @@ func testResourceTopic_initialCheck(s *terraform.State) error {
 	//}
 
 	client := testProvider.Meta().(*LazyClient)
-	topic, err := client.ReadTopic(name)
+	topic, err := client.ReadTopic(name, true)
 	if err != nil {
 		return err
 	}
@@ -279,7 +279,7 @@ func testResourceTopic_updateCheck(s *terraform.State) error {
 		return fmt.Errorf("id doesn't match name")
 	}
 
-	topic, err := client.ReadTopic(name)
+	topic, err := client.ReadTopic(name, true)
 	if err != nil {
 		return err
 	}
@@ -303,7 +303,7 @@ func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
 	instanceState := resourceState.Primary
 	client := testProvider.Meta().(*LazyClient)
 	name := instanceState.ID
-	topic, err := client.ReadTopic(name)
+	topic, err := client.ReadTopic(name, true)
 	if err != nil {
 		return err
 	}
@@ -335,7 +335,7 @@ func testResourceTopic_updateRFCheck(s *terraform.State) error {
 	}
 	expectedPartitions := int32(parsed)
 
-	topic, err := client.ReadTopic(topicName)
+	topic, err := client.ReadTopic(topicName, true)
 	if err != nil {
 		return err
 	}

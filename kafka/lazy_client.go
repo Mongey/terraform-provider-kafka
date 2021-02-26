@@ -65,12 +65,12 @@ func (c *LazyClient) CreateTopic(t Topic) error {
 	return c.inner.CreateTopic(t)
 }
 
-func (c *LazyClient) ReadTopic(name string) (Topic, error) {
+func (c *LazyClient) ReadTopic(name string, refresh_metadata bool) (Topic, error) {
 	err := c.init()
 	if err != nil {
 		return Topic{}, err
 	}
-	return c.inner.ReadTopic(name)
+	return c.inner.ReadTopic(name, refresh_metadata)
 }
 
 func (c *LazyClient) UpdateTopic(t Topic) error {

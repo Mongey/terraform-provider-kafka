@@ -16,11 +16,15 @@ type TopicMissingError struct {
 
 func (e TopicMissingError) Error() string { return e.msg }
 
+type void struct{}
+var member void
+
 type Client struct {
 	client        sarama.Client
 	kafkaConfig   *sarama.Config
 	config        *Config
 	supportedAPIs map[int]int
+	topics        map[string]void
 }
 
 func NewClient(config *Config) (*Client, error) {
@@ -52,12 +56,13 @@ func NewClient(config *Config) (*Client, error) {
 		kafkaConfig: kc,
 	}
 
-	err = kc.Validate()
+	err = client.populateAPIVersions()
 	if err != nil {
 		return client, err
 	}
 
-	err = client.populateAPIVersions()
+	err = client.extractTopics()
+
 	return client, err
 }
 
@@ -163,6 +168,19 @@ func updateClusterApiVersions(clusterApiVersions *map[int][2]int, brokerApiVersi
 			cluster[apiKey] = clusterMinMax
 		}
 	}
+}
+
+func (c *Client) extractTopics() error {
+	topics, err := c.client.Topics()
+	if err != nil {
+		log.Printf("[ERROR] Error getting topics %s from Kafka", err)
+		return err
+	}
+	c.topics = make(map[string]void)
+	for _, t := range topics {
+		c.topics[t] = member
+	}
+	return nil
 }
 
 func (c *Client) DeleteTopic(t string) error {
@@ -436,58 +454,57 @@ func isPartitionRFChanging(status *sarama.PartitionReplicaReassignmentsStatus) b
 	return len(status.AddingReplicas) != 0 || len(status.RemovingReplicas) != 0
 }
 
-func (client *Client) ReadTopic(name string) (Topic, error) {
+func (client *Client) ReadTopic(name string, refresh_metadata bool) (Topic, error) {
 	c := client.client
 
 	topic := Topic{
 		Name: name,
 	}
 
-	err := c.RefreshMetadata()
-	if err != nil {
-		log.Printf("[ERROR] Error refreshing metadata %s", err)
-		return topic, err
+	if refresh_metadata {
+		log.Printf("[DEBUG] Refreshing metadata");
+		err := c.RefreshMetadata()
+		if err != nil {
+			log.Printf("[ERROR] Error refreshing metadata %s", err)
+			return topic, err
+		}
+		err = client.extractTopics()
+		if err != nil {
+			return topic, err
+		}
+	} else {
+		log.Printf("[DEBUG] skipping metadata refresh")
 	}
-	topics, err := c.Topics()
 
-	if err != nil {
-		log.Printf("[ERROR] Error getting topics %s from Kafka", err)
-		return topic, err
-	}
+	if _, ok := client.topics[name]; ok {
+		log.Printf("[DEBUG] Found %s from Kafka", name)
+		p, err := c.Partitions(name)
+		if err == nil {
+			partitionCount := int32(len(p))
+			log.Printf("[DEBUG] [%s] %d Partitions Found: %v from Kafka", name, partitionCount, p)
+			topic.Partitions = partitionCount
 
-	log.Printf("[INFO] There are %d topics", len(topics))
-	for _, t := range topics {
-		log.Printf("[TRACE] [%s] Reading Topicfrom Kafka", t)
-		if name == t {
-			log.Printf("[DEBUG] Found %s from Kafka", name)
-			p, err := c.Partitions(t)
-			if err == nil {
-				partitionCount := int32(len(p))
-				log.Printf("[DEBUG] [%s] %d Partitions Found: %v from Kafka", name, partitionCount, p)
-				topic.Partitions = partitionCount
-
-				r, err := ReplicaCount(c, name, p)
-				if err != nil {
-					return topic, err
-				}
-
-				log.Printf("[DEBUG] [%s] ReplicationFactor %d from Kafka", name, r)
-				topic.ReplicationFactor = int16(r)
-
-				configToSave, err := client.topicConfig(t)
-				if err != nil {
-					log.Printf("[ERROR] [%s] Could not get config for topic %s", name, err)
-					return topic, err
-				}
-
-				log.Printf("[TRACE] [%s] Config %v from Kafka", name, strPtrMapToStrMap(configToSave))
-				topic.Config = configToSave
-				return topic, nil
+			r, err := ReplicaCount(c, name, p)
+			if err != nil {
+				return topic, err
 			}
+
+			log.Printf("[DEBUG] [%s] ReplicationFactor %d from Kafka", name, r)
+			topic.ReplicationFactor = int16(r)
+
+			configToSave, err := client.topicConfig(name)
+			if err != nil {
+				log.Printf("[ERROR] [%s] Could not get config for topic %s", name, err)
+				return topic, err
+			}
+
+			log.Printf("[TRACE] [%s] Config %v from Kafka", name, strPtrMapToStrMap(configToSave))
+			topic.Config = configToSave
+			return topic, nil
 		}
 	}
 
-	err = TopicMissingError{msg: fmt.Sprintf("%s could not be found", name)}
+	err := TopicMissingError{msg: fmt.Sprintf("%s could not be found", name)}
 	return topic, err
 }
 
