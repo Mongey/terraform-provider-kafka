@@ -101,6 +101,7 @@ data "kafka_topic" "test" {
 }
 `
 
+//lintignore:AT004
 const testDataSourceTopic_readMissingTopic = `
 provider "kafka" {
   bootstrap_servers = ["%[1]s"]
