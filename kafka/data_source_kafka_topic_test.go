@@ -80,6 +80,7 @@ func testDataSourceTopic_existingTopicCheck(s *terraform.State) error {
 	return nil
 }
 
+//lintignore:AT004
 const testDataSourceTopic_readExistingTopic = `
 provider "kafka" {
   bootstrap_servers = ["%[1]s"]
