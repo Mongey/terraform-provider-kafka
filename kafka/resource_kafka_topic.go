@@ -86,7 +86,7 @@ func topicCreate(d *schema.ResourceData, meta interface{}) error {
 
 func topicCreateFunc(client *LazyClient, t Topic) resource.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
-		topic, err := client.ReadTopic(t.Name)
+		topic, err := client.ReadTopic(t.Name, true)
 		switch e := err.(type) {
 		case TopicMissingError:
 			return topic, "Pending", nil
@@ -199,7 +199,7 @@ func waitForTopicRefresh(client *LazyClient, topic string, expected Topic) error
 func topicRefreshFunc(client *LazyClient, topic string, expected Topic) resource.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
 		log.Printf("[DEBUG] waiting for topic to update %s", topic)
-		actual, err := client.ReadTopic(topic)
+		actual, err := client.ReadTopic(topic, true)
 		if err != nil {
 			log.Printf("[ERROR] could not read topic %s, %s", topic, err)
 			return actual, "Error", err
@@ -243,7 +243,7 @@ func topicDelete(d *schema.ResourceData, meta interface{}) error {
 
 func topicDeleteFunc(client *LazyClient, id string, t Topic) resource.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
-		topic, err := client.ReadTopic(t.Name)
+		topic, err := client.ReadTopic(t.Name, true)
 
 		if err != nil {
 			_, ok := err.(TopicMissingError)
@@ -260,7 +260,7 @@ func topicDeleteFunc(client *LazyClient, id string, t Topic) resource.StateRefre
 func topicRead(d *schema.ResourceData, meta interface{}) error {
 	name := d.Id()
 	client := meta.(*LazyClient)
-	topic, err := client.ReadTopic(name)
+	topic, err := client.ReadTopic(name, false)
 
 	if err != nil {
 		log.Printf("[ERROR] Error getting topics %s from Kafka", err)

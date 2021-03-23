@@ -105,6 +105,9 @@ func Provider() terraform.ResourceProvider {
 			"kafka_topic": kafkaTopicResource(),
 			"kafka_acl":   kafkaACLResource(),
 		},
+		DataSourcesMap: map[string]*schema.Resource{
+			"kafka_topic": kafkaTopicDataSource(),
+		},
 	}
 }
 
