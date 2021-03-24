@@ -118,10 +118,11 @@ func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*t
 			return &tlsConfig, err
 		}
 
-		if x509.IsEncryptedPEMBlock(keyBlock) {
+		if x509.IsEncryptedPEMBlock(keyBlock) { //nolint:staticcheck
 			log.Printf("[INFO] Using encrypted private key")
 			var err error
-			keyBytes, err = x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase))
+
+			keyBytes, err = x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase)) //nolint:staticcheck
 			if err != nil {
 				log.Printf("[ERROR] Error decrypting private key with passphrase %s", err)
 				return &tlsConfig, err
