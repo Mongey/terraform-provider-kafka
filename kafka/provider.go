@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-func Provider() terraform.ResourceProvider {
+func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
 			"bootstrap_servers": {
@@ -114,7 +113,7 @@ func Provider() terraform.ResourceProvider {
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	brokers := dTos("bootstrap_servers", d)
 
-	log.Printf("[DEBUG] configuring provider with Brokers @ %v", brokers)
+	log.Printf("[TRACE] configuring provider with brokers @ %v", brokers)
 
 	saslMechanism := d.Get("sasl_mechanism").(string)
 	switch saslMechanism {
@@ -147,7 +146,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		config.ClientCertKey = d.Get("client_key_file").(string)
 	}
 
-	log.Printf("[DEBUG] Config @ %v", config.copyWithMaskedSensitiveValues())
+	log.Printf("[TRACE] Config @ %v", config.copyWithMaskedSensitiveValues())
 
 	return &LazyClient{
 		Config: config,

@@ -1,8 +1,9 @@
 package kafka
 
 import (
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	"log"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func kafkaTopicDataSource() *schema.Resource {
@@ -15,18 +16,18 @@ func kafkaTopicDataSource() *schema.Resource {
 				Description: "The name of the topic.",
 			},
 			"partitions": {
-				Type:         schema.TypeInt,
-				Computed:     true,
-				Description:  "Number of partitions.",
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Number of partitions.",
 			},
 			"replication_factor": {
-				Type:         schema.TypeInt,
-				Computed:     true,
-				Description:  "Number of replicas.",
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Number of replicas.",
 			},
 			"config": {
 				Type:        schema.TypeMap,
-				Computed:     true,
+				Computed:    true,
 				Description: "A map of string k/v attributes.",
 				Elem:        schema.TypeString,
 			},
@@ -40,14 +41,13 @@ func dataSourceTopicRead(d *schema.ResourceData, meta interface{}) error {
 	name := d.Get("name").(string)
 
 	client := meta.(*LazyClient)
-	topic, err := client.ReadTopic(name, false)
+	topic, err := client.ReadTopic(name, true)
 
 	if err != nil {
-		log.Printf("[ERROR] Error getting topics %s from Kafka", err)
+		log.Printf("[ERROR] Error getting topic %s from Kafka: %s", name, err)
 		_, ok := err.(TopicMissingError)
 		if ok {
-			d.SetId("")
-			return nil
+			return err
 		}
 		return err
 	}
@@ -63,4 +63,3 @@ func dataSourceTopicRead(d *schema.ResourceData, meta interface{}) error {
 	d.SetId(name)
 	return errSet.err
 }
-

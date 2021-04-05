@@ -1,12 +1,9 @@
 name: test
 
 on:
-  push:
-    branches:
-      - '**'
   pull_request:
-    branches:
-      - master
+  push:
+    branches: [ $default-branch ]
 
 jobs:
   test:
@@ -15,41 +12,45 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v2
         with:
-          go-version: 1.13.x
-      - run: make test
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: bflad/tfproviderlint-github-action@master
+          go-version: 1.16.x
+      - name: "Run tests"
+        run: |
+          go install github.com/jstemmer/go-junit-report
+          make test | go-junit-report 2>&1 > unit-test-results.xml
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v1
+        if: always()
         with:
-          args: ./...
+          check_name: "Unit Tests"
+          report_paths: unit-test-results.xml
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
   golangci:
-    name: lint
+    name: golangci-lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16.x
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
         with:
-          # Required: the version of golangci-lint is required and must be specified without patch version: we always use the latest patch version.
           version: v1.29
 
   acctest:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v2
         with:
-          go-version: 1.13.x
-      - uses: actions/cache@v1
+          go-version: 1.16.x
+      - uses: actions/cache@v2
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}

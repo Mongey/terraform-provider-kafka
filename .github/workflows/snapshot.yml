@@ -1,9 +1,9 @@
 name: Build Snapshots
 
 on:
+  pull_request:
   push:
-    branches:
-      - '**'
+    branches: [ $default-branch ]
 
 jobs:
   goreleaser:
@@ -14,7 +14,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v1
         with:
-          go-version: 1.13.x
+          go-version: 1.16.x
       - name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v2

@@ -1,4 +1,4 @@
-FROM golang:1.13
+FROM golang:1.16
 
 WORKDIR /go/src/github.com/Mongey/terraform-provider-kafka/
 

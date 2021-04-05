@@ -1,20 +1,23 @@
 package kafka
 
 import (
+	"context"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 var testProvider *schema.Provider
 var testBootstrapServers []string = bootstrapServersFromEnv()
 
 func TestProvider(t *testing.T) {
-	if err := Provider().(*schema.Provider).InternalValidate(); err != nil {
+	if err := Provider().InternalValidate(); err != nil {
 		t.Fatalf("err: %s", err)
 	}
 }
@@ -28,31 +31,53 @@ func testAccPreCheck(t *testing.T) {
 	if client == nil {
 		t.Fatal("No client")
 	}
+	if err := client.init(); err != nil {
+		t.Fatalf("Bad init %v", err)
+	}
 }
 
-func accProvider() map[string]terraform.ResourceProvider {
+func overrideProvider() (*schema.Provider, error) {
 	log.Println("[INFO] Setting up override for a provider")
-	provider := Provider().(*schema.Provider)
+	provider := Provider()
 
-	bootstrapServers := []interface{}{}
-	for _, bs := range testBootstrapServers {
-		bootstrapServers = append(bootstrapServers, bs)
-	}
-
-	raw := map[string]interface{}{
-		"bootstrap_servers": bootstrapServers,
-	}
-
-	err := provider.Configure(terraform.NewResourceConfigRaw(raw))
-	if err != nil {
-		log.Printf("[ERROR] Could not configure provider %v", err)
+	diags := provider.Configure(context.Background(), accTestProviderConfig())
+	if diags.HasError() {
+		log.Printf("[ERROR] Could not configure provider %v", diags)
+		return nil, fmt.Errorf("Could not configure provider")
 	}
 
 	testProvider = provider
+	return provider, nil
+}
 
-	return map[string]terraform.ResourceProvider{
-		"kafka": provider,
+func accTestProviderConfig() *terraform.ResourceConfig {
+	bootstrapServers := bootstrapServersFromEnv()
+	bs := make([]interface{}, len(bootstrapServers))
+
+	for i, s := range bootstrapServers {
+		bs[i] = s
 	}
+
+	ca, err := ioutil.ReadFile("../secrets/ca.crt")
+	if err != nil {
+		panic(err)
+	}
+	cert, err := ioutil.ReadFile("../secrets/client.pem")
+	if err != nil {
+		panic(err)
+	}
+	key, err := ioutil.ReadFile("../secrets/client.key")
+	if err != nil {
+		panic(err)
+	}
+
+	raw := map[string]interface{}{
+		"bootstrap_servers": bs,
+		"ca_cert":           string(ca),
+		"client_cert":       string(cert),
+		"client_key":        string(key),
+	}
+	return terraform.NewResourceConfigRaw(raw)
 }
 
 func bootstrapServersFromEnv() []string {
@@ -71,17 +96,4 @@ func bootstrapServersFromEnv() []string {
 	}
 
 	return bootstrapServers
-}
-
-func nonEmptyAndTrimmed(bootstrapServers []string) []string {
-	wellFormed := make([]string, 0)
-
-	for _, bs := range bootstrapServers {
-		trimmed := strings.TrimSpace(bs)
-		if trimmed != "" {
-			wellFormed = append(wellFormed, trimmed)
-		}
-	}
-
-	return wellFormed
 }

@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"fmt"
+	"strings"
 )
 
 // MapEq compares two maps, and checks that the keys and values are the same
@@ -24,6 +25,19 @@ func MapEq(result, expected map[string]*string) error {
 		}
 	}
 	return nil
+}
+
+func nonEmptyAndTrimmed(bootstrapServers []string) []string {
+	wellFormed := make([]string, 0)
+
+	for _, bs := range bootstrapServers {
+		trimmed := strings.TrimSpace(bs)
+		if trimmed != "" {
+			wellFormed = append(wellFormed, trimmed)
+		}
+	}
+
+	return wellFormed
 }
 
 // TODO: can I just get rid of this?

@@ -1,30 +1,24 @@
 package kafka
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
-
-func positiveValue(val interface{}, key string) (warns []string, errs []error) {
-	v := val.(int)
-	if v < 1 {
-		errs = append(errs, fmt.Errorf("%q must be greater than 0, got: %d", key, v))
-	}
-	return
-}
 
 func kafkaTopicResource() *schema.Resource {
 	return &schema.Resource{
-		Create: topicCreate,
-		Read:   topicRead,
-		Update: topicUpdate,
-		Delete: topicDelete,
+		CreateContext: topicCreate,
+		ReadContext:   topicRead,
+		UpdateContext: topicUpdate,
+		DeleteContext: topicDelete,
 		Importer: &schema.ResourceImporter{
-			State: schema.ImportStatePassthrough,
+			StateContext: schema.ImportStatePassthroughContext,
 		},
 		CustomizeDiff: customDiff,
 		Schema: map[string]*schema.Schema{
@@ -58,26 +52,26 @@ func kafkaTopicResource() *schema.Resource {
 	}
 }
 
-func topicCreate(d *schema.ResourceData, meta interface{}) error {
+func topicCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*LazyClient)
 	t := metaToTopic(d, meta)
 
 	err := c.CreateTopic(t)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	stateConf := &resource.StateChangeConf{
-		Pending: []string{"Pending"},
-		Target: []string{"Created"},
-		Refresh: topicCreateFunc(c, t),
-		Timeout: time.Duration(c.Config.Timeout) * time.Second,
-		Delay: 1 * time.Second,
+		Pending:      []string{"Pending"},
+		Target:       []string{"Created"},
+		Refresh:      topicCreateFunc(c, t),
+		Timeout:      time.Duration(c.Config.Timeout) * time.Second,
+		Delay:        1 * time.Second,
 		PollInterval: 2 * time.Second,
 	}
 
-	if _, err := stateConf.WaitForState(); err != nil {
-		return fmt.Errorf("error waiting for topic (%s) to be created: %s", t.Name, err)
+	if _, err := stateConf.WaitForStateContext(ctx); err != nil {
+		return diag.FromErr(fmt.Errorf("error waiting for topic (%s) to be created: %s", t.Name, err))
 	}
 
 	d.SetId(t.Name)
@@ -98,12 +92,12 @@ func topicCreateFunc(client *LazyClient, t Topic) resource.StateRefreshFunc {
 	}
 }
 
-func topicUpdate(d *schema.ResourceData, meta interface{}) error {
+func topicUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*LazyClient)
 	t := metaToTopic(d, meta)
 
 	if err := c.UpdateTopic(t); err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	// update replica count of existing partitions before adding new ones
@@ -115,11 +109,11 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 		t.ReplicationFactor = int16(newRF)
 
 		if err := c.AlterReplicationFactor(t); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 
-		if err := waitForRFUpdate(c, d.Id()); err != nil {
-			return err
+		if err := waitForRFUpdate(ctx, c, d.Id()); err != nil {
+			return diag.FromErr(err)
 		}
 	}
 
@@ -132,18 +126,18 @@ func topicUpdate(d *schema.ResourceData, meta interface{}) error {
 		t.Partitions = int32(newPartitions)
 
 		if err := c.AddPartitions(t); err != nil {
-			return err
+			return diag.FromErr(err)
 		}
 	}
 
-	if err := waitForTopicRefresh(c, d.Id(), t); err != nil {
-		return err
+	if err := waitForTopicRefresh(ctx, c, d.Id(), t); err != nil {
+		return diag.FromErr(err)
 	}
 
 	return nil
 }
 
-func waitForRFUpdate(client *LazyClient, topic string) error {
+func waitForRFUpdate(ctx context.Context, client *LazyClient, topic string) error {
 	refresh := func() (interface{}, string, error) {
 		isRFUpdating, err := client.IsReplicationFactorUpdating(topic)
 		if err != nil {
@@ -166,7 +160,7 @@ func waitForRFUpdate(client *LazyClient, topic string) error {
 		MinTimeout:   2 * time.Second,
 	}
 
-	if _, err := stateConf.WaitForState(); err != nil {
+	if _, err := stateConf.WaitForStateContext(ctx); err != nil {
 		return fmt.Errorf(
 			"Error waiting for topic (%s) replication_factor to update: %s",
 			topic, err)
@@ -175,7 +169,7 @@ func waitForRFUpdate(client *LazyClient, topic string) error {
 	return nil
 }
 
-func waitForTopicRefresh(client *LazyClient, topic string, expected Topic) error {
+func waitForTopicRefresh(ctx context.Context, client *LazyClient, topic string, expected Topic) error {
 	timeout := time.Duration(client.Config.Timeout) * time.Second
 	stateConf := &resource.StateChangeConf{
 		Pending:      []string{"Updating"},
@@ -187,7 +181,7 @@ func waitForTopicRefresh(client *LazyClient, topic string, expected Topic) error
 		MinTimeout:   2 * time.Second,
 	}
 
-	if _, err := stateConf.WaitForState(); err != nil {
+	if _, err := stateConf.WaitForStateContext(ctx); err != nil {
 		return fmt.Errorf(
 			"Error waiting for topic (%s) to become ready: %s",
 			topic, err)
@@ -213,15 +207,16 @@ func topicRefreshFunc(client *LazyClient, topic string, expected Topic) resource
 	}
 }
 
-func topicDelete(d *schema.ResourceData, meta interface{}) error {
+func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*LazyClient)
 	t := metaToTopic(d, meta)
 
 	err := c.DeleteTopic(t.Name)
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
+	log.Printf("[DEBUG] waiting for topic to delete? %s", t.Name)
 	stateConf := &resource.StateChangeConf{
 		Pending:      []string{"Pending"},
 		Target:       []string{"Deleted"},
@@ -231,20 +226,21 @@ func topicDelete(d *schema.ResourceData, meta interface{}) error {
 		PollInterval: 2 * time.Second,
 		MinTimeout:   20 * time.Second,
 	}
-	_, err = stateConf.WaitForState()
-
+	_, err = stateConf.WaitForStateContext(ctx)
 	if err != nil {
-		return fmt.Errorf("Error waiting for topic (%s) to delete: %s", d.Id(), err)
+		return diag.FromErr(fmt.Errorf("Error waiting for topic (%s) to delete: %s", d.Id(), err))
 	}
 
+	log.Printf("[DEBUG] deletetopic done! %s", t.Name)
 	d.SetId("")
-	return err
+	return nil
 }
 
 func topicDeleteFunc(client *LazyClient, id string, t Topic) resource.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
 		topic, err := client.ReadTopic(t.Name, true)
 
+		log.Printf("[DEBUG] deletetopic read %s, %v", t.Name, err)
 		if err != nil {
 			_, ok := err.(TopicMissingError)
 			if ok {
@@ -254,10 +250,9 @@ func topicDeleteFunc(client *LazyClient, id string, t Topic) resource.StateRefre
 		}
 		return topic, "Pending", nil
 	}
-
 }
 
-func topicRead(d *schema.ResourceData, meta interface{}) error {
+func topicRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	name := d.Id()
 	client := meta.(*LazyClient)
 	topic, err := client.ReadTopic(name, false)
@@ -270,7 +265,7 @@ func topicRead(d *schema.ResourceData, meta interface{}) error {
 			return nil
 		}
 
-		return err
+		return diag.FromErr(err)
 	}
 
 	log.Printf("[DEBUG] Setting the state from Kafka %v", topic)
@@ -280,10 +275,14 @@ func topicRead(d *schema.ResourceData, meta interface{}) error {
 	errSet.Set("replication_factor", topic.ReplicationFactor)
 	errSet.Set("config", topic.Config)
 
-	return errSet.err
+	if errSet.err != nil {
+		return diag.FromErr(errSet.err)
+	}
+
+	return nil
 }
 
-func customDiff(diff *schema.ResourceDiff, v interface{}) error {
+func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
 	log.Printf("[INFO] Checking the diff!")
 	client := v.(*LazyClient)
 
@@ -292,7 +291,7 @@ func customDiff(diff *schema.ResourceDiff, v interface{}) error {
 		o, n := diff.GetChange("partitions")
 		oi := o.(int)
 		ni := n.(int)
-		log.Printf("Partitions is changing from %d to %d", oi, ni)
+		log.Printf("[INFO] Partitions is changing from %d to %d", oi, ni)
 		if ni < oi {
 			log.Printf("Partitions decreased from %d to %d. Forcing new resource", oi, ni)
 			if err := diff.ForceNew("partitions"); err != nil {
@@ -316,4 +315,12 @@ func customDiff(diff *schema.ResourceDiff, v interface{}) error {
 	}
 
 	return nil
+}
+
+func positiveValue(val interface{}, key string) (warns []string, errs []error) {
+	v := val.(int)
+	if v < 1 {
+		errs = append(errs, fmt.Errorf("%q must be greater than 0, got: %d", key, v))
+	}
+	return
 }

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"time"
 	"math/rand"
+	"time"
 
 	"github.com/Shopify/sarama"
 )
@@ -17,6 +17,7 @@ type TopicMissingError struct {
 func (e TopicMissingError) Error() string { return e.msg }
 
 type void struct{}
+
 var member void
 
 type Client struct {
@@ -32,7 +33,11 @@ func NewClient(config *Config) (*Client, error) {
 		return nil, errors.New("Cannot create client without kafka config")
 	}
 
-	log.Printf("[INFO] configuring bootstrap_servers %v", config.copyWithMaskedSensitiveValues())
+	log.Printf("[TRACE] configuring bootstrap_servers %v", config.copyWithMaskedSensitiveValues())
+	if config.BootstrapServers == nil {
+		return nil, fmt.Errorf("No bootstrap_servers provided")
+	}
+
 	bootstrapServers := *(config.BootstrapServers)
 	if bootstrapServers == nil {
 		return nil, fmt.Errorf("No bootstrap_servers provided")
@@ -113,12 +118,12 @@ func (c *Client) populateAPIVersions() error {
 	return nil
 }
 
-func apiVersionsFromBroker(broker *sarama.Broker, config *sarama.Config, ch chan <- []*sarama.ApiVersionsResponseBlock, errCh chan <- error) {
+func apiVersionsFromBroker(broker *sarama.Broker, config *sarama.Config, ch chan<- []*sarama.ApiVersionsResponseBlock, errCh chan<- error) {
 	resp, err := rawApiVersionsRequest(broker, config)
 
 	if err != nil {
 		errCh <- err
-	} else if (resp.Err != sarama.ErrNoError) {
+	} else if resp.Err != sarama.ErrNoError {
 		errCh <- errors.New(resp.Err.Error())
 	} else {
 		ch <- resp.ApiVersions
@@ -246,7 +251,8 @@ func (c *Client) CreateTopic(t Topic) error {
 	}
 
 	timeout := time.Duration(c.config.Timeout) * time.Second
-	log.Printf("[DEBUG] Timeout is %v ", timeout)
+	log.Printf("[TRACE] Timeout is %v ", timeout)
+
 	req := &sarama.CreateTopicsRequest{
 		TopicDetails: map[string]*sarama.TopicDetail{
 			t.Name: {
@@ -372,7 +378,7 @@ func (c *Client) allReplicas() *[]int32 {
 	return &replicas
 }
 
-func buildNewReplicas(allReplicas *[]int32, usedReplicas *[]int32, deltaRF int16) (*[]int32, error)  {
+func buildNewReplicas(allReplicas *[]int32, usedReplicas *[]int32, deltaRF int16) (*[]int32, error) {
 	usedCount := int16(len(*usedReplicas))
 
 	if deltaRF == 0 {
@@ -454,15 +460,16 @@ func isPartitionRFChanging(status *sarama.PartitionReplicaReassignmentsStatus) b
 	return len(status.AddingReplicas) != 0 || len(status.RemovingReplicas) != 0
 }
 
-func (client *Client) ReadTopic(name string, refresh_metadata bool) (Topic, error) {
+func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error) {
 	c := client.client
+	log.Printf("[INFO] 👋 reading topics %s from Kafka: %v", name, refreshMetadata)
 
 	topic := Topic{
 		Name: name,
 	}
 
-	if refresh_metadata {
-		log.Printf("[DEBUG] Refreshing metadata");
+	if refreshMetadata {
+		log.Printf("[DEBUG] Refreshing metadata")
 		err := c.RefreshMetadata()
 		if err != nil {
 			log.Printf("[ERROR] Error refreshing metadata %s", err)

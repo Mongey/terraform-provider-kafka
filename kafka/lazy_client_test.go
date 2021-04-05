@@ -27,7 +27,7 @@ func Test_LazyClientErrors(t *testing.T) {
 	}
 }
 
-func Test_LazyClientWithConfigErors(t *testing.T) {
+func Test_LazyClientWithConfigErrors(t *testing.T) {
 	config := &Config{
 		BootstrapServers: &[]string{"localhost:9000"},
 		Timeout:          10,

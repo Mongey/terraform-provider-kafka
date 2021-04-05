@@ -2,13 +2,16 @@ package kafka
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
 	"github.com/Shopify/sarama"
 	uuid "github.com/hashicorp/go-uuid"
-	r "github.com/hashicorp/terraform-plugin-sdk/helper/resource"
-	"github.com/hashicorp/terraform-plugin-sdk/terraform"
+	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
 func TestAcc_ACLCreateAndUpdate(t *testing.T) {
@@ -20,24 +23,27 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 	bs := testBootstrapServers[0]
 
 	r.Test(t, r.TestCase{
-		Providers:    accProvider(),
-		IsUnitTest:   false,
+		ProviderFactories: map[string]func() (*schema.Provider, error){
+			"kafka": func() (*schema.Provider, error) {
+				return overrideProvider()
+			},
+		},
 		PreCheck:     func() { testAccPreCheck(t) },
 		CheckDestroy: func(s *terraform.State) error { return testAccCheckAclDestroy(aclResourceName) },
 		Steps: []r.TestStep{
 			{
-				Config: fmt.Sprintf(testResourceACL_initialConfig, bs, aclResourceName),
+				Config: cfg(t, bs, fmt.Sprintf(testResourceACL_initialConfig, aclResourceName)),
 				Check:  testResourceACL_initialCheck,
 			},
 			{
-				Config: fmt.Sprintf(testResourceACL_updateConfig, bs, aclResourceName),
+				Config: cfg(t, bs, fmt.Sprintf(testResourceACL_updateConfig, aclResourceName)),
 				Check:  testResourceACL_updateCheck,
 			},
 			{
 				ResourceName:      "kafka_acl.test",
 				ImportState:       true,
 				ImportStateVerify: true,
-				Config:            fmt.Sprintf(testResourceACL_updateConfig, bs, aclResourceName),
+				Config:            cfg(t, bs, fmt.Sprintf(testResourceACL_updateConfig, aclResourceName)),
 			},
 		},
 	})
@@ -105,6 +111,7 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 	if acl.Resource.ResourcePatternType != sarama.AclPatternLiteral {
 		return fmt.Errorf("Should be Literal, not %v", acl.Resource.ResourcePatternType)
 	}
+	log.Printf("[INFO] success")
 	return nil
 }
 
@@ -171,13 +178,6 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 
 //lintignore:AT004
 const testResourceACL_initialConfig = `
-provider "kafka" {
-  bootstrap_servers = ["%s"]
-	ca_cert           = file("../secrets/ca.crt")
-	client_cert       = file("../secrets/client.pem")
-	client_key        = file("../secrets/client.key")
-}
-
 resource "kafka_acl" "test" {
 	resource_name       = "%s"
 	resource_type       = "Topic"
@@ -189,15 +189,7 @@ resource "kafka_acl" "test" {
 }
 `
 
-//lintignore:AT004
 const testResourceACL_updateConfig = `
-provider "kafka" {
-  bootstrap_servers = ["%s"]
-	ca_cert           = file("../secrets/ca.crt")
-	client_cert       = file("../secrets/client.pem")
-	client_key        = file("../secrets/client.key")
-}
-
 resource "kafka_acl" "test" {
 	resource_name                = "%s"
 	resource_type                = "Topic"
@@ -208,3 +200,28 @@ resource "kafka_acl" "test" {
 	acl_permission_type          = "Deny"
 }
 `
+
+//lintignore:AT004
+func cfg(t *testing.T, bs string, extraCfg string) string {
+	_, err := ioutil.ReadFile("../secrets/ca.crt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = ioutil.ReadFile("../secrets/terraform-cert.pem")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = ioutil.ReadFile("../secrets/terraform.pem")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return fmt.Sprintf(`
+provider "kafka" {
+	bootstrap_servers = ["%s"]
+}
+
+%s
+
+`, bs, extraCfg)
+}
