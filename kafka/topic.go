@@ -60,7 +60,7 @@ func isDefault(tc *sarama.ConfigEntry, version int) bool {
 	if version == 0 {
 		return tc.Default
 	}
-	return tc.Source == sarama.SourceDefault || tc.Source == sarama.SourceStaticBroker
+	return (tc.Source == sarama.SourceDefault || tc.Source == sarama.SourceStaticBroker) && tc.Name != "min.insync.replicas"
 }
 
 func metaToTopic(d *schema.ResourceData, meta interface{}) Topic {
