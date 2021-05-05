@@ -1,0 +1,17 @@
+# See GitHub's docs for more information on this file:
+# https://docs.github.com/en/free-pro-team@latest/github/administering-a-repository/configuration-options-for-dependency-updates
+version: 2
+updates:
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      # Check for updates to GitHub Actions every weekday
+      interval: "daily"
+
+  # Maintain dependencies for Go modules
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      # Check for updates to Go modules every weekday
+      interval: "daily"

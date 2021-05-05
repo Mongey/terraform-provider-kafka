@@ -10,11 +10,11 @@ require (
 	github.com/hashicorp/go-getter v1.5.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/hcl/v2 v2.8.1 // indirect
+	github.com/hashicorp/terraform-plugin-docs v0.4.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.5.0
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/ulikunitz/xz v0.5.9 // indirect
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c
-	github.com/zclconf/go-cty v1.7.1 // indirect
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
 	golang.org/x/sys v0.0.0-20201223074533-0d417f636930 // indirect
 	golang.org/x/tools v0.0.0-20201230224404-63754364767c // indirect
