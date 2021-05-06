@@ -1,6 +1,6 @@
 module github.com/Mongey/terraform-provider-kafka
 
-go 1.12
+go 1.16
 
 require (
 	github.com/Shopify/sarama v1.26.4
