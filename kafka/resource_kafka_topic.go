@@ -7,15 +7,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/helper/validation"
 )
-
-func positiveValue(val interface{}, key string) (warns []string, errs []error) {
-	v := val.(int)
-	if v < 1 {
-		errs = append(errs, fmt.Errorf("%q must be greater than 0, got: %d", key, v))
-	}
-	return
-}
 
 func kafkaTopicResource() *schema.Resource {
 	return &schema.Resource{
@@ -38,14 +31,14 @@ func kafkaTopicResource() *schema.Resource {
 				Type:         schema.TypeInt,
 				Required:     true,
 				Description:  "Number of partitions.",
-				ValidateFunc: positiveValue,
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"replication_factor": {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ForceNew:     false,
 				Description:  "Number of replicas.",
-				ValidateFunc: positiveValue,
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"config": {
 				Type:        schema.TypeMap,
@@ -68,11 +61,11 @@ func topicCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	stateConf := &resource.StateChangeConf{
-		Pending: []string{"Pending"},
-		Target: []string{"Created"},
-		Refresh: topicCreateFunc(c, t),
-		Timeout: time.Duration(c.Config.Timeout) * time.Second,
-		Delay: 1 * time.Second,
+		Pending:      []string{"Pending"},
+		Target:       []string{"Created"},
+		Refresh:      topicCreateFunc(c, t),
+		Timeout:      time.Duration(c.Config.Timeout) * time.Second,
+		Delay:        1 * time.Second,
 		PollInterval: 2 * time.Second,
 	}
 
