@@ -2,6 +2,14 @@ package kafka
 
 import "testing"
 
+func Test_NewClient(t *testing.T) {
+	config := &Config{}
+	_, err := NewClient(config)
+	if err == nil {
+		t.Errorf("Expected error, got none")
+	}
+}
+
 func Test_ClientAPIVersion(t *testing.T) {
 	// Default to 0
 	client := &Client{}
