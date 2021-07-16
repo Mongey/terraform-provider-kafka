@@ -1,21 +1,23 @@
 package kafka
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func kafkaACLResource() *schema.Resource {
 	//lintignore:R011
 	return &schema.Resource{
-		Create: aclCreate,
-		Read:   aclRead,
-		Delete: aclDelete,
+		CreateContext: aclCreate,
+		ReadContext:   aclRead,
+		DeleteContext: aclDelete,
 		Importer: &schema.ResourceImporter{
-			State: ImportACL,
+			StateContext: importACL,
 		},
 		SchemaVersion: 1,
 		MigrateState:  migrateKafkaAclState,
@@ -61,7 +63,7 @@ func kafkaACLResource() *schema.Resource {
 	}
 }
 
-func aclCreate(d *schema.ResourceData, meta interface{}) error {
+func aclCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*LazyClient)
 	a := aclInfo(d)
 
@@ -70,7 +72,7 @@ func aclCreate(d *schema.ResourceData, meta interface{}) error {
 
 	if err != nil {
 		log.Println("[ERROR] Failed to create ACL")
-		return err
+		return diag.FromErr(err)
 	}
 
 	d.SetId(a.String())
@@ -78,14 +80,19 @@ func aclCreate(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func aclDelete(d *schema.ResourceData, meta interface{}) error {
+func aclDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*LazyClient)
 	a := aclInfo(d)
 	log.Printf("[INFO] Deleting ACL %s", a)
-	return c.DeleteACL(a)
+
+	err := c.DeleteACL(a)
+	if err != nil {
+		return diag.FromErr(err)
+	}
+	return nil
 }
 
-func aclRead(d *schema.ResourceData, meta interface{}) error {
+func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	log.Println("[INFO] Reading ACL")
 	c := meta.(*LazyClient)
 	a := aclInfo(d)
@@ -93,7 +100,7 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 
 	currentACLs, err := c.ListACLs()
 	if err != nil {
-		return err
+		return diag.FromErr(err)
 	}
 
 	aclNotFound := true
@@ -134,11 +141,11 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 				errSet := errSetter{d: d}
 				errSet.Set("acl_principal", acl.Principal)
 				errSet.Set("acl_host", acl.Host)
-				errSet.Set("acl_operation", acl.Operation)
-				errSet.Set("acl_permission_type", acl.PermissionType)
-				errSet.Set("resource_pattern_type_filter", foundACLs.ResourcePatternType)
+				errSet.Set("acl_operation", ACLOperationToString(acl.Operation))
+				errSet.Set("acl_permission_type", ACLPermissionTypeToString(acl.PermissionType))
+				errSet.Set("resource_pattern_type_filter", resourcePatternToString(foundACLs.ResourcePatternType))
 				if errSet.err != nil {
-					return err
+					return diag.FromErr(err)
 				}
 			}
 		}
@@ -152,7 +159,7 @@ func aclRead(d *schema.ResourceData, meta interface{}) error {
 	return nil
 }
 
-func ImportACL(d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func importACL(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	parts := strings.Split(d.Id(), "|")
 	if len(parts) == 7 {
 		errSet := errSetter{d: d}
