@@ -2,7 +2,6 @@ package kafka
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -24,42 +23,12 @@ func kafkaClient(provider *schema.Provider) (*LazyClient, error) {
 }
 
 func TestAcc_TopicData(t *testing.T) {
-	if os.Getenv("TF_ACC") == "" {
-		t.Skip(" Acceptance tests skipped unless env 'TF_ACC' set")
-	}
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	topicName := fmt.Sprintf("syslog-%s", u)
 	bs := testBootstrapServers[0]
-
-	// ensure the provider is called so we can extract a kafka client from it
-	_, err = overrideProvider()
-	if err != nil {
-		t.Fatal("Could not construct client", err)
-	}
-
-	client, err := kafkaClient(testProvider)
-	if err != nil {
-		t.Fatal("Could not construct client")
-	}
-
-	segmentMs := "12345"
-	err = client.CreateTopic(Topic{
-		topicName,
-		1,
-		1,
-		map[string]*string{
-			"segment.ms": &segmentMs,
-		},
-	})
-
-	if err != nil {
-		t.Fatalf("Unable to setup topic that is needed for data source test: %s", err)
-	}
-
 	r.Test(t, r.TestCase{
 		ProviderFactories: map[string]func() (*schema.Provider, error){
 			"kafka": func() (*schema.Provider, error) {
@@ -69,7 +38,11 @@ func TestAcc_TopicData(t *testing.T) {
 		PreCheck: func() { testAccPreCheck(t) },
 		Steps: []r.TestStep{
 			{
-				Config: cfg(t, bs, fmt.Sprintf(testDataSourceTopic, topicName)),
+				Config: fmt.Sprintf(testDataSourceTopic_readMissingTopic, bs, topicName),
+				Check:  testDataSourceTopic_missingTopicCheck,
+			},
+			{
+				Config: fmt.Sprintf(testDataSourceTopic_readExistingTopic, bs, topicName),
 				Check:  testDataSourceTopic_existingTopicCheck,
 			},
 		},
@@ -99,16 +72,49 @@ func testDataSourceTopic_existingTopicCheck(s *terraform.State) error {
 	if v, ok := instanceState.Attributes["partitions"]; ok && v != "1" {
 		return fmt.Errorf("partitions did not get match, got: %v", instanceState.Attributes["partitions"])
 	}
-	if v, ok := instanceState.Attributes["config.segment.ms"]; ok && v != "12345" {
+	if v, ok := instanceState.Attributes["config.segment.ms"]; ok && v != "22222" {
 		return fmt.Errorf("segment.ms did not get match, got: %v", instanceState.Attributes["config.segment.ms"])
 	}
 
 	return nil
 }
 
+func testDataSourceTopic_missingTopicCheck(s *terraform.State) error {
+	resourceState := s.Modules[0].Resources["data.kafka_topic.test"]
+	if resourceState == nil {
+		return fmt.Errorf("resource not found in state")
+	}
+
+	instanceState := resourceState.Primary
+	if instanceState == nil {
+		return fmt.Errorf("resource has no primary instance")
+	}
+
+	if instanceState.ID != "" {
+		return fmt.Errorf("topic resource present")
+	}
+
+	return nil
+}
+
 //lintignore:AT004
-const testDataSourceTopic = `
+const testDataSourceTopic_readExistingTopic = `
+resource "kafka_topic" "test" {
+  name               = "%[2]s"
+  replication_factor = 1
+  partitions         = 1
+  config = {
+    "segment.ms" = "22222"
+  }
+}
 data "kafka_topic" "test" {
-  name               = "%s"
+  name               = "%[2]s"
+}
+`
+
+//lintignore:AT004
+const testDataSourceTopic_readMissingTopic = `
+data "kafka_topic" "test" {
+  name               = "%[2]s"
 }
 `

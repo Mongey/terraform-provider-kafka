@@ -2,11 +2,12 @@ package kafka
 
 import (
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
 	uuid "github.com/hashicorp/go-uuid"
 	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -27,7 +28,8 @@ func TestAcc_BasicTopic(t *testing.T) {
 			"kafka": func() (*schema.Provider, error) {
 				return overrideProvider()
 			},
-		}, PreCheck: func() { testAccPreCheck(t) },
+		},
+		PreCheck:     func() { testAccPreCheck(t) },
 		CheckDestroy: testAccCheckTopicDestroy,
 		Steps: []r.TestStep{
 			{
