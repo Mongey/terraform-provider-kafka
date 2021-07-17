@@ -317,11 +317,3 @@ func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) e
 
 	return nil
 }
-
-func positiveValue(val interface{}, key string) (warns []string, errs []error) {
-	v := val.(int)
-	if v < 1 {
-		errs = append(errs, fmt.Errorf("%q must be greater than 0, got: %d", key, v))
-	}
-	return
-}
