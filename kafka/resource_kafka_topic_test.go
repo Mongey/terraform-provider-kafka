@@ -473,7 +473,6 @@ func testMessageEqual(pm *sarama.ProducerMessage, cm *sarama.ConsumerMessage) er
 	return nil
 }
 
-//lintignore:AT004
 const testResourceTopic_noConfig = `
 resource "kafka_topic" "test" {
   name               = "%s"
@@ -482,7 +481,6 @@ resource "kafka_topic" "test" {
 }
 `
 
-//lintignore:AT004
 const testResourceTopic_initialConfig = `
 resource "kafka_topic" "test" {
   name               = "%s"
@@ -496,7 +494,6 @@ resource "kafka_topic" "test" {
 }
 `
 
-//lintignore:AT004
 const testResourceTopic_updateConfig = `
 resource "kafka_topic" "test" {
   name               = "%s"
@@ -510,7 +507,6 @@ resource "kafka_topic" "test" {
 }
 `
 
-//lintignore:AT004
 const testResourceTopic_updatePartitions = `
 resource "kafka_topic" "test" {
   name               = "%s"
@@ -524,7 +520,6 @@ resource "kafka_topic" "test" {
 }
 `
 
-//lintignore:AT004
 const testResourceTopic_updateRF = `
 resource "kafka_topic" "test" {
   name               = "%s"

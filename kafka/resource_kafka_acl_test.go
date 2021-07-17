@@ -176,7 +176,6 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 	return nil
 }
 
-//lintignore:AT004
 const testResourceACL_initialConfig = `
 resource "kafka_acl" "test" {
 	resource_name       = "%s"
@@ -222,6 +221,5 @@ provider "kafka" {
 }
 
 %s
-
 `, bs, extraCfg)
 }

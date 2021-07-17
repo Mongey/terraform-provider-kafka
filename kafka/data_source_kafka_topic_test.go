@@ -97,7 +97,6 @@ func testDataSourceTopic_missingTopicCheck(s *terraform.State) error {
 	return nil
 }
 
-//lintignore:AT004
 const testDataSourceTopic_readExistingTopic = `
 resource "kafka_topic" "test" {
   name               = "%[2]s"
@@ -107,12 +106,12 @@ resource "kafka_topic" "test" {
     "segment.ms" = "22222"
   }
 }
+
 data "kafka_topic" "test" {
   name               = "%[2]s"
 }
 `
 
-//lintignore:AT004
 const testDataSourceTopic_readMissingTopic = `
 data "kafka_topic" "test" {
   name               = "%[2]s"
