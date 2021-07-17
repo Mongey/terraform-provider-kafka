@@ -183,6 +183,7 @@ func (c *Client) extractTopics() error {
 		log.Printf("[ERROR] Error getting topics %s from Kafka", err)
 		return err
 	}
+	log.Printf("[DEBUG] Got %d topics from Kafka", len(topics))
 	c.topics = make(map[string]void)
 	for _, t := range topics {
 		c.topics[t] = member
@@ -464,7 +465,7 @@ func isPartitionRFChanging(status *sarama.PartitionReplicaReassignmentsStatus) b
 
 func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error) {
 	c := client.client
-	log.Printf("[INFO] 👋 reading topics %s from Kafka: %v", name, refreshMetadata)
+	log.Printf("[INFO] 👋 reading topic '%s' from Kafka: %v", name, refreshMetadata)
 
 	topic := Topic{
 		Name: name,

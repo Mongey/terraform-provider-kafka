@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -46,9 +47,11 @@ func dataSourceTopicRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		log.Printf("[ERROR] Error getting topic %s from Kafka: %s", name, err)
 		_, ok := err.(TopicMissingError)
+
 		if ok {
-			return err
+			return fmt.Errorf("Could not find topic '%s'", name)
 		}
+
 		return err
 	}
 
