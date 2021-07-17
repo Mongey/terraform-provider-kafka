@@ -135,17 +135,17 @@ func TestAcc_TopicAlterReplicationFactor(t *testing.T) {
 
 	keyEncoder := sarama.StringEncoder("same key -> same partition -> same ordering")
 	messages := []*sarama.ProducerMessage{
-		&sarama.ProducerMessage{
+		{
 			Topic: topicName,
 			Key:   keyEncoder,
 			Value: sarama.StringEncoder("Krusty"),
 		},
-		&sarama.ProducerMessage{
+		{
 			Topic: topicName,
 			Key:   keyEncoder,
 			Value: sarama.StringEncoder("Krab"),
 		},
-		&sarama.ProducerMessage{
+		{
 			Topic: topicName,
 			Key:   keyEncoder,
 			Value: sarama.StringEncoder("Pizza"),
