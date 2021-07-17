@@ -40,7 +40,11 @@ func overrideProvider() (*schema.Provider, error) {
 	log.Println("[INFO] Setting up override for a provider")
 	provider := Provider()
 
-	diags := provider.Configure(context.Background(), accTestProviderConfig())
+	rc, err := accTestProviderConfig()
+	if err != nil {
+		return nil, err
+	}
+	diags := provider.Configure(context.Background(), rc)
 	if diags.HasError() {
 		log.Printf("[ERROR] Could not configure provider %v", diags)
 		return nil, fmt.Errorf("Could not configure provider")
@@ -50,7 +54,7 @@ func overrideProvider() (*schema.Provider, error) {
 	return provider, nil
 }
 
-func accTestProviderConfig() *terraform.ResourceConfig {
+func accTestProviderConfig() (*terraform.ResourceConfig, error) {
 	bootstrapServers := bootstrapServersFromEnv()
 	bs := make([]interface{}, len(bootstrapServers))
 
@@ -60,15 +64,15 @@ func accTestProviderConfig() *terraform.ResourceConfig {
 
 	ca, err := ioutil.ReadFile("../secrets/ca.crt")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	cert, err := ioutil.ReadFile("../secrets/client.pem")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	key, err := ioutil.ReadFile("../secrets/client.key")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	raw := map[string]interface{}{
@@ -77,7 +81,8 @@ func accTestProviderConfig() *terraform.ResourceConfig {
 		"client_cert":       string(cert),
 		"client_key":        string(key),
 	}
-	return terraform.NewResourceConfigRaw(raw)
+
+	return terraform.NewResourceConfigRaw(raw), nil
 }
 
 func bootstrapServersFromEnv() []string {
