@@ -23,10 +23,11 @@ func (c *LazyClient) init() error {
 		c.inner, err = NewClient(c.Config)
 		c.initErr = err
 	})
+
 	if c.Config != nil {
-		log.Printf("[DEBUG] lazy client init %s; config, %v", c.initErr, c.Config.copyWithMaskedSensitiveValues())
+		log.Printf("[TRACE] lazy client init %s; config, %v", c.initErr, c.Config.copyWithMaskedSensitiveValues())
 	} else {
-		log.Printf("[DEBUG] lazy client init %s", c.initErr)
+		log.Printf("[TRACE] lazy client init %s", c.initErr)
 	}
 	if c.initErr == sarama.ErrBrokerNotAvailable || c.initErr == sarama.ErrOutOfBrokers {
 		if c.Config.TLSEnabled {

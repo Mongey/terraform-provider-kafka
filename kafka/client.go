@@ -33,7 +33,13 @@ func NewClient(config *Config) (*Client, error) {
 		return nil, errors.New("Cannot create client without kafka config")
 	}
 
+	log.Printf("[TRACE] configuring bootstrap_servers %v", config.copyWithMaskedSensitiveValues())
 	if config.BootstrapServers == nil {
+		return nil, fmt.Errorf("No bootstrap_servers provided")
+	}
+
+	bootstrapServers := *(config.BootstrapServers)
+	if bootstrapServers == nil {
 		return nil, fmt.Errorf("No bootstrap_servers provided")
 	}
 
@@ -45,7 +51,6 @@ func NewClient(config *Config) (*Client, error) {
 		return nil, err
 	}
 
-	bootstrapServers := *(config.BootstrapServers)
 	c, err := sarama.NewClient(bootstrapServers, kc)
 	if err != nil {
 		log.Printf("[ERROR] Error connecting to kafka %s", err)
@@ -178,6 +183,7 @@ func (c *Client) extractTopics() error {
 		log.Printf("[ERROR] Error getting topics %s from Kafka", err)
 		return err
 	}
+	log.Printf("[DEBUG] Got %d topics from Kafka", len(topics))
 	c.topics = make(map[string]void)
 	for _, t := range topics {
 		c.topics[t] = member
@@ -248,7 +254,8 @@ func (c *Client) CreateTopic(t Topic) error {
 	}
 
 	timeout := time.Duration(c.config.Timeout) * time.Second
-	log.Printf("[DEBUG] Timeout is %v ", timeout)
+	log.Printf("[TRACE] Timeout is %v ", timeout)
+
 	req := &sarama.CreateTopicsRequest{
 		TopicDetails: map[string]*sarama.TopicDetail{
 			t.Name: {
@@ -456,14 +463,15 @@ func isPartitionRFChanging(status *sarama.PartitionReplicaReassignmentsStatus) b
 	return len(status.AddingReplicas) != 0 || len(status.RemovingReplicas) != 0
 }
 
-func (client *Client) ReadTopic(name string, refresh_metadata bool) (Topic, error) {
+func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error) {
 	c := client.client
+	log.Printf("[INFO] 👋 reading topic '%s' from Kafka: %v", name, refreshMetadata)
 
 	topic := Topic{
 		Name: name,
 	}
 
-	if refresh_metadata {
+	if refreshMetadata {
 		log.Printf("[DEBUG] Refreshing metadata")
 		err := c.RefreshMetadata()
 		if err != nil {

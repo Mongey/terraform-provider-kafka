@@ -6,9 +6,11 @@ build:
 	go build .
 
 test:
-	 go test ./...
+	 go test $(TEST) -v $(TESTARGS)
 
 testacc:
+	GODEBUG=x509ignoreCN=0 \
+	KAFKA_BOOTSTRAP_SERVERS=localhost:9092 \
 	KAFKA_CA_CERT=../secrets/ca.crt \
 	KAFKA_CLIENT_CERT=../secrets/client.pem \
 	KAFKA_CLIENT_KEY=../secrets/client.key \
