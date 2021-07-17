@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
 	uuid "github.com/hashicorp/go-uuid"
 	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -24,13 +22,9 @@ func TestAcc_BasicTopic(t *testing.T) {
 	topicName := fmt.Sprintf("syslog-%s", u)
 	bs := testBootstrapServers[0]
 	r.Test(t, r.TestCase{
-		ProviderFactories: map[string]func() (*schema.Provider, error){
-			"kafka": func() (*schema.Provider, error) {
-				return overrideProvider()
-			},
-		},
-		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccCheckTopicDestroy,
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckTopicDestroy,
 		Steps: []r.TestStep{
 			{
 				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_noConfig, topicName)),
@@ -49,13 +43,9 @@ func TestAcc_TopicConfigUpdate(t *testing.T) {
 	bs := testBootstrapServers[0]
 
 	r.Test(t, r.TestCase{
-		ProviderFactories: map[string]func() (*schema.Provider, error){
-			"kafka": func() (*schema.Provider, error) {
-				return overrideProvider()
-			},
-		},
-		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccCheckTopicDestroy,
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckTopicDestroy,
 		Steps: []r.TestStep{
 			{
 				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_initialConfig, topicName)),
@@ -105,13 +95,9 @@ func TestAcc_TopicUpdatePartitions(t *testing.T) {
 	bs := testBootstrapServers[0]
 
 	r.Test(t, r.TestCase{
-		ProviderFactories: map[string]func() (*schema.Provider, error){
-			"kafka": func() (*schema.Provider, error) {
-				return overrideProvider()
-			},
-		},
-		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccCheckTopicDestroy,
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckTopicDestroy,
 		Steps: []r.TestStep{
 			{
 				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_initialConfig, topicName)),
@@ -153,13 +139,9 @@ func TestAcc_TopicAlterReplicationFactor(t *testing.T) {
 	}
 
 	r.Test(t, r.TestCase{
-		ProviderFactories: map[string]func() (*schema.Provider, error){
-			"kafka": func() (*schema.Provider, error) {
-				return overrideProvider()
-			},
-		},
-		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: testAccCheckTopicDestroy,
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckTopicDestroy,
 		Steps: []r.TestStep{
 			{
 				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_updateRF, topicName, 1, 7)),

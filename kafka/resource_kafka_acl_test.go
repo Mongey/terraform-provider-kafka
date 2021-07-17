@@ -6,8 +6,6 @@ import (
 	"log"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-
 	"github.com/Shopify/sarama"
 	uuid "github.com/hashicorp/go-uuid"
 	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
@@ -23,13 +21,9 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 	bs := testBootstrapServers[0]
 
 	r.Test(t, r.TestCase{
-		ProviderFactories: map[string]func() (*schema.Provider, error){
-			"kafka": func() (*schema.Provider, error) {
-				return overrideProvider()
-			},
-		},
-		PreCheck:     func() { testAccPreCheck(t) },
-		CheckDestroy: func(s *terraform.State) error { return testAccCheckAclDestroy(aclResourceName) },
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      func(s *terraform.State) error { return testAccCheckAclDestroy(aclResourceName) },
 		Steps: []r.TestStep{
 			{
 				Config: cfg(t, bs, fmt.Sprintf(testResourceACL_initialConfig, aclResourceName)),

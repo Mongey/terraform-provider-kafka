@@ -36,6 +36,14 @@ func testAccPreCheck(t *testing.T) {
 	}
 }
 
+func overrideProviderFactory() map[string]func() (*schema.Provider, error) {
+	return map[string]func() (*schema.Provider, error){
+		"kafka": func() (*schema.Provider, error) {
+			return overrideProvider()
+		},
+	}
+}
+
 func overrideProvider() (*schema.Provider, error) {
 	log.Println("[INFO] Setting up override for a provider")
 	provider := Provider()
