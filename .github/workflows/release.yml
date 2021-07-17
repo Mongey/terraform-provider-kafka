@@ -20,9 +20,9 @@ jobs:
       - name: Import GPG key
         id: import_gpg
         uses: crazy-max/ghaction-import-gpg@v3.1.0
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          PASSPHRASE: ${{ secrets.PASSPHRASE }}
+        with:
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.PASSPHRASE }}
       - uses: actions/cache@v2
         with:
           path: ~/go/pkg/mod
