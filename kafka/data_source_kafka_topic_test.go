@@ -12,16 +12,6 @@ import (
 	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func kafkaClient(provider *schema.Provider) (*LazyClient, error) {
-	meta := testProvider.Meta()
-	if meta == nil {
-		return nil, fmt.Errorf("No client found, was Configure() called on provider?")
-	}
-	client := meta.(*LazyClient)
-
-	return client, nil
-}
-
 func TestAcc_TopicData(t *testing.T) {
 	u, err := uuid.GenerateUUID()
 	if err != nil {
