@@ -47,6 +47,7 @@ your [terraform plugin directory][third-party-plugins] (typically `~/.terraform.
     ``` bash
     mkdir -p $GOPATH/src/github.com/Mongey/terraform-provider-kafka; cd $GOPATH/src/github.com/Mongey/
     git clone https://github.com/Mongey/terraform-provider-kafka.git
+    cd terraform-provider-kafka
     ```
 0. Build the provider `make build`
 0. Run the tests `make test`
