@@ -421,10 +421,11 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	for _, r := range allResources {
 		log.Printf("[TRACE] Describe Acl Requst %v", r)
 		aclsR, err := broker.DescribeAcls(r)
-		log.Printf("[TRACE] ThrottleTime: %d", aclsR.ThrottleTime)
 		if err != nil {
 			return nil, err
 		}
+		
+		log.Printf("[TRACE] ThrottleTime: %d", aclsR.ThrottleTime)
 
 		if err == nil {
 			if aclsR.Err != sarama.ErrNoError {
