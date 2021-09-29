@@ -5,7 +5,7 @@ go 1.16
 require (
 	cloud.google.com/go v0.74.0 // indirect
 	cloud.google.com/go/storage v1.12.0 // indirect
-	github.com/Shopify/sarama v1.29.1
+	github.com/Shopify/sarama v1.30.0
 	github.com/aws/aws-sdk-go v1.36.18 // indirect
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/hcl/v2 v2.8.1 // indirect
@@ -14,6 +14,7 @@ require (
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/ulikunitz/xz v0.5.9 // indirect
 	github.com/xdg/scram v1.0.3
+	github.com/xdg/stringprep v1.0.3 // indirect
 	golang.org/x/tools v0.0.0-20201230224404-63754364767c // indirect
 	google.golang.org/genproto v0.0.0-20201214200347-8c77b98c765d // indirect
 )
