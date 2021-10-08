@@ -28,7 +28,7 @@ type Config struct {
 
 func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V2_4_0_0
+	kafkaConfig.Version = sarama.V2_6_0_0
 	kafkaConfig.ClientID = "terraform-provider-kafka"
 	kafkaConfig.Admin.Timeout = time.Duration(c.Timeout) * time.Second
 	kafkaConfig.Metadata.Full = true // the default, but just being clear

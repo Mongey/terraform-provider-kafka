@@ -3,7 +3,6 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -70,31 +69,15 @@ func accTestProviderConfig() (*terraform.ResourceConfig, error) {
 		bs[i] = s
 	}
 
-	ca, err := ioutil.ReadFile("../secrets/ca.crt")
-	if err != nil {
-		return nil, err
-	}
-	cert, err := ioutil.ReadFile("../secrets/client.pem")
-	if err != nil {
-		return nil, err
-	}
-	key, err := ioutil.ReadFile("../secrets/client.key")
-	if err != nil {
-		return nil, err
-	}
-
 	raw := map[string]interface{}{
 		"bootstrap_servers": bs,
-		"ca_cert":           string(ca),
-		"client_cert":       string(cert),
-		"client_key":        string(key),
 	}
 
 	return terraform.NewResourceConfigRaw(raw), nil
 }
 
 func bootstrapServersFromEnv() []string {
-	fromEnv := strings.Split(os.Getenv("KAFKA_BOOTSTRAP_SERVER"), ",")
+	fromEnv := strings.Split(os.Getenv("KAFKA_BOOTSTRAP_SERVERS"), ",")
 	fromEnv = nonEmptyAndTrimmed(fromEnv)
 
 	if len(fromEnv) == 0 {

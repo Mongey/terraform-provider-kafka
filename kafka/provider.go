@@ -103,6 +103,7 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"kafka_topic": kafkaTopicResource(),
 			"kafka_acl":   kafkaACLResource(),
+			"kafka_quota": kafkaQuotaResource(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"kafka_topic": kafkaTopicDataSource(),

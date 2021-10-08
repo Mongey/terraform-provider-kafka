@@ -78,7 +78,7 @@ func (c *Client) SaramaClient() sarama.Client {
 }
 
 func (c *Client) populateAPIVersions() error {
-	ch := make(chan []*sarama.ApiVersionsResponseBlock)
+	ch := make(chan []sarama.ApiVersionsResponseKey)
 	errCh := make(chan error)
 
 	brokers := c.client.Brokers()
@@ -120,15 +120,15 @@ func (c *Client) populateAPIVersions() error {
 	return nil
 }
 
-func apiVersionsFromBroker(broker *sarama.Broker, config *sarama.Config, ch chan<- []*sarama.ApiVersionsResponseBlock, errCh chan<- error) {
+func apiVersionsFromBroker(broker *sarama.Broker, config *sarama.Config, ch chan<- []sarama.ApiVersionsResponseKey, errCh chan<- error) {
 	resp, err := rawApiVersionsRequest(broker, config)
 
 	if err != nil {
 		errCh <- err
-	} else if resp.Err != sarama.ErrNoError {
-		errCh <- errors.New(resp.Err.Error())
+	} else if sarama.KError(resp.ErrorCode) != sarama.ErrNoError {
+		errCh <- errors.New(sarama.KError(resp.ErrorCode).Error())
 	} else {
-		ch <- resp.ApiVersions
+		ch <- resp.ApiKeys
 	}
 }
 
@@ -146,7 +146,7 @@ func rawApiVersionsRequest(broker *sarama.Broker, config *sarama.Config) (*saram
 	return broker.ApiVersions(&sarama.ApiVersionsRequest{})
 }
 
-func updateClusterApiVersions(clusterApiVersions *map[int][2]int, brokerApiVersions []*sarama.ApiVersionsResponseBlock) {
+func updateClusterApiVersions(clusterApiVersions *map[int][2]int, brokerApiVersions []sarama.ApiVersionsResponseKey) {
 	cluster := *clusterApiVersions
 
 	for _, apiBlock := range brokerApiVersions {

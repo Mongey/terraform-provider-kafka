@@ -170,6 +170,37 @@ For import, use as a parameter the items separated by `|` character. Quote it to
 terraform import kafka_acl.admin 'User:12345|*|Describe|Allow|Topic|experimental-topic|Prefixed'
 ```
 
+### `kafka_quota`
+A resource for managing Kafka Quotas.
+
+#### Example
+
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9092"]
+  ca_cert           = file("../secrets/ca.crt")
+  client_cert       = file("../secrets/terraform-cert.pem")
+  client_key        = file("../secrets/terraform.pem")
+}
+
+resource "kafka_quota" "test" {
+  entity_name       = "client1"
+  entity_type       = "client-id"
+  config = {
+    "consumer_byte_rate" = "4000000"
+    "producer_byte_rate" = "3500000"
+  }
+}
+```
+
+#### Properties
+
+| Property             | Description                                    |
+| -------------------- | ---------------------------------------------- |
+| `entity_name`        | The name of the entity                         |
+| `entity_type`        | The entity type (client-id, user, ip)          |
+| `config`             | A map of string attributes for the entity      |
+
 ## Requirements
 * [>= Kafka 1.0.0][3]
 
