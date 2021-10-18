@@ -145,3 +145,19 @@ func (c *LazyClient) DeleteACL(s StringlyTypedACL) error {
 	}
 	return c.inner.DeleteACL(s)
 }
+
+func (c *LazyClient) AlterQuota(q Quota) error {
+	err := c.init()
+	if err != nil {
+		return err
+	}
+	return c.inner.AlterQuota(q, false)
+}
+
+func (c *LazyClient) DescribeQuota(entityType string, entityName string) (*Quota, error) {
+	err := c.init()
+	if err != nil {
+		return nil, err
+	}
+	return c.inner.DescribeQuota(entityType, entityName)
+}
