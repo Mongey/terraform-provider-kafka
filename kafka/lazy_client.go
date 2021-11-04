@@ -161,3 +161,27 @@ func (c *LazyClient) DescribeQuota(entityType string, entityName string) (*Quota
 	}
 	return c.inner.DescribeQuota(entityType, entityName)
 }
+
+func (c *LazyClient) UpsertUserScramCredential(userScramCredential UserScramCredential) error {
+	err := c.init()
+	if err != nil {
+		return err
+	}
+	return c.inner.UpsertUserScramCredential(userScramCredential)
+}
+
+func (c *LazyClient) DeleteUserScramCredential(userScramCredential UserScramCredential) error {
+	err := c.init()
+	if err != nil {
+		return err
+	}
+	return c.inner.DeleteUserScramCredential(userScramCredential)
+}
+
+func (c *LazyClient) DescribeUserScramCredential(username string) (*UserScramCredential, error) {
+	err := c.init()
+	if err != nil {
+		return nil, err
+	}
+	return c.inner.DescribeUserScramCredential(username)
+}
