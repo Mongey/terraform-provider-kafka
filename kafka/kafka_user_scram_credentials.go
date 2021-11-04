@@ -71,6 +71,11 @@ func (c *Client) UpsertUserScramCredential(userScramCredential UserScramCredenti
 
 	results, err := admin.UpsertUserScramCredentials([]sarama.AlterUserScramCredentialsUpsert{*upsert})
 
+	if err != nil {
+		log.Printf("[ERROR] Error upserting user scram credential %v", err)
+		return err
+	}
+
 	for _, res := range results {
 		if res.ErrorCode != sarama.ErrNoError {
 			return res.ErrorCode
@@ -89,6 +94,11 @@ func (c *Client) DeleteUserScramCredential(userScramCredential UserScramCredenti
 	delete := prepareDelete(userScramCredential)
 	results, err := admin.DeleteUserScramCredentials([]sarama.AlterUserScramCredentialsDelete{*delete})
 
+	if err != nil {
+		log.Printf("[ERROR] Error deleting user scram credential %v", err)
+		return err
+	}
+
 	for _, res := range results {
 		if res.ErrorCode != sarama.ErrNoError {
 			return res.ErrorCode
@@ -99,15 +109,16 @@ func (c *Client) DeleteUserScramCredential(userScramCredential UserScramCredenti
 }
 
 
-func (c *Client) DescribeUserScramCredential(credentialName string) (*UserScramCredential, error) {
+func (c *Client) DescribeUserScramCredential(username string) (*UserScramCredential, error) {
 	log.Printf("[INFO] Describing User Scram Credential")
 	admin, err := sarama.NewClusterAdminFromClient(c.client)
 	if err != nil {
 		return nil, err
 	}
 
-	results, err := admin.DescribeUserScramCredentials([]string{credentialName})
+	results, err := admin.DescribeUserScramCredentials([]string{username})
 	if err != nil {
+		log.Printf("[ERROR] Error finding user scram credential %v", err)
 		return nil, err
 	}
 
@@ -118,7 +129,7 @@ func (c *Client) DescribeUserScramCredential(credentialName string) (*UserScramC
 	res := []UserScramCredential{}
 	for _, result := range results {
 		if result.ErrorCode != sarama.ErrNoError {
-			return nil, fmt.Errorf("Error describing user scram credential '%s': %s", credentialName, *result.ErrorMessage)
+			return nil, fmt.Errorf("Error describing user scram credential '%s': %s", username, *result.ErrorMessage)
 		}
 		r := UserScramCredential{
 			Name: result.User,

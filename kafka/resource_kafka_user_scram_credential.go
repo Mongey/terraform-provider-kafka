@@ -47,6 +47,7 @@ func kafkaUserScramCredentialResource() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    false,
+				ValidateFunc: validation.StringIsNotWhiteSpace,
 				Description: "The password of the credential",
 			},
 		},
