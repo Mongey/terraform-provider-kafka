@@ -598,3 +598,11 @@ func (c *Client) getDeleteAclsRequestAPIVersion() int16 {
 func (c *Client) getDescribeConfigAPIVersion() int16 {
 	return int16(c.versionForKey(32, 1))
 }
+
+func (c *Client) getKafkaTopicList() ([]string, error) {
+	topics, err := c.client.Topics()
+	if err != nil {
+		return nil, err
+	}
+	return topics, nil
+}

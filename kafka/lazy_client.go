@@ -185,3 +185,10 @@ func (c *LazyClient) DeleteUserScramCredential(userScramCredential UserScramCred
 	}
 	return c.inner.DeleteUserScramCredential(userScramCredential)
 }
+func (c *LazyClient) GetKafkaTopics() ([]Topic, error) {
+	err := c.init()
+	if err != nil {
+		return nil, err
+	}
+	return c.inner.getKafkaTopics()
+}

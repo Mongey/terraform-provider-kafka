@@ -108,6 +108,7 @@ func Provider() *schema.Provider {
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"kafka_topic": kafkaTopicDataSource(),
+			"kafka_topic_list": kafkaTopicListDataSource(),
 		},
 	}
 }
