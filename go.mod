@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/go-uuid v1.0.2
 	github.com/hashicorp/hcl/v2 v2.8.1 // indirect
 	github.com/hashicorp/terraform-plugin-docs v0.5.0
-	github.com/hashicorp/terraform-plugin-sdk/v2 v2.10.0
+	github.com/hashicorp/terraform-plugin-sdk/v2 v2.10.1
 	github.com/ulikunitz/xz v0.5.9 // indirect
 	github.com/xdg/scram v1.0.3
 	github.com/xdg/stringprep v1.0.3 // indirect
