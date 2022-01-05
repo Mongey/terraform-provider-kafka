@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-func kafkaTopicListDataSource() *schema.Resource {
+func kafkaTopicsDataSource() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceTopicListRead,
+		Read: dataSourceTopicsRead,
 		Schema: map[string]*schema.Schema{
 			"list": {
 				Type:        schema.TypeList,
@@ -19,7 +19,7 @@ func kafkaTopicListDataSource() *schema.Resource {
 	}
 }
 
-func dataSourceTopicListRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceTopicsRead(d *schema.ResourceData, meta interface{}) error {
 	client := meta.(*LazyClient)
 	topicList, err := client.GetKafkaTopicList()
 	if err != nil {

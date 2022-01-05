@@ -6,7 +6,7 @@ import (
 	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-func TestAcc_TopicList(t *testing.T) {
+func TestAcc_Topics(t *testing.T) {
 	bs := testBootstrapServers[0]
 	// Should be only one topic in a brand new kafka cluster
 	expectedTopic := "__confluent.support.metrics"
@@ -14,17 +14,17 @@ func TestAcc_TopicList(t *testing.T) {
 		ProviderFactories: overrideProviderFactory(),
 		Steps: []r.TestStep{
 			{
-				Config: cfg(t, bs,testDataSourceKafkaTopicList),
+				Config: cfg(t, bs,testDataSourceKafkaTopics),
 				Check: r.ComposeTestCheckFunc(
-					r.TestCheckResourceAttr("data.kafka_topic_list.test", "list.0", expectedTopic),
-					r.TestCheckResourceAttr("data.kafka_topic_list.test", "list.#", "1"),
+					r.TestCheckResourceAttr("data.kafka_topics.test", "list.0", expectedTopic),
+					r.TestCheckResourceAttr("data.kafka_topics.test", "list.#", "1"),
 				),
 			},
 		},
 	})
 }
 
-const testDataSourceKafkaTopicList = `
-data "kafka_topic_list" "test" {
+const testDataSourceKafkaTopics = `
+data "kafka_topics" "test" {
 }
 `
