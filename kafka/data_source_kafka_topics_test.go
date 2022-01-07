@@ -14,10 +14,12 @@ func TestAcc_Topics(t *testing.T) {
 		ProviderFactories: overrideProviderFactory(),
 		Steps: []r.TestStep{
 			{
-				Config: cfg(t, bs,testDataSourceKafkaTopics),
+				Config: cfg(t, bs, testDataSourceKafkaTopics),
 				Check: r.ComposeTestCheckFunc(
-					r.TestCheckResourceAttr("data.kafka_topics.test", "list.0", expectedTopic),
-					r.TestCheckResourceAttr("data.kafka_topics.test", "list.#", "1"),
+					r.TestCheckOutput("partitions", "1"),
+					r.TestCheckOutput("replication_factor", "3"),
+					r.TestCheckOutput("topic_name", expectedTopic),
+					r.TestCheckOutput("retention_ms", "31536000000"),
 				),
 			},
 		},
@@ -26,5 +28,21 @@ func TestAcc_Topics(t *testing.T) {
 
 const testDataSourceKafkaTopics = `
 data "kafka_topics" "test" {
+}
+
+output "partitions" {
+ value = data.kafka_topics.test.list[0].partitions
+}
+
+output "replication_factor" {
+ value = data.kafka_topics.test.list[0].replication_factor
+}
+
+output "topic_name" {
+ value = data.kafka_topics.test.list[0].topic_name
+}
+
+output "retention_ms" {
+ value = data.kafka_topics.test.list[0].config["retention.ms"]
 }
 `

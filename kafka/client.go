@@ -599,10 +599,17 @@ func (c *Client) getDescribeConfigAPIVersion() int16 {
 	return int16(c.versionForKey(32, 1))
 }
 
-func (c *Client) getKafkaTopicList() ([]string, error) {
+func (c *Client) getKafkaTopics() ([]Topic, error) {
 	topics, err := c.client.Topics()
 	if err != nil {
 		return nil, err
 	}
-	return topics, nil
+	topicList := make([]Topic, len(topics))
+	for i, _ := range topicList {
+		topicList[i], err = c.ReadTopic(topics[i], true)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return topicList, nil
 }

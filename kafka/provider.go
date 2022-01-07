@@ -107,7 +107,7 @@ func Provider() *schema.Provider {
 			"kafka_user_scram_credential": kafkaUserScramCredentialResource(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
-			"kafka_topic": kafkaTopicDataSource(),
+			"kafka_topic":  kafkaTopicDataSource(),
 			"kafka_topics": kafkaTopicsDataSource(),
 		},
 	}
