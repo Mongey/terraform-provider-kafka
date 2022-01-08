@@ -605,7 +605,7 @@ func (c *Client) getKafkaTopics() ([]Topic, error) {
 		return nil, err
 	}
 	topicList := make([]Topic, len(topics))
-	for i, _ := range topicList {
+	for i := range topicList {
 		topicList[i], err = c.ReadTopic(topics[i], true)
 		if err != nil {
 			return nil, err

@@ -2,9 +2,9 @@ package kafka
 
 import (
 	"context"
+	"fmt"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"time"
 )
 
 func kafkaTopicsDataSource() *schema.Resource {
@@ -60,13 +60,13 @@ func dataSourceTopicsRead(ctx context.Context, d *schema.ResourceData, meta inte
 	if err != nil {
 		return diag.FromErr(err)
 	}
-	d.SetId(time.Now().UTC().String())
+	d.SetId(fmt.Sprint(len(topics)))
 	return diags
 }
 
 func flattenTopicsData(topicList *[]Topic) []interface{} {
 	if topicList != nil {
-		topics := make([]interface{}, len(*topicList), len(*topicList))
+		topics := make([]interface{}, len(*topicList))
 		for i, topic := range *topicList {
 			topicObj := make(map[string]interface{})
 			topicObj["topic_name"] = topic.Name
