@@ -32,6 +32,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig.ClientID = "terraform-provider-kafka"
 	kafkaConfig.Admin.Timeout = time.Duration(c.Timeout) * time.Second
 	kafkaConfig.Metadata.Full = true // the default, but just being clear
+	kafkaConfig.Metadata.AllowAutoTopicCreation = false
 
 	if c.saslEnabled() {
 		switch c.SASLMechanism {
