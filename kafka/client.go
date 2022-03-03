@@ -320,7 +320,8 @@ func (c *Client) CanAlterReplicationFactor() bool {
 }
 
 func (c *Client) AlterReplicationFactor(t Topic) error {
-	if err := c.client.RefreshMetadata(); err != nil {
+	log.Printf("[DEBUG] Refreshing metadata for topic '%s'", t.Name)
+	if err := c.client.RefreshMetadata(t.Name); err != nil {
 		return err
 	}
 
@@ -431,7 +432,8 @@ func findUnusedReplicas(allReplicas *[]int32, usedReplicas *[]int32, extraCount 
 }
 
 func (c *Client) IsReplicationFactorUpdating(topic string) (bool, error) {
-	if err := c.client.RefreshMetadata(); err != nil {
+	log.Printf("[DEBUG] Refreshing metadata for topic '%s'", topic)
+	if err := c.client.RefreshMetadata(topic); err != nil {
 		return false, err
 	}
 
@@ -472,10 +474,15 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 	}
 
 	if refreshMetadata {
-		log.Printf("[DEBUG] Refreshing metadata")
-		err := c.RefreshMetadata()
+		log.Printf("[DEBUG] Refreshing metadata for topic '%s'", name)
+		err := c.RefreshMetadata(name)
+
+		if err == sarama.ErrUnknownTopicOrPartition {
+			err := TopicMissingError{msg: fmt.Sprintf("%s could not be found", name)}
+			return topic, err
+		}
 		if err != nil {
-			log.Printf("[ERROR] Error refreshing metadata %s", err)
+			log.Printf("[ERROR] Error refreshing topic '%s' metadata %s", name, err)
 			return topic, err
 		}
 		err = client.extractTopics()
@@ -483,7 +490,7 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 			return topic, err
 		}
 	} else {
-		log.Printf("[DEBUG] skipping metadata refresh")
+		log.Printf("[DEBUG] skipping metadata refresh for topic '%s'", name)
 	}
 
 	if _, ok := client.topics[name]; ok {
