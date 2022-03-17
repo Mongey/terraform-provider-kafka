@@ -146,18 +146,12 @@ func (c *Client) DeleteACL(s StringlyTypedACL) error {
 		return err
 	}
 
-	matchingAclCount := 0
-
 	for _, r := range res.FilterResponses {
-		matchingAclCount += len(r.MatchingAcls)
 		if r.Err != sarama.ErrNoError {
 			return r.Err
 		}
 	}
 
-	if matchingAclCount == 0 {
-		return fmt.Errorf("There were no acls matching this filter")
-	}
 	return nil
 }
 
