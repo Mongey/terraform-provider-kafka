@@ -151,7 +151,6 @@ func (c *Client) DeleteACL(s StringlyTypedACL) error {
 			return r.Err
 		}
 	}
-
 	return nil
 }
 
