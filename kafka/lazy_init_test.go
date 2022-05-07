@@ -8,6 +8,7 @@ import (
 	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
+//lintignore:AT001
 func TestAcc_LazyInit(t *testing.T) {
 	u, err := uuid.GenerateUUID()
 	if err != nil {
@@ -15,7 +16,11 @@ func TestAcc_LazyInit(t *testing.T) {
 	}
 	topicName := fmt.Sprintf("syslog-%s", u)
 	bs := "localhost:90"
-	overrideProvider()
+
+	_, err = overrideProvider()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	r.Test(t, r.TestCase{
 		ProviderFactories: overrideProviderFactory(),
