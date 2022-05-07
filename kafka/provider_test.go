@@ -31,7 +31,7 @@ func testAccPreCheck(t *testing.T) {
 		t.Fatal("No client")
 	}
 	if err := client.init(); err != nil {
-		t.Fatalf("Bad init %v", err)
+		t.Fatalf("Client could not be initialized %v", err)
 	}
 }
 
