@@ -15,14 +15,16 @@ func TestAcc_LazyInit(t *testing.T) {
 	}
 	topicName := fmt.Sprintf("syslog-%s", u)
 	bs := "localhost:90"
+	overrideProvider()
+
 	r.Test(t, r.TestCase{
 		ProviderFactories: overrideProviderFactory(),
 		PreCheck:          func() { testAccPreCheck(t) },
-		CheckDestroy:      testAccCheckTopicDestroy,
 		Steps: []r.TestStep{
 			{
-				Config:   cfg(t, bs, fmt.Sprintf(testResourceTopic_noConfig, topicName)),
-				PlanOnly: true,
+				Config:             cfg(t, bs, fmt.Sprintf(testResourceTopic_noConfig, topicName)),
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})

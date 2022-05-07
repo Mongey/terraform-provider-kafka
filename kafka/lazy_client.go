@@ -41,7 +41,8 @@ func (c *LazyClient) init() error {
 		}
 	}
 
-	return fmt.Errorf("%w\n%s", c.initErr, "kafka client is not initialized")
+	return c.initErr
+	//return fmt.Errorf("%w\n%s", c.initErr, "kafka client is not initialized")
 }
 
 func (c *LazyClient) checkTLSConfig() error {
