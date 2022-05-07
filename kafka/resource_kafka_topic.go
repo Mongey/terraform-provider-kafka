@@ -284,9 +284,10 @@ func topicRead(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 }
 
 func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
-	log.Printf("[INFO] Checking the diff!")
-	//client := v.(*LazyClient)
-
+	// Skip custom logic for resource creation.
+	if diff.Id() == "" {
+		return nil
+	}
 	if diff.HasChange("partitions") {
 		log.Printf("[INFO] Partitions have changed!")
 		o, n := diff.GetChange("partitions")
@@ -302,10 +303,13 @@ func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) e
 	}
 
 	if diff.HasChange("replication_factor") {
-		canAlterRF := true //, err := client.CanAlterReplicationFactor()
-		//if err != nil {
-		//return err
-		//}
+		log.Printf("[INFO] Checking the diff!")
+		client := v.(*LazyClient)
+
+		canAlterRF, err := client.CanAlterReplicationFactor()
+		if err != nil {
+			return err
+		}
 
 		if !canAlterRF {
 			log.Println("[INFO] Need Kafka >= 2.4.0 to update replication_factor in-place")

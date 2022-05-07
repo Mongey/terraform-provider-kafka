@@ -24,7 +24,6 @@ func TestAcc_LazyInit(t *testing.T) {
 
 	r.Test(t, r.TestCase{
 		ProviderFactories: overrideProviderFactory(),
-		PreCheck:          func() { testAccPreCheck(t) },
 		Steps: []r.TestStep{
 			{
 				Config:             cfg(t, bs, fmt.Sprintf(test_allResources_config, topicName, topicName)),
@@ -50,13 +49,5 @@ resource "kafka_acl" "test" {
 	acl_host                     = "*"
 	acl_operation                = "Write"
 	acl_permission_type          = "Deny"
-}
-
-resource "kafka_quota" "test1" {
-  entity_name               = "my-client"
-  entity_type               = "client-id"
-  config = {
-		"producer_byte_rate" = "2500000"
-  }
 }
 `
