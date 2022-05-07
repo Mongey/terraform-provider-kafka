@@ -50,4 +50,12 @@ resource "kafka_acl" "test" {
 	acl_operation                = "Write"
 	acl_permission_type          = "Deny"
 }
+
+resource "kafka_quota" "test" {
+  entity_name               = "my-app"
+  entity_type               = "client-id"
+  config = {
+		"producer_byte_rate" = "2500000"
+  }
+}
 `
