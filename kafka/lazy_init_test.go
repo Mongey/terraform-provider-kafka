@@ -27,10 +27,36 @@ func TestAcc_LazyInit(t *testing.T) {
 		PreCheck:          func() { testAccPreCheck(t) },
 		Steps: []r.TestStep{
 			{
-				Config:             cfg(t, bs, fmt.Sprintf(testResourceTopic_noConfig, topicName)),
+				Config:             cfg(t, bs, fmt.Sprintf(test_allResources_config, topicName, topicName)),
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
 }
+
+const test_allResources_config = `
+resource "kafka_topic" "test" {
+  name               = "%s"
+  replication_factor = 1
+  partitions         = 1
+}
+
+resource "kafka_acl" "test" {
+	resource_name                = "%s"
+	resource_type                = "Topic"
+	resource_pattern_type_filter = "Prefixed"
+	acl_principal                = "User:Alice"
+	acl_host                     = "*"
+	acl_operation                = "Write"
+	acl_permission_type          = "Deny"
+}
+
+resource "kafka_quota" "test1" {
+  entity_name               = "my-client"
+  entity_type               = "client-id"
+  config = {
+		"producer_byte_rate" = "2500000"
+  }
+}
+`

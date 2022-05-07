@@ -184,7 +184,6 @@ provider "kafka" {
 
 const testResourceQuota1 = `
 resource "kafka_quota" "test1" {
-  provider = "kafka"
   entity_name               = "%s"
   entity_type               = "client-id"
   config = {
