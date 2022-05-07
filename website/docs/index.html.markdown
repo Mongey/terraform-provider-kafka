@@ -45,7 +45,7 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 * `skip_tls_verify` - (Optional) Skip TLS verification. Default `false`.
 
 * `tls_enabled` - (Optional) Enable communication with the Kafka Cluster over TLS.
-  Default `false`.
+  Default `true`.
 
 * `sasl_username` - (Optional) Username for SASL authentication.
 
