@@ -29,20 +29,16 @@ func (c *LazyClient) init() error {
 	} else {
 		log.Printf("[TRACE] lazy client init %s", c.initErr)
 	}
-
 	if c.initErr == sarama.ErrBrokerNotAvailable || c.initErr == sarama.ErrOutOfBrokers {
 		if c.Config.TLSEnabled {
 			tlsError := c.checkTLSConfig()
 			if tlsError != nil {
-				err = fmt.Errorf("%w\n%s", tlsError, c.initErr)
-
-				return nil
+				return fmt.Errorf("%w\n%s", tlsError, c.initErr)
 			}
 		}
 	}
 
 	return c.initErr
-	//return fmt.Errorf("%w\n%s", c.initErr, "kafka client is not initialized")
 }
 
 func (c *LazyClient) checkTLSConfig() error {
