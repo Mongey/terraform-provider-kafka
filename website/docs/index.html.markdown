@@ -34,22 +34,24 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
   to discover the full set of alive brokers.
 
 * `ca_cert` - (Optional) The CA certificate or path to a CA certificate file to
-  validate the server's certificate.
+  validate the server's certificate. Can be set through the `KAFKA_CA_CERT` environment variable.
 
 * `client_cert` - (Optional) The client certificate or path to a file containing
-  the client certificate -- Use for Client authentication to Kafka.
+  the client certificate -- Use for Client authentication to Kafka. Can be set through the `KAFKA_CLIENT_CERT` environment variable.
 
 * `client_key` - (Optional) The private key or path to a file containing the private
-  key that the client certificate was issued for.
+  key that the client certificate was issued for. Can be set through the `KAFKA_CLIENT_KEY` environment variable.
 
-* `skip_tls_verify` - (Optional) Skip TLS verification. Default `false`.
+* `client_key_passphrase` - (Optional) The passphrase of the private key. Can be set through the `KAFKA_CLIENT_KEY_PASSPHRASE` environment variable.
+
+* `skip_tls_verify` - (Optional) Skip TLS verification. Default `false`. Can be set through the `KAFKA_SKIP_VERIFY` environment variable.
 
 * `tls_enabled` - (Optional) Enable communication with the Kafka Cluster over TLS.
-  Default `true`.
+  Default `true`. Can be set through the `KAFKA_ENABLE_TLS` environment variable.
 
-* `sasl_username` - (Optional) Username for SASL authentication.
+* `sasl_username` - (Optional) Username for SASL authentication. Can be set through the `KAFKA_SASL_USERNAME` environment variable.
 
-* `sasl_password` - (Optional) Password for SASL authentication.
+* `sasl_password` - (Optional) Password for SASL authentication. Can be set through the `KAFKA_SASL_PASSWORD` environment variable.
 
 * `sasl_mechanism` - (Optional) Mechanism for SASL authentication. Allowed values
-  are `plain`, `scram-sha512` and `scram-sha256`. Default `plain`.
+  are `plain`, `scram-sha512` and `scram-sha256`. Default `plain`. Can be set through the `KAFKA_SASL_MECHANISM` environment variable.
