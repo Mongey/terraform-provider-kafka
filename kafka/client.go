@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -26,6 +27,7 @@ type Client struct {
 	config        *Config
 	supportedAPIs map[int]int
 	topics        map[string]void
+	topicsMutex   sync.RWMutex
 }
 
 func NewClient(config *Config) (*Client, error) {
@@ -184,10 +186,12 @@ func (c *Client) extractTopics() error {
 		return err
 	}
 	log.Printf("[DEBUG] Got %d topics from Kafka", len(topics))
+	c.topicsMutex.Lock()
 	c.topics = make(map[string]void)
 	for _, t := range topics {
 		c.topics[t] = member
 	}
+	c.topicsMutex.Unlock()
 	return nil
 }
 
@@ -493,7 +497,10 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 		log.Printf("[DEBUG] skipping metadata refresh for topic '%s'", name)
 	}
 
-	if _, ok := client.topics[name]; ok {
+	client.topicsMutex.RLock()
+	_, topicExists := client.topics[name]
+	client.topicsMutex.RUnlock()
+	if topicExists {
 		log.Printf("[DEBUG] Found %s from Kafka", name)
 		p, err := c.Partitions(name)
 		if err == nil {
