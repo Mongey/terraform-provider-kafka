@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Shopify/sarama"
@@ -37,7 +38,7 @@ func Test_LazyClientWithConfigErrors(t *testing.T) {
 	}
 	err := c.init()
 
-	if err != sarama.ErrOutOfBrokers {
-		t.Fatalf("exepted err, got %v", err)
+	if !strings.Contains(err.Error(), sarama.ErrOutOfBrokers.Error()) {
+		t.Fatalf("expected err, got %v", err)
 	}
 }
