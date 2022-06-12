@@ -55,6 +55,44 @@ func TestAcc_QuotaConfigUpdate(t *testing.T) {
 	})
 }
 
+func TestAcc_DefaultEntityBasicQuota(t *testing.T) {
+	emptyEntityName := ""
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckQuotaDestroy,
+		Steps: []r.TestStep{
+			{
+				Config: cfgs(t, bs, fmt.Sprintf(testResourceQuota1, emptyEntityName, "4000000")),
+				Check:  testResourceQuota_initialCheck,
+			},
+		},
+	})
+}
+
+func TestAcc_DefaultEntityQuotaConfigUpdate(t *testing.T) {
+	emptyEntityName := ""
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckQuotaDestroy,
+		Steps: []r.TestStep{
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceQuota1, emptyEntityName, "4000000")),
+				Check:  testResourceQuota_initialCheck,
+			},
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceQuota1, emptyEntityName, "3000000")),
+				Check:  testResourceQuota_updateCheck,
+			},
+		},
+	})
+}
+
 func testResourceQuota_initialCheck(s *terraform.State) error {
 	resourceState := s.Modules[0].Resources["kafka_quota.test1"]
 	if resourceState == nil {

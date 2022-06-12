@@ -424,7 +424,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 		if err != nil {
 			return nil, err
 		}
-		
+
 		log.Printf("[TRACE] ThrottleTime: %d", aclsR.ThrottleTime)
 
 		if err == nil {

@@ -20,7 +20,7 @@ func kafkaQuotaResource() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 				ForceNew:    true,
-				Description: "The name of the entity",
+				Description: "The name of the entity (if entity_name is empty string, it will create default-entity Kafka quota)",
 			},
 			"entity_type": {
 				Type:             schema.TypeString,
@@ -74,7 +74,7 @@ func quotaDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 func quotaRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	log.Println("[INFO] Reading Quota")
 	c := meta.(*LazyClient)
-	
+
 	entityType := d.Get("entity_type").(string)
 	entityName := d.Get("entity_name").(string)
 	log.Printf("[INFO] Reading Quota %s", entityName)
