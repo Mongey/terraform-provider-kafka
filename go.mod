@@ -6,7 +6,7 @@ require (
 	github.com/Shopify/sarama v1.34.0
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
 	github.com/hashicorp/go-uuid v1.0.3
-	github.com/hashicorp/terraform-plugin-docs v0.9.0
+	github.com/hashicorp/terraform-plugin-docs v0.10.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.17.0
 	github.com/xdg/scram v1.0.5
 	github.com/xdg/stringprep v1.0.3 // indirect
