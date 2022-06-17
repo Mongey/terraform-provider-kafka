@@ -51,10 +51,19 @@ resource "kafka_acl" "test" {
 }
 
 resource "kafka_quota" "quota1" {
-  entity_name       = "client1"
-  entity_type       = "client-id"
+  entity_name = "client1"
+  entity_type = "client-id"
   config = {
     "consumer_byte_rate" = "4000000"
     "producer_byte_rate" = "3500000"
+  }
+}
+
+resource "kafka_quota" "default_user_quota" {
+  entity_name = ""
+  entity_type = "user"
+  config = {
+    "consumer_byte_rate" = "2000000"
+    "producer_byte_rate" = "1500000"
   }
 }

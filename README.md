@@ -184,11 +184,20 @@ provider "kafka" {
 }
 
 resource "kafka_quota" "test" {
-  entity_name       = "client1"
-  entity_type       = "client-id"
+  entity_name = "client1"
+  entity_type = "client-id"
   config = {
     "consumer_byte_rate" = "4000000"
     "producer_byte_rate" = "3500000"
+  }
+}
+
+resource "kafka_quota" "default_user_quota" {
+  entity_name = ""
+  entity_type = "user"
+  config = {
+    "consumer_byte_rate" = "2000000"
+    "producer_byte_rate" = "1500000"
   }
 }
 ```
@@ -197,7 +206,7 @@ resource "kafka_quota" "test" {
 
 | Property             | Description                                    |
 | -------------------- | ---------------------------------------------- |
-| `entity_name`        | The name of the entity                         |
+| `entity_name`        | The name of the entity (if entity_name is empty string, it will create default-entity Kafka quota)                      |
 | `entity_type`        | The entity type (client-id, user, ip)          |
 | `config`             | A map of string attributes for the entity      |
 
