@@ -11,6 +11,7 @@ A [Terraform][1] plugin for managing [Apache Kafka][2].
 * [Resources](#resources)
   * [`kafka_topic`](#kafka_topic)
   * [`kafka_acl`](#kafka_acl)
+  * [`kafka_quota`](#kafka_quota)
 * [Requirements](#requirements)
 
 ## Installation
@@ -72,8 +73,8 @@ provider "kafka" {
 | Property                | Description                                                                                                           | Default    |
 | -------------------     | --------------------------------------------------------------------------------------------------------------------- | ---------- |
 | `bootstrap_servers`     | A list of host:port addresses that will be used to discover the full set of alive brokers                             | `Required` |
-| `ca_cert`               | The CA certificate or path to a CA certificate file to validate the server's certificate.                             | `""`       |
-| `client_cert`           | The client certificate or path to a file containing the client certificate -- Use for Client authentication to Kafka. | `""`       |
+| `ca_cert`               | The CA certificate or path to a CA certificate file in `PEM` format to validate the server's certificate.                             | `""`       |
+| `client_cert`           | The client certificate or path to a file containing the client certificate in `PEM` format. Use for Client authentication to Kafka.<br>If you have Intermediate CA certificate(s) append them to `client_cert`.| `""`       |
 | `client_key`            | The private key or path to a file containing the private key that the client certificate was issued for.              | `""`       |
 | `client_key_passphrase` | The passphrase for the private key that the certificate was issued for.                                               | `""`       |
 | `tls_enabled`           | Enable communication with the Kafka Cluster over TLS.                                                                 | `true`     |
