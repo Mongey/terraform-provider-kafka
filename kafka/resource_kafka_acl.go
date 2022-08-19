@@ -124,8 +124,9 @@ func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag
 					PermissionType: ACLPermissionTypeToString(acl.PermissionType),
 				},
 				Resource: Resource{
-					Type: ACLResourceToString(foundACLs.ResourceType),
-					Name: foundACLs.ResourceName,
+					Type:              ACLResourceToString(foundACLs.ResourceType),
+					Name:              foundACLs.ResourceName,
+					PatternTypeFilter: foundACLs.ResourcePatternType.String(),
 				},
 			}
 
