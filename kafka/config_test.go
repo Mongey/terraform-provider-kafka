@@ -1,12 +1,12 @@
 package kafka
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
 func loadFile(t *testing.T, file string) string {
-	fb, err := ioutil.ReadFile(file)
+	fb, err := os.ReadFile(file)
 	if err != nil {
 		t.Fatalf("[ERROR] Error reading file %s", err)
 	}

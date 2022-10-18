@@ -2,8 +2,8 @@ package kafka
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"testing"
 
 	"github.com/Shopify/sarama"
@@ -194,17 +194,17 @@ resource "kafka_acl" "test" {
 }
 `
 
-//lintignore:AT004
+// lintignore:AT004
 func cfg(t *testing.T, bs string, extraCfg string) string {
-	_, err := ioutil.ReadFile("../secrets/ca.crt")
+	_, err := os.ReadFile("../secrets/ca.crt")
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = ioutil.ReadFile("../secrets/terraform-cert.pem")
+	_, err = os.ReadFile("../secrets/terraform-cert.pem")
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = ioutil.ReadFile("../secrets/terraform.pem")
+	_, err = os.ReadFile("../secrets/terraform.pem")
 	if err != nil {
 		t.Fatal(err)
 	}

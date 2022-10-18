@@ -5,8 +5,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -91,7 +91,7 @@ func parsePemOrLoadFromFile(input string) (*pem.Block, []byte, error) {
 		//attempt to load from file
 		log.Printf("[INFO] Attempting to load from file '%s'", input)
 		var err error
-		inputBytes, err = ioutil.ReadFile(input)
+		inputBytes, err = os.ReadFile(input)
 		if err != nil {
 			return nil, nil, err
 		}

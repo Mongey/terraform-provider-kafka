@@ -5,8 +5,8 @@ import (
 	"crypto/x509"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/Mongey/terraform-provider-kafka/kafka"
 	"github.com/Shopify/sarama"
@@ -21,17 +21,17 @@ func main() {
 
 func client(broker, caLocation, clientCertLocation, clientKeyLocation string) (*sarama.Client, error) {
 	brokers := []string{broker}
-	caCert, err := ioutil.ReadFile(caLocation)
+	caCert, err := os.ReadFile(caLocation)
 	if err != nil {
 		return nil, err
 	}
 
-	clientCert, err := ioutil.ReadFile(clientCertLocation)
+	clientCert, err := os.ReadFile(clientCertLocation)
 	if err != nil {
 		return nil, err
 	}
 
-	clientKey, err := ioutil.ReadFile(clientKeyLocation)
+	clientKey, err := os.ReadFile(clientKeyLocation)
 	if err != nil {
 		return nil, err
 	}
@@ -82,17 +82,17 @@ func fauxMain() error {
 			return err
 		}
 	} else {
-		caCert, err := ioutil.ReadFile(*ca)
+		caCert, err := os.ReadFile(*ca)
 		if err != nil {
 			return err
 		}
 
-		clientCert, err := ioutil.ReadFile(*cert)
+		clientCert, err := os.ReadFile(*cert)
 		if err != nil {
 			return err
 		}
 
-		clientKey, err := ioutil.ReadFile(*key)
+		clientKey, err := os.ReadFile(*key)
 		if err != nil {
 			return err
 		}
