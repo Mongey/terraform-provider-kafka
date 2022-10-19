@@ -10,8 +10,8 @@ provider "kafka" {
   bootstrap_servers = ["localhost:9092"]
 
   ca_cert     = file("../secrets/ca.crt")
-  client_cert = file("../secrets/terraform-cert.pem")
-  client_key  = file("../secrets/terraform.pem")
+  client_cert = file("../secrets/client.pem")
+  client_key  = file("../secrets/client-no-password.key")
   tls_enabled = true
 }
 
