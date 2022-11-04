@@ -134,21 +134,6 @@ func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag
 			if a.String() == aclID.String() {
 				return nil
 			}
-
-			// partial match -> update state
-			if a.ACL.Principal == aclID.ACL.Principal &&
-				a.ACL.Operation == aclID.ACL.Operation {
-				aclNotFound = false
-				errSet := errSetter{d: d}
-				errSet.Set("acl_principal", acl.Principal)
-				errSet.Set("acl_host", acl.Host)
-				errSet.Set("acl_operation", ACLOperationToString(acl.Operation))
-				errSet.Set("acl_permission_type", ACLPermissionTypeToString(acl.PermissionType))
-				errSet.Set("resource_pattern_type_filter", resourcePatternToString(foundACLs.ResourcePatternType))
-				if errSet.err != nil {
-					return diag.FromErr(err)
-				}
-			}
 		}
 	}
 
