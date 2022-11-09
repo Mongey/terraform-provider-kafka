@@ -115,20 +115,6 @@ func stringToACLPrefix(s string) sarama.AclResourcePatternType {
 	return unknownConversion
 }
 
-func resourcePatternToString(p sarama.AclResourcePatternType) string {
-	switch p {
-	case sarama.AclPatternAny:
-		return "Any"
-	case sarama.AclPatternMatch:
-		return "Match"
-	case sarama.AclPatternLiteral:
-		return "Literal"
-	case sarama.AclPatternPrefixed:
-		return "Prefixed"
-	}
-	return "unknownConversion"
-}
-
 func (c *Client) DeleteACL(s StringlyTypedACL) error {
 	log.Printf("[INFO] Deleting ACL %v", s)
 	broker, err := c.client.Controller()
@@ -424,7 +410,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 		if err != nil {
 			return nil, err
 		}
-		
+
 		log.Printf("[TRACE] ThrottleTime: %d", aclsR.ThrottleTime)
 
 		if err == nil {
