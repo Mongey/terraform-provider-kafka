@@ -30,6 +30,58 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 				Check:  testResourceACL_initialCheck,
 			},
 			{
+				Config:   cfg(t, bs, fmt.Sprintf(testResourceACL_initialConfig, aclResourceName)),
+				PlanOnly: true,
+				PreConfig: func() {
+					client := testProvider.Meta().(*LazyClient)
+					acl := StringlyTypedACL{
+						ACL{
+							Principal:      "User:Alice",
+							Host:           "*",
+							Operation:      "Write",
+							PermissionType: "Allow",
+						},
+						Resource{
+							Type:              "Topic",
+							Name:              aclResourceName,
+							PatternTypeFilter: "Literal",
+						},
+					}
+					err := client.DeleteACL(acl)
+					if err != nil {
+						t.Fatal(err)
+					}
+				},
+				ExpectNonEmptyPlan: true,
+				Check: func(s *terraform.State) error {
+					if len(s.Modules[0].Resources) != 0 {
+						return fmt.Errorf("Expected no resources to exist got %d", len(s.Modules[0].Resources))
+					}
+					return nil
+				},
+			},
+		},
+	})
+}
+
+func TestAcc_ACLDeletedOutsideOfTerraform(t *testing.T) {
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	aclResourceName := fmt.Sprintf("syslog-%s", u)
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      func(s *terraform.State) error { return testAccCheckAclDestroy(aclResourceName) },
+		Steps: []r.TestStep{
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceACL_initialConfig, aclResourceName)),
+				Check:  testResourceACL_initialCheck,
+			},
+			{
 				Config: cfg(t, bs, fmt.Sprintf(testResourceACL_updateConfig, aclResourceName)),
 				Check:  testResourceACL_updateCheck,
 			},
@@ -194,7 +246,7 @@ resource "kafka_acl" "test" {
 }
 `
 
-//lintignore:AT004
+// lintignore:AT004
 func cfg(t *testing.T, bs string, extraCfg string) string {
 	_, err := ioutil.ReadFile("../secrets/ca.crt")
 	if err != nil {
