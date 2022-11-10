@@ -54,7 +54,7 @@ func kafkaTopicResource() *schema.Resource {
 				Optional:    true,
 				Default:     false,
 				ForceNew:    false,
-				Description: `Prevents a Kafka topic from being deleted.`,
+				Description: `Prevents terraform from destroying the topic.`,
 			},
 		},
 	}
@@ -220,7 +220,7 @@ func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	t := metaToTopic(d, meta)
 
 	if d.Get("termination_protection").(bool) {
-		return fmt.Errorf("Topic '%s' have termination_protection enabled and it prevent from deletion", t.Name)
+		return diag.FromErr(fmt.Errorf("Topic '%s' has termination_protection enabled. Disable before attempting to destroy", t.Name))
 	}
 
 	err := c.DeleteTopic(t.Name)

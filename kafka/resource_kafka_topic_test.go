@@ -3,6 +3,7 @@ package kafka
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"testing"
 	"time"
@@ -84,6 +85,36 @@ func testAccCheckTopicDestroy(s *terraform.State) error {
 	}
 
 	return nil
+}
+
+func TestAcc_PreventTopicDeleteion(t *testing.T) {
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	topicName := fmt.Sprintf("syslog-%s", u)
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		Steps: []r.TestStep{
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_topicTerminationProtection, topicName, true)),
+				Check:  testResourceTopic_initialCheck,
+			},
+			{
+				Config:      cfg(t, bs, fmt.Sprintf(testResourceTopic_topicTerminationProtection, topicName, true)),
+				Destroy:     true,
+				ExpectError: regexp.MustCompile("termination_protection enabled. Disable before attempting to destroy"),
+			},
+			// Bring the config back, for post-destory cleanup
+			// https://github.com/hashicorp/terraform-plugin-sdk/issues/609
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_topicTerminationProtection, topicName, false)),
+			},
+		},
+	})
 }
 
 func TestAcc_TopicUpdatePartitions(t *testing.T) {
@@ -507,6 +538,20 @@ resource "kafka_topic" "test" {
   name               = "%s"
   replication_factor = %d
   partitions         = %d
+
+  config = {
+    "retention.ms" = "11111"
+    "segment.ms" = "22222"
+  }
+}
+`
+
+const testResourceTopic_topicTerminationProtection = `
+resource "kafka_topic" "test" {
+  name                   = "%s"
+  replication_factor     = 1
+  partitions             = 1
+	termination_protection = %v
 
   config = {
     "retention.ms" = "11111"
