@@ -21,6 +21,7 @@ type Config struct {
 	ClientCertKeyPassphrase string
 	TLSEnabled              bool
 	SkipTLSVerify           bool
+	SASLAWSRegion           string
 	SASLUsername            string
 	SASLPassword            string
 	SASLMechanism           string
@@ -42,9 +43,18 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 		case "scram-sha256":
 			kafkaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: SHA256} }
 			kafkaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeSCRAMSHA256)
+		case "aws-iam":
+			kafkaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
+				return &IAMSaslClient{
+					userAgent:  kafkaConfig.ClientID,
+					region:     c.SASLAWSRegion,
+					brokerHost: (*c.BootstrapServers)[0],
+				}
+			}
+			kafkaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(SASLTypeAWSIAM)
 		case "plain":
 		default:
-			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\" or \"plain\"", c.SASLMechanism)
+			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\" or \"plain\"", c.SASLMechanism)
 		}
 		kafkaConfig.Net.SASL.Enable = true
 		kafkaConfig.Net.SASL.Password = c.SASLPassword
@@ -75,7 +85,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 }
 
 func (c *Config) saslEnabled() bool {
-	return c.SASLUsername != "" || c.SASLPassword != ""
+	return c.SASLUsername != "" || c.SASLPassword != "" || c.SASLAWSRegion != ""
 }
 
 func NewTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*tls.Config, error) {
@@ -177,6 +187,7 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		"*****",
 		config.TLSEnabled,
 		config.SkipTLSVerify,
+		config.SASLAWSRegion,
 		config.SASLUsername,
 		"*****",
 		config.SASLMechanism,
