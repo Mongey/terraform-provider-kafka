@@ -10,6 +10,7 @@ import (
 )
 
 func TestAcc_TopicData(t *testing.T) {
+	t.Parallel()
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)

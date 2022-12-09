@@ -13,6 +13,7 @@ import (
 )
 
 func TestAcc_ACLCreateAndUpdate(t *testing.T) {
+	t.Parallel()
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)
@@ -65,6 +66,7 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 }
 
 func TestAcc_ACLDeletedOutsideOfTerraform(t *testing.T) {
+	t.Parallel()
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)

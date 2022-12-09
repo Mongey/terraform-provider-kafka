@@ -10,6 +10,7 @@ import (
 )
 
 func TestAcc_BasicQuota(t *testing.T) {
+	t.Parallel()
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)
@@ -31,6 +32,7 @@ func TestAcc_BasicQuota(t *testing.T) {
 }
 
 func TestAcc_QuotaConfigUpdate(t *testing.T) {
+	t.Parallel()
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)
@@ -171,7 +173,7 @@ func testAccCheckQuotaDestroy(s *terraform.State) error {
 	return nil
 }
 
-//lintignore:AT004
+// lintignore:AT004
 func cfgs(t *testing.T, bs string, extraCfg string) string {
 	return fmt.Sprintf(`
 provider "kafka" {

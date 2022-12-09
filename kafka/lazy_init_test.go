@@ -8,8 +8,9 @@ import (
 	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 )
 
-//lintignore:AT001
+// lintignore:AT001
 func TestAcc_LazyInit(t *testing.T) {
+	t.Parallel()
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)
