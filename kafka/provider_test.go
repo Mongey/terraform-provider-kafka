@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
-var testProvider *schema.Provider
+var testProvider, _ = overrideProvider()
 var testBootstrapServers []string = bootstrapServersFromEnv()
 
 func TestProvider(t *testing.T) {
@@ -57,7 +57,6 @@ func overrideProvider() (*schema.Provider, error) {
 		return nil, fmt.Errorf("Could not configure provider")
 	}
 
-	testProvider = provider
 	return provider, nil
 }
 

@@ -1,4 +1,3 @@
-TEST?=./...
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 default: build
 
@@ -6,7 +5,7 @@ build:
 	go build .
 
 test:
-	 go test $(TEST) -v $(TESTARGS)
+	 go test ./kafka -v $(TESTARGS)
 
 testacc:
 	GODEBUG=x509ignoreCN=0 \
@@ -18,6 +17,6 @@ testacc:
 	KAFKA_SKIP_VERIFY=false \
 	KAFKA_ENABLE_TLS=true \
 	TF_LOG=DEBUG \
-	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 9m -count=1
+	TF_ACC=1 go test ./kafka -v $(TESTARGS) -timeout 9m -count=1
 
 .PHONY: build test testacc

@@ -15,6 +15,7 @@ import (
 )
 
 func TestAcc_BasicTopic(t *testing.T) {
+	t.Parallel()
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)
@@ -35,6 +36,7 @@ func TestAcc_BasicTopic(t *testing.T) {
 }
 
 func TestAcc_TopicConfigUpdate(t *testing.T) {
+	t.Parallel()
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)
@@ -87,6 +89,7 @@ func testAccCheckTopicDestroy(s *terraform.State) error {
 }
 
 func TestAcc_TopicUpdatePartitions(t *testing.T) {
+	t.Parallel()
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)
@@ -112,6 +115,7 @@ func TestAcc_TopicUpdatePartitions(t *testing.T) {
 }
 
 func TestAcc_TopicAlterReplicationFactor(t *testing.T) {
+	t.Parallel()
 	u, err := uuid.GenerateUUID()
 	if err != nil {
 		t.Fatal(err)
@@ -238,15 +242,6 @@ func testResourceTopic_initialCheck(s *terraform.State) error {
 func testResourceTopic_produceMessages(messages []*sarama.ProducerMessage) r.TestCheckFunc {
 	return func(s *terraform.State) error {
 		c := testProvider.Meta().(*LazyClient)
-		if c == nil {
-			return fmt.Errorf("unable to get lazy client")
-		}
-		if c.inner == nil {
-			err := c.init()
-			if err != nil {
-				return fmt.Errorf("unable to get original kafka client")
-			}
-		}
 
 		config := c.inner.config
 		kafkaConfig, err := config.newKafkaConfig()
