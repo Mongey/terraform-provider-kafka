@@ -101,9 +101,10 @@ func Provider() *schema.Provider {
 
 		ConfigureFunc: providerConfigure,
 		ResourcesMap: map[string]*schema.Resource{
-			"kafka_topic": kafkaTopicResource(),
-			"kafka_acl":   kafkaACLResource(),
-			"kafka_quota": kafkaQuotaResource(),
+			"kafka_topic":                 kafkaTopicResource(),
+			"kafka_acl":                   kafkaACLResource(),
+			"kafka_quota":                 kafkaQuotaResource(),
+			"kafka_user_scram_credential": kafkaUserScramCredentialResource(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"kafka_topic": kafkaTopicDataSource(),
