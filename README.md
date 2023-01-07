@@ -202,6 +202,36 @@ resource "kafka_quota" "test" {
 | `entity_type`        | The entity type (client-id, user, ip)          |
 | `config`             | A map of string attributes for the entity      |
 
+### `kafka_user_scram_credential`
+A resource for managing Kafka SCRAM user credentials.
+
+#### Example
+
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9092"]
+  ca_cert           = file("../secrets/ca.crt")
+  client_cert       = file("../secrets/terraform-cert.pem")
+  client_key        = file("../secrets/terraform.pem")
+}
+
+resource "kafka_user_scram_credential" "test" {
+  username               = "user1"
+  scram_mechanism        = "SCRAM-SHA-256"
+  scram_iterations       = "8192"
+  password               = "password"
+}
+```
+
+#### Properties
+
+| Property             | Description                                    |
+| -------------------- | ---------------------------------------------- |
+| `username`        | The username                         |
+| `scram_mechanism`        | The SCRAM mechanism (SCRAM-SHA-256 or SCRAM-SHA-512)          |
+| `scram_iterations`             | The number of SCRAM iterations (must be >= 4096). Default: 4096       |
+| `password` | The password for the user |
+
 ## Requirements
 * [>= Kafka 1.0.0][3]
 
