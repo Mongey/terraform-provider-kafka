@@ -3,7 +3,9 @@ name: Build Snapshots
 on:
   push:
     branches:
-      - '**'
+      - master
+      - main
+  pull_request:
 
 jobs:
   goreleaser:
