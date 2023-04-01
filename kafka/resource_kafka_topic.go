@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -62,7 +62,7 @@ func topicCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		return diag.FromErr(err)
 	}
 
-	stateConf := &resource.StateChangeConf{
+	stateConf := &retry.StateChangeConf{
 		Pending:      []string{"Pending"},
 		Target:       []string{"Created"},
 		Refresh:      topicCreateFunc(c, t),
@@ -79,7 +79,7 @@ func topicCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	return nil
 }
 
-func topicCreateFunc(client *LazyClient, t Topic) resource.StateRefreshFunc {
+func topicCreateFunc(client *LazyClient, t Topic) retry.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
 		topic, err := client.ReadTopic(t.Name, true)
 		switch e := err.(type) {
@@ -151,7 +151,7 @@ func waitForRFUpdate(ctx context.Context, client *LazyClient, topic string) erro
 	}
 
 	timeout := time.Duration(client.Config.Timeout) * time.Second
-	stateConf := &resource.StateChangeConf{
+	stateConf := &retry.StateChangeConf{
 		Pending:      []string{"Updating"},
 		Target:       []string{"Ready"},
 		Refresh:      refresh,
@@ -172,7 +172,7 @@ func waitForRFUpdate(ctx context.Context, client *LazyClient, topic string) erro
 
 func waitForTopicRefresh(ctx context.Context, client *LazyClient, topic string, expected Topic) error {
 	timeout := time.Duration(client.Config.Timeout) * time.Second
-	stateConf := &resource.StateChangeConf{
+	stateConf := &retry.StateChangeConf{
 		Pending:      []string{"Updating"},
 		Target:       []string{"Ready"},
 		Refresh:      topicRefreshFunc(client, topic, expected),
@@ -191,7 +191,7 @@ func waitForTopicRefresh(ctx context.Context, client *LazyClient, topic string, 
 	return nil
 }
 
-func topicRefreshFunc(client *LazyClient, topic string, expected Topic) resource.StateRefreshFunc {
+func topicRefreshFunc(client *LazyClient, topic string, expected Topic) retry.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
 		log.Printf("[DEBUG] waiting for topic to update %s", topic)
 		actual, err := client.ReadTopic(topic, true)
@@ -218,7 +218,7 @@ func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	}
 
 	log.Printf("[DEBUG] waiting for topic to delete? %s", t.Name)
-	stateConf := &resource.StateChangeConf{
+	stateConf := &retry.StateChangeConf{
 		Pending:      []string{"Pending"},
 		Target:       []string{"Deleted"},
 		Refresh:      topicDeleteFunc(c, d.Id(), t),
@@ -237,7 +237,7 @@ func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	return nil
 }
 
-func topicDeleteFunc(client *LazyClient, id string, t Topic) resource.StateRefreshFunc {
+func topicDeleteFunc(client *LazyClient, id string, t Topic) retry.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
 		topic, err := client.ReadTopic(t.Name, true)
 
