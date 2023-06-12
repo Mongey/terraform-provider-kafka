@@ -179,6 +179,14 @@ func updateClusterApiVersions(clusterApiVersions *map[int][2]int, brokerApiVersi
 	}
 }
 
+func flatTopicMap(allTopics map[string]void) TopicsMap {
+	topicsList := make(TopicsMap, 0, len(allTopics))
+	for k := range allTopics {
+		topicsList = append(topicsList, k)
+	}
+	return topicsList
+}
+
 func (c *Client) extractTopics() error {
 	topics, err := c.client.Topics()
 	if err != nil {
@@ -532,6 +540,29 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 	return topic, err
 }
 
+func (client *Client) ReadTopics(refreshMetadata bool) (TopicsMap, error) {
+	c := client.client
+	log.Printf("[INFO] 👋 listing topics from Kafka: %v", refreshMetadata)
+
+	if refreshMetadata {
+		log.Printf("[DEBUG] Refreshing metadata for all topics")
+		err := c.RefreshMetadata()
+		if err != nil {
+			log.Printf("[ERROR] Error refreshing topics metadata %s", err)
+			return TopicsMap{}, err
+		}
+
+		err = client.extractTopics()
+		if err != nil {
+			return TopicsMap{}, err
+		}
+	} else {
+		log.Printf("[DEBUG] skipping metadata refresh for topics")
+	}
+
+	return flatTopicMap(client.topics), nil
+}
+
 func (c *Client) versionForKey(apiKey, wantedMaxVersion int) int {
 	if maxSupportedVersion, ok := c.supportedAPIs[apiKey]; ok {
 		if maxSupportedVersion < wantedMaxVersion {
@@ -543,7 +574,7 @@ func (c *Client) versionForKey(apiKey, wantedMaxVersion int) int {
 	return 0
 }
 
-//topicConfig retrives the non-default config map for a topic
+// topicConfig retrives the non-default config map for a topic
 func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	conf := map[string]*string{}
 	request := &sarama.DescribeConfigsRequest{

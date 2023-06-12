@@ -8,6 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+// type TopicsMap []string
+type TopicsMap []interface{}
 type Topic struct {
 	Name              string
 	Partitions        int32

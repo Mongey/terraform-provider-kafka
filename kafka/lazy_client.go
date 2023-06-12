@@ -74,6 +74,14 @@ func (c *LazyClient) ReadTopic(name string, refresh_metadata bool) (Topic, error
 	return c.inner.ReadTopic(name, refresh_metadata)
 }
 
+func (c *LazyClient) ReadTopicsList(refresh_metadata bool) (TopicsMap, error) {
+	err := c.init()
+	if err != nil {
+		return TopicsMap{}, err
+	}
+	return c.inner.ReadTopics(refresh_metadata)
+}
+
 func (c *LazyClient) UpdateTopic(t Topic) error {
 	err := c.init()
 	if err != nil {
