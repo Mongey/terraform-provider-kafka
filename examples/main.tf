@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     kafka = {
-      source = "Mongey/kafka"
+      source = "terraform.local/local/kafka"
     }
   }
 }
@@ -57,4 +57,16 @@ resource "kafka_quota" "quota1" {
     "consumer_byte_rate" = "4000000"
     "producer_byte_rate" = "3500000"
   }
+}
+
+data "kafka_topic" "a" {
+  name = "syslog"
+}
+
+data "kafka_topics" "a" {}
+
+
+output "topic_list" {
+  description = "Topic name"
+  value       = data.kafka_topics.a
 }
