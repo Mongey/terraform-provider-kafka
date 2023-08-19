@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	uuid "github.com/hashicorp/go-uuid"
 	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"

@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 type QuotaMissingError struct {

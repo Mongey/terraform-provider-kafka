@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 type TopicMissingError struct {
