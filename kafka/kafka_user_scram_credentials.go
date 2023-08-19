@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 type UserScramCredential struct {

@@ -9,7 +9,7 @@ import (
 	"os"
 
 	"github.com/Mongey/terraform-provider-kafka/kafka"
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 func main() {
