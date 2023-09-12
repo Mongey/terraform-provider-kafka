@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
+	"golang.org/x/net/proxy"
 )
 
 type Config struct {
@@ -33,6 +34,9 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig.Admin.Timeout = time.Duration(c.Timeout) * time.Second
 	kafkaConfig.Metadata.Full = true // the default, but just being clear
 	kafkaConfig.Metadata.AllowAutoTopicCreation = false
+
+	kafkaConfig.Net.Proxy.Enable = true
+	kafkaConfig.Net.Proxy.Dialer = proxy.FromEnvironment()
 
 	if c.saslEnabled() {
 		switch c.SASLMechanism {
