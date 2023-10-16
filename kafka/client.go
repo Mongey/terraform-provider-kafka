@@ -61,7 +61,7 @@ func NewClient(config *Config) (*Client, error) {
 	for attempt := 0; attempt < maxRetry; attempt++ {
 		c, err = sarama.NewClient(bootstrapServers, kc)
 		if err != nil {
-			log.Printf("[ERROR] [%d/%d] Error connecting to kafka %s", attempt, maxRetry, err)
+			log.Printf("[ERROR] [%d/%d] Error connecting to kafka %s", attempt+1, maxRetry, err)
 			if attempt >= maxRetry-1 {
 				return nil, err
 			}
