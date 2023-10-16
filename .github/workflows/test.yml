@@ -63,9 +63,8 @@ jobs:
           run: docker compose up &
           wait-on: |
             tcp:localhost:9092
-            tcp:localhost:9093
           tail: true
           log-output-if: true
 
       - name: "Run tests"
-        run: make testacc
+        run: sleep 10 && make testacc
