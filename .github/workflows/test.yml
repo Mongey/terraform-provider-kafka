@@ -58,6 +58,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
       - name: Bring up kafka + zk
-        run: docker-compose up -d
+        uses: JarvusInnovations/background-action@v1
+        with:
+          run: docker compose up &
+          wait-on: |
+            tcp:localhost:9092
+            tcp:localhost:9093
+          tail: true
+          log-output-if: true
+
       - name: "Run tests"
         run: make testacc
