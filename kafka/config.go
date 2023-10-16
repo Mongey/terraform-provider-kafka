@@ -34,6 +34,8 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig.Admin.Timeout = time.Duration(c.Timeout) * time.Second
 	kafkaConfig.Metadata.Full = true // the default, but just being clear
 	kafkaConfig.Metadata.AllowAutoTopicCreation = false
+	kafkaConfig.Metadata.Retry.Max = 10
+	kafkaConfig.Metadata.Retry.Backoff = 250 * time.Millisecond
 
 	kafkaConfig.Net.Proxy.Enable = true
 	kafkaConfig.Net.Proxy.Dialer = proxy.FromEnvironment()
@@ -93,7 +95,7 @@ func parsePemOrLoadFromFile(input string) (*pem.Block, []byte, error) {
 
 	if inputBlock == nil {
 		//attempt to load from file
-		log.Printf("[INFO] Attempting to load from file '%s'", input)
+		log.Printf("[TRACE] Attempting to load from file '%s'", input)
 		var err error
 		inputBytes, err = os.ReadFile(input)
 		if err != nil {
