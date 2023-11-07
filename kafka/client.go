@@ -21,6 +21,28 @@ type void struct{}
 
 var member void
 
+type aclCache struct {
+	acls  []*sarama.ResourceAcls
+	mutex sync.RWMutex
+	valid bool
+}
+
+type aclDeletionQueue struct {
+	filters   []*sarama.AclFilter
+	after     time.Duration
+	timer     *time.Timer
+	mutex     sync.Mutex
+	waitChans []chan error
+}
+
+type aclCreationQueue struct {
+	creations []*sarama.AclCreation
+	after     time.Duration
+	timer     *time.Timer
+	mutex     sync.Mutex
+	waitChans []chan error
+}
+
 type Client struct {
 	client        sarama.Client
 	kafkaConfig   *sarama.Config
@@ -28,6 +50,9 @@ type Client struct {
 	supportedAPIs map[int]int
 	topics        map[string]void
 	topicsMutex   sync.RWMutex
+	aclCache
+	aclDeletionQueue
+	aclCreationQueue
 }
 
 func NewClient(config *Config) (*Client, error) {
@@ -63,6 +88,12 @@ func NewClient(config *Config) (*Client, error) {
 		client:      c,
 		config:      config,
 		kafkaConfig: kc,
+		aclDeletionQueue: aclDeletionQueue{
+			after: time.Millisecond * 500,
+		},
+		aclCreationQueue: aclCreationQueue{
+			after: time.Millisecond * 500,
+		},
 	}
 
 	err = client.populateAPIVersions()
