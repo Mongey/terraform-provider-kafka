@@ -155,10 +155,7 @@ func (c *Client) enqueueDeleteACL(broker *sarama.Broker, filter *sarama.AclFilte
 			return
 		}
 
-		c.aclCache.mutex.Lock()
-		c.aclCache.valid = false
-		c.aclCache.acls = nil
-		c.aclCache.mutex.Unlock()
+		c.InvalidateACLCache()
 		for i, r := range res.FilterResponses {
 			if r.Err != sarama.ErrNoError {
 				c.aclDeletionQueue.waitChans[i] <- r.Err
@@ -230,10 +227,7 @@ func (c *Client) enqueueCreateACL(broker *sarama.Broker, create *sarama.AclCreat
 			return
 		}
 
-		c.aclCache.mutex.Lock()
-		c.aclCache.valid = false
-		c.aclCache.acls = nil
-		c.aclCache.mutex.Unlock()
+		c.InvalidateACLCache()
 
 		for i, r := range res.AclCreationResponses {
 			if r.Err != sarama.ErrNoError {
@@ -432,6 +426,13 @@ func (c *Client) DescribeACLs(s StringlyTypedACL) ([]*sarama.ResourceAcls, error
 	}
 
 	return aclsR.ResourceAcls, err
+}
+
+func (c *Client) InvalidateACLCache() {
+	c.aclCache.mutex.Lock()
+	c.aclCache.valid = false
+	c.aclCache.acls = nil
+	c.aclCache.mutex.Unlock()
 }
 
 func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
