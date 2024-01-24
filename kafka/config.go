@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
+	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
 	"golang.org/x/net/proxy"
 )
 
@@ -25,6 +27,16 @@ type Config struct {
 	SASLUsername            string
 	SASLPassword            string
 	SASLMechanism           string
+	SASLAWSRegion           string
+}
+
+type MSKAccessTokenProvider struct {
+	region string
+}
+
+func (m *MSKAccessTokenProvider) Token() (*sarama.AccessToken, error) {
+	token, _, err := signer.GenerateAuthToken(context.TODO(), m.region)
+	return &sarama.AccessToken{Token: token}, err
 }
 
 func (c *Config) newKafkaConfig() (*sarama.Config, error) {
@@ -46,14 +58,30 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 		case "scram-sha256":
 			kafkaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient { return &XDGSCRAMClient{HashGeneratorFcn: SHA256} }
 			kafkaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeSCRAMSHA256)
+		case "aws-iam":
+			kafkaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeOAuth)
+			region := c.SASLAWSRegion
+			if region == "" {
+				region = os.Getenv("AWS_REGION")
+			}
+			if region == "" {
+				log.Fatalf("[ERROR] aws region must be configured or AWS_REGION environment variable must be set to use aws-iam sasl mechanism")
+			}
+			kafkaConfig.Net.SASL.TokenProvider = &MSKAccessTokenProvider{region: region}
 		case "plain":
 		default:
-			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\" or \"plain\"", c.SASLMechanism)
+			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\" or \"plain\"", c.SASLMechanism)
 		}
+
 		kafkaConfig.Net.SASL.Enable = true
-		kafkaConfig.Net.SASL.Password = c.SASLPassword
-		kafkaConfig.Net.SASL.User = c.SASLUsername
 		kafkaConfig.Net.SASL.Handshake = true
+
+		if c.SASLUsername != "" {
+			kafkaConfig.Net.SASL.User = c.SASLUsername
+		}
+		if c.SASLPassword != "" {
+			kafkaConfig.Net.SASL.Password = c.SASLPassword
+		}
 	} else {
 		log.Printf("[WARN] SASL disabled username: '%s', password '%s'", c.SASLUsername, "****")
 	}
@@ -79,7 +107,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 }
 
 func (c *Config) saslEnabled() bool {
-	return c.SASLUsername != "" || c.SASLPassword != ""
+	return c.SASLUsername != "" || c.SASLPassword != "" || c.SASLMechanism == "aws-iam"
 }
 
 func NewTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*tls.Config, error) {
@@ -181,6 +209,7 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		"*****",
 		config.TLSEnabled,
 		config.SkipTLSVerify,
+		config.SASLAWSRegion,
 		config.SASLUsername,
 		"*****",
 		config.SASLMechanism,
