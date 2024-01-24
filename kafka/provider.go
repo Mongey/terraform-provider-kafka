@@ -61,6 +61,12 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY_PASSPHRASE", nil),
 				Description: "The passphrase for the private key that the certificate was issued for.",
 			},
+			"sasl_aws_region": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_IAM_AWS_REGION", nil),
+				Description: "AWS region where MSK is deployed.",
+			},
 			"sasl_username": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -77,7 +83,7 @@ func Provider() *schema.Provider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_MECHANISM", "plain"),
-				Description: "SASL mechanism, can be plain, scram-sha512, scram-sha256",
+				Description: "SASL mechanism, can be plain, scram-sha512, scram-sha256, aws-iam",
 			},
 			"skip_tls_verify": &schema.Schema{
 				Type:        schema.TypeBool,
@@ -119,9 +125,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 	saslMechanism := d.Get("sasl_mechanism").(string)
 	switch saslMechanism {
-	case "scram-sha512", "scram-sha256", "plain":
+	case "scram-sha512", "scram-sha256", "aws-iam", "plain":
 	default:
-		return nil, fmt.Errorf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\" or \"plain\"", saslMechanism)
+		return nil, fmt.Errorf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\" or \"plain\"", saslMechanism)
 	}
 
 	config := &Config{
@@ -131,6 +137,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		ClientCertKey:           d.Get("client_key").(string),
 		ClientCertKeyPassphrase: d.Get("client_key_passphrase").(string),
 		SkipTLSVerify:           d.Get("skip_tls_verify").(bool),
+		SASLAWSRegion:           d.Get("sasl_aws_region").(string),
 		SASLUsername:            d.Get("sasl_username").(string),
 		SASLPassword:            d.Get("sasl_password").(string),
 		SASLMechanism:           saslMechanism,

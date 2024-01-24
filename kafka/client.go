@@ -543,7 +543,7 @@ func (c *Client) versionForKey(apiKey, wantedMaxVersion int) int {
 	return 0
 }
 
-//topicConfig retrives the non-default config map for a topic
+// topicConfig retrives the non-default config map for a topic
 func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	conf := map[string]*string{}
 	request := &sarama.DescribeConfigsRequest{
