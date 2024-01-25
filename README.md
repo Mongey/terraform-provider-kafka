@@ -73,7 +73,7 @@ provider "kafka" {
 | Property                | Description                                                                                                           | Default    |
 | -------------------     | --------------------------------------------------------------------------------------------------------------------- | ---------- |
 | `bootstrap_servers`     | A list of host:port addresses that will be used to discover the full set of alive brokers                             | `Required` |
-| `ca_cert`               | The CA certificate or path to a CA certificate file in `PEM` format to validate the server's certificate.                             | `""`       |
+| `ca_cert`               | The CA certificate or path to a CA certificate file in `PEM` format to validate the server's certificate.             | `""`       |
 | `client_cert`           | The client certificate or path to a file containing the client certificate in `PEM` format. Use for Client authentication to Kafka.<br>If you have Intermediate CA certificate(s) append them to `client_cert`.| `""`       |
 | `client_key`            | The private key or path to a file containing the private key that the client certificate was issued for.              | `""`       |
 | `client_key_passphrase` | The passphrase for the private key that the certificate was issued for.                                               | `""`       |
@@ -81,7 +81,11 @@ provider "kafka" {
 | `skip_tls_verify`       | Skip TLS verification.                                                                                                | `false`    |
 | `sasl_username`         | Username for SASL authentication.                                                                                     | `""`       |
 | `sasl_password`         | Password for SASL authentication.                                                                                     | `""`       |
-| `sasl_mechanism`        | Mechanism for SASL authentication. Allowed values are plain, scram-sha512 and scram-sha256                            | `plain`    |
+| `sasl_mechanism`        | Mechanism for SASL authentication. Allowed values are plain, iam, scram-sha512 and scram-sha256                       | `plain`    |
+| `aws_region`            | AWS region for IAM authentication.                                                                                    | `""`       |
+| `aws_role_arn`          | Arn of AWS IAM role to assume for IAM authentication.                                                                 | `""`       |
+| `aws_region`            | AWS profile to use for IAM authentication.                                                                            | `""`       |
+| `aws_creds_debug`       | Enable debug logging for AWS authentication.                                                                          | `false`    |
 
 ## Resources
 ### `kafka_topic`

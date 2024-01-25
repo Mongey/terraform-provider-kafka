@@ -77,7 +77,31 @@ func Provider() *schema.Provider {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_MECHANISM", "plain"),
-				Description: "SASL mechanism, can be plain, scram-sha512, scram-sha256",
+				Description: "SASL mechanism, can be plain, iam, scram-sha512, scram-sha256",
+			},
+			"aws_region": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("AWS_DEFAULT_REGION", nil),
+				Description: "AWS Region for IAM authentication",
+			},
+			"aws_role_arn": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("AWS_ROLE_ARN", nil),
+				Description: "Arn of an AWS IAM role to assume",
+			},
+			"aws_profile": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("AWS_PROFILE", nil),
+				Description: "AWS profile name to use",
+			},
+			"aws_creds_debug": &schema.Schema{
+				Type:        schema.TypeBool,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("AWS_CREDS_DEBUG", "false"),
+				Description: "Set this to true to turn AWS credentials debug.",
 			},
 			"skip_tls_verify": &schema.Schema{
 				Type:        schema.TypeBool,
@@ -119,9 +143,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 	saslMechanism := d.Get("sasl_mechanism").(string)
 	switch saslMechanism {
-	case "scram-sha512", "scram-sha256", "plain":
+	case "scram-sha512", "scram-sha256", "plain", "iam":
 	default:
-		return nil, fmt.Errorf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\" or \"plain\"", saslMechanism)
+		return nil, fmt.Errorf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"iam\" or \"plain\"", saslMechanism)
 	}
 
 	config := &Config{
@@ -134,6 +158,10 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SASLUsername:            d.Get("sasl_username").(string),
 		SASLPassword:            d.Get("sasl_password").(string),
 		SASLMechanism:           saslMechanism,
+		AWSRegion:               d.Get("aws_region").(string),
+		AWSRoleArn:              d.Get("aws_role_arn").(string),
+		AWSProfile:              d.Get("aws_profile").(string),
+		AWSCredsDebug:           d.Get("aws_creds_debug").(bool),
 		TLSEnabled:              d.Get("tls_enabled").(bool),
 		Timeout:                 d.Get("timeout").(int),
 	}
