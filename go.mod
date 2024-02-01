@@ -10,7 +10,7 @@ require (
 	github.com/hashicorp/terraform-plugin-docs v0.16.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.32.0
 	github.com/xdg/scram v1.0.5
-	golang.org/x/net v0.19.0
+	golang.org/x/net v0.20.0
 )
 
 require (
