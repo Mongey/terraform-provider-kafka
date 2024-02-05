@@ -13,6 +13,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
 	"golang.org/x/net/proxy"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
@@ -32,47 +33,45 @@ type Config struct {
 	SASLTokenUrl            string
 }
 
+type OAuth2Config interface {
+	Token(ctx context.Context) (*oauth2.Token, error)
+}
+
 type oauthbearerTokenProvider struct {
 	tokenExpiration time.Time
 	token           string
-	tokenUrl        string
-	clientId        string
-	clientSecret    string
+	oauth2Config    OAuth2Config
 }
 
 type MSKAccessTokenProvider struct {
 	region string
 }
 
-func newOauthbearerTokenProvider(tokenUrl string, clientId string, clientSecret string) *oauthbearerTokenProvider {
+func newOauthbearerTokenProvider(oauth2Config OAuth2Config) *oauthbearerTokenProvider {
 	return &oauthbearerTokenProvider{
 		tokenExpiration: time.Time{},
 		token:           "",
-		tokenUrl:        tokenUrl,
-		clientId:        clientId,
-		clientSecret:    clientSecret,
+		oauth2Config:    oauth2Config,
 	}
 }
 
-func (k *oauthbearerTokenProvider) Token() (*sarama.AccessToken, error) {
+func (o *oauthbearerTokenProvider) Token() (*sarama.AccessToken, error) {
 	var accessToken string
 	var err error
 	currentTime := time.Now()
 	ctx := context.Background()
 
-	if k.token != "" && currentTime.Before(k.tokenExpiration.Add(time.Duration(-2)*time.Second)) {
-		accessToken = k.token
+	if o.token != "" && currentTime.Before(o.tokenExpiration.Add(time.Duration(-2)*time.Second)) {
+		accessToken = o.token
 		err = nil
 	} else {
-		config := &clientcredentials.Config{
-			ClientID:     k.clientId,
-			ClientSecret: k.clientSecret,
-			TokenURL:     k.tokenUrl,
-		}
-		token, _err := config.Token(ctx)
+		token, _err := o.oauth2Config.Token(ctx)
 		err = _err
-		k.token = token.AccessToken
-		k.tokenExpiration = token.Expiry
+		if err == nil {
+			accessToken = token.AccessToken
+			o.token = token.AccessToken
+			o.tokenExpiration = token.Expiry
+		}
 	}
 
 	return &sarama.AccessToken{Token: accessToken}, err
@@ -121,7 +120,12 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 			if tokenUrl == "" {
 				log.Fatalf("[ERROR] token url must be configured or TOKEN_URL environment variable must be set to use oauthbearer sasl mechanism")
 			}
-			kafkaConfig.Net.SASL.TokenProvider = newOauthbearerTokenProvider(tokenUrl, c.SASLUsername, c.SASLPassword)
+			oauth2Config := clientcredentials.Config{
+				TokenURL:     tokenUrl,
+				ClientID:     c.SASLUsername,
+				ClientSecret: c.SASLPassword,
+			}
+			kafkaConfig.Net.SASL.TokenProvider = newOauthbearerTokenProvider(&oauth2Config)
 		case "plain":
 		default:
 			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\" or \"plain\"", c.SASLMechanism)
