@@ -13,6 +13,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
 	"golang.org/x/net/proxy"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 type Config struct {
@@ -28,10 +29,53 @@ type Config struct {
 	SASLPassword            string
 	SASLMechanism           string
 	SASLAWSRegion           string
+	SASLTokenUrl            string
+}
+
+type oauthbearerTokenProvider struct {
+	tokenExpiration time.Time
+	token           string
+	tokenUrl        string
+	clientId        string
+	clientSecret    string
 }
 
 type MSKAccessTokenProvider struct {
 	region string
+}
+
+func newOauthbearerTokenProvider(tokenUrl string, clientId string, clientSecret string) *oauthbearerTokenProvider {
+	return &oauthbearerTokenProvider{
+		tokenExpiration: time.Time{},
+		token:           "",
+		tokenUrl:        tokenUrl,
+		clientId:        clientId,
+		clientSecret:    clientSecret,
+	}
+}
+
+func (k *oauthbearerTokenProvider) Token() (*sarama.AccessToken, error) {
+	var accessToken string
+	var err error
+	currentTime := time.Now()
+	ctx := context.Background()
+
+	if k.token != "" && currentTime.Before(k.tokenExpiration.Add(time.Duration(-2)*time.Second)) {
+		accessToken = k.token
+		err = nil
+	} else {
+		config := &clientcredentials.Config{
+			ClientID:     k.clientId,
+			ClientSecret: k.clientSecret,
+			TokenURL:     k.tokenUrl,
+		}
+		token, _err := config.Token(ctx)
+		err = _err
+		k.token = token.AccessToken
+		k.tokenExpiration = token.Expiry
+	}
+
+	return &sarama.AccessToken{Token: accessToken}, err
 }
 
 func (m *MSKAccessTokenProvider) Token() (*sarama.AccessToken, error) {
@@ -68,6 +112,16 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 				log.Fatalf("[ERROR] aws region must be configured or AWS_REGION environment variable must be set to use aws-iam sasl mechanism")
 			}
 			kafkaConfig.Net.SASL.TokenProvider = &MSKAccessTokenProvider{region: region}
+		case "oauthbearer":
+			kafkaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeOAuth)
+			tokenUrl := c.SASLTokenUrl
+			if tokenUrl == "" {
+				tokenUrl = os.Getenv("TOKEN_URL")
+			}
+			if tokenUrl == "" {
+				log.Fatalf("[ERROR] token url must be configured or TOKEN_URL environment variable must be set to use oauthbearer sasl mechanism")
+			}
+			kafkaConfig.Net.SASL.TokenProvider = newOauthbearerTokenProvider(tokenUrl, c.SASLUsername, c.SASLPassword)
 		case "plain":
 		default:
 			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\" or \"plain\"", c.SASLMechanism)
@@ -210,6 +264,7 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.TLSEnabled,
 		config.SkipTLSVerify,
 		config.SASLAWSRegion,
+		config.SASLTokenUrl,
 		config.SASLUsername,
 		"*****",
 		config.SASLMechanism,
