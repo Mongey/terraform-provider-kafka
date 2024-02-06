@@ -79,6 +79,12 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_PASSWORD", nil),
 				Description: "Password for SASL authentication.",
 			},
+			"sasl_token_url": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_TOKEN_URL", nil),
+				Description: "The url to retrieve oauth2 tokens from, when using sasl mechanism oauthbearer",
+			},
 			"sasl_mechanism": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -125,9 +131,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 
 	saslMechanism := d.Get("sasl_mechanism").(string)
 	switch saslMechanism {
-	case "scram-sha512", "scram-sha256", "aws-iam", "plain":
+	case "scram-sha512", "scram-sha256", "aws-iam", "oauthbearer", "plain":
 	default:
-		return nil, fmt.Errorf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\" or \"plain\"", saslMechanism)
+		return nil, fmt.Errorf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\", \"oauthbearer\" or \"plain\"", saslMechanism)
 	}
 
 	config := &Config{
@@ -140,6 +146,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SASLAWSRegion:           d.Get("sasl_aws_region").(string),
 		SASLUsername:            d.Get("sasl_username").(string),
 		SASLPassword:            d.Get("sasl_password").(string),
+		SASLTokenUrl:            d.Get("sasl_token_url").(string),
 		SASLMechanism:           saslMechanism,
 		TLSEnabled:              d.Get("tls_enabled").(bool),
 		Timeout:                 d.Get("timeout").(int),

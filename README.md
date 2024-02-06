@@ -81,7 +81,8 @@ provider "kafka" {
 | `skip_tls_verify`       | Skip TLS verification.                                                                                                | `false`    |
 | `sasl_username`         | Username for SASL authentication.                                                                                     | `""`       |
 | `sasl_password`         | Password for SASL authentication.                                                                                     | `""`       |
-| `sasl_mechanism`        | Mechanism for SASL authentication. Allowed values are plain, scram-sha512 and scram-sha256                            | `plain`    |
+| `sasl_token_url`        | The url to retrieve oauth2 tokens from, when using sasl mechanism oauthbearer                                         | `""`    |
+| `sasl_mechanism`        | Mechanism for SASL authentication. Allowed values are plain, scram-sha512, scram-sha256 and oauthbearer               | `plain`    |
 
 ## Resources
 ### `kafka_topic`

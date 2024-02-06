@@ -53,5 +53,7 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 
 * `sasl_password` - (Optional) Password for SASL authentication. Can be set through the `KAFKA_SASL_PASSWORD` environment variable.
 
+* `sasl_token_rul` - (Optional) The url to retrieve oauth2 tokens from, when using sasl mechanism oauthbearer. Can be set through the `KAFKA_SASL_TOKEN_URL` environment variable.
+
 * `sasl_mechanism` - (Optional) Mechanism for SASL authentication. Allowed values
-  are `plain`, `scram-sha512` and `scram-sha256`. Default `plain`. Can be set through the `KAFKA_SASL_MECHANISM` environment variable.
+  are `plain`, `scram-sha512`, `scram-sha256` and `oauthbearer`. Default `plain`. Can be set through the `KAFKA_SASL_MECHANISM` environment variable.
