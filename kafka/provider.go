@@ -67,6 +67,12 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_IAM_AWS_REGION", nil),
 				Description: "AWS region where MSK is deployed.",
 			},
+			"sasl_aws_profile": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_IAM_AWS_PROFILE", nil),
+				Description: "AWS profile to use for authentication.",
+			},
 			"sasl_username": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -138,6 +144,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		ClientCertKeyPassphrase: d.Get("client_key_passphrase").(string),
 		SkipTLSVerify:           d.Get("skip_tls_verify").(bool),
 		SASLAWSRegion:           d.Get("sasl_aws_region").(string),
+		SASLAWSProfile:          d.Get("sasl_aws_profile").(string),
 		SASLUsername:            d.Get("sasl_username").(string),
 		SASLPassword:            d.Get("sasl_password").(string),
 		SASLMechanism:           saslMechanism,

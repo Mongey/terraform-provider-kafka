@@ -28,14 +28,22 @@ type Config struct {
 	SASLPassword            string
 	SASLMechanism           string
 	SASLAWSRegion           string
+	SASLAWSProfile          string
 }
 
 type MSKAccessTokenProvider struct {
-	region string
+	region  string
+	profile string
 }
 
 func (m *MSKAccessTokenProvider) Token() (*sarama.AccessToken, error) {
-	token, _, err := signer.GenerateAuthToken(context.TODO(), m.region)
+	var token string
+	var err error
+	if m.profile != "" {
+		token, _, err = signer.GenerateAuthTokenFromProfile(context.TODO(), m.region, m.profile)
+	} else {
+		token, _, err = signer.GenerateAuthToken(context.TODO(), m.region)
+	}
 	return &sarama.AccessToken{Token: token}, err
 }
 
@@ -61,13 +69,17 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 		case "aws-iam":
 			kafkaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeOAuth)
 			region := c.SASLAWSRegion
+			profile := c.SASLAWSProfile
 			if region == "" {
 				region = os.Getenv("AWS_REGION")
 			}
 			if region == "" {
-				log.Fatalf("[ERROR] aws region must be configured or AWS_REGION environment variable must be set to use aws-iam sasl mechanism")
+				return nil, fmt.Errorf("[ERROR] aws region must be configured or AWS_REGION environment variable must be set to use aws-iam sasl mechanism")
 			}
-			kafkaConfig.Net.SASL.TokenProvider = &MSKAccessTokenProvider{region: region}
+			kafkaConfig.Net.SASL.TokenProvider = &MSKAccessTokenProvider{
+				region:  region,
+				profile: profile,
+			}
 		case "plain":
 		default:
 			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\" or \"plain\"", c.SASLMechanism)
@@ -201,18 +213,19 @@ func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*t
 
 func (config *Config) copyWithMaskedSensitiveValues() Config {
 	copy := Config{
-		config.BootstrapServers,
-		config.Timeout,
-		config.CACert,
-		config.ClientCert,
-		"*****",
-		"*****",
-		config.TLSEnabled,
-		config.SkipTLSVerify,
-		config.SASLAWSRegion,
-		config.SASLUsername,
-		"*****",
-		config.SASLMechanism,
+		BootstrapServers:        config.BootstrapServers,
+		Timeout:                 config.Timeout,
+		CACert:                  config.CACert,
+		ClientCert:              config.ClientCert,
+		ClientCertKey:           "*****",
+		ClientCertKeyPassphrase: "*****",
+		TLSEnabled:              config.TLSEnabled,
+		SkipTLSVerify:           config.SkipTLSVerify,
+		SASLUsername:            config.SASLUsername,
+		SASLPassword:            "*****",
+		SASLMechanism:           config.SASLMechanism,
+		SASLAWSRegion:           config.SASLAWSRegion,
+		SASLAWSProfile:          config.SASLAWSProfile,
 	}
 	return copy
 }

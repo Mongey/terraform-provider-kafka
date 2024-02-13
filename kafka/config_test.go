@@ -1,8 +1,11 @@
 package kafka
 
 import (
+	"fmt"
 	"os"
 	"testing"
+
+	"github.com/IBM/sarama"
 )
 
 func loadFile(t *testing.T, file string) string {
@@ -113,6 +116,80 @@ func Test_newTLSConfig(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("newTLSConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+		})
+	}
+}
+
+func Test_newKafkaConfig(t *testing.T) {
+	type AssertConfig func(config *sarama.Config, hasProfile bool) error
+	assertFn := func(config *sarama.Config, hasProfile bool) error {
+		if !config.Net.SASL.Enable {
+			return fmt.Errorf("SASL is not enabled")
+		}
+		if config.Net.SASL.Mechanism != "OAUTHBEARER" {
+			return fmt.Errorf("SALS mechanism is not 'OAUTHBEARER'")
+		}
+		if config.Net.SASL.TokenProvider == nil {
+			return fmt.Errorf("SALS TokenProvider not set")
+		}
+		tokenProvider := config.Net.SASL.TokenProvider.(*MSKAccessTokenProvider)
+		if tokenProvider.region == "" {
+			return fmt.Errorf("Token provider region not set")
+		}
+		if (tokenProvider.profile == "") == hasProfile {
+			return fmt.Errorf("Token provider profile not set")
+		}
+		return nil
+	}
+
+	tests := []struct {
+		name     string
+		config   Config
+		assertFn AssertConfig
+		wantErr  bool
+	}{
+		{
+			name: "sasl mechanism - aws-iam no region provided",
+			config: Config{
+				SASLMechanism: "aws-iam",
+			},
+			wantErr: true,
+		},
+		{
+			name: "sasl mechanism - aws-iam with region provided",
+			config: Config{
+				SASLMechanism: "aws-iam",
+				SASLAWSRegion: "aws-region",
+			},
+			assertFn: assertFn,
+			wantErr:  false,
+		},
+		{
+			name: "sasl mechanism - aws-iam with region and profile provided",
+			config: Config{
+				SASLMechanism:  "aws-iam",
+				SASLAWSRegion:  "aws-region",
+				SASLAWSProfile: "aws-profile",
+			},
+			assertFn: assertFn,
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sc, err := tt.config.newKafkaConfig()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("newKafkaConfig() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if tt.assertFn != nil {
+				assertErr := tt.assertFn(sc, tt.config.SASLAWSProfile != "")
+				if (assertErr != nil) != tt.wantErr {
+					t.Errorf("newKafkaConfig() error = %v, wantErr %v", assertErr, tt.wantErr)
+					return
+				}
 			}
 		})
 	}

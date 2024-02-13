@@ -81,7 +81,9 @@ provider "kafka" {
 | `skip_tls_verify`       | Skip TLS verification.                                                                                                | `false`    |
 | `sasl_username`         | Username for SASL authentication.                                                                                     | `""`       |
 | `sasl_password`         | Password for SASL authentication.                                                                                     | `""`       |
-| `sasl_mechanism`        | Mechanism for SASL authentication. Allowed values are plain, scram-sha512 and scram-sha256                            | `plain`    |
+| `sasl_mechanism`        | Mechanism for SASL authentication. Allowed values are plain, scram-sha512, scram-sha256, aws-iam                      | `plain`    |
+| `sasl_aws_region`       | Only for aws-iam. An AWS region where Kafka cluster is deployed.                                                      | `""`       |
+| `sasl_aws_profile`      | Only for aws-iam. An AWS profile to use while authenticating against AWS IAM. Can be left empty - will use default.   | `""`       |
 
 ## Resources
 ### `kafka_topic`
