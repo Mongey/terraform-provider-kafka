@@ -101,6 +101,17 @@ provider "kafka" {
   sasl_aws_region   = "us-east-1"
 }
 ```
+#### Compatibility with Redpanda
+
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9092"]
+  kafka_version = "2.1.0"
+}
+```
+
+Due to Redpanda not implementing some Metadata APIs, we need to force the Kafka version to use when creating the provider.
+>>>>>>> d9b1386 (Add support for Kafka version configuration)
 
 | Property                | Description                                                                                                           | Default    |
 | -------------------     | --------------------------------------------------------------------------------------------------------------------- | ---------- |
@@ -109,6 +120,7 @@ provider "kafka" {
 | `client_cert`           | The client certificate or path to a file containing the client certificate in `PEM` format. Use for Client authentication to Kafka.<br>If you have Intermediate CA certificate(s) append them to `client_cert`.| `""`       |
 | `client_key`            | The private key or path to a file containing the private key that the client certificate was issued for.              | `""`       |
 | `client_key_passphrase` | The passphrase for the private key that the certificate was issued for.                                               | `""`       |
+| `kafka_version`         | The version of Kafka protocol to use in `$MAJOR.$MINOR.$PATCH` format. Some features may not be available on older versions.  | `""`       |
 | `tls_enabled`           | Enable communication with the Kafka Cluster over TLS.                                                                 | `true`     |
 | `skip_tls_verify`       | Skip TLS verification.                                                                                                | `false`    |
 | `sasl_username`         | Username for SASL authentication.                                                                                     | `""`       |

@@ -28,6 +28,7 @@ description: |-
 - `client_key` (String) The private key that the certificate was issued for.
 - `client_key_file` (String, Deprecated) Path to a file containing the private key that the certificate was issued for.
 - `client_key_passphrase` (String) The passphrase for the private key that the certificate was issued for.
+- `kafka_version` (String) The version of Kafka protocol to use in `$MAJOR.$MINOR.$PATCH` format. Some features may not be available on older versions.
 - `sasl_mechanism` (String) SASL mechanism, can be plain, scram-sha512, scram-sha256, aws-iam
 - `sasl_password` (String) Password for SASL authentication.
 - `sasl_username` (String) Username for SASL authentication.

@@ -24,6 +24,7 @@ type Config struct {
 	ClientCert              string
 	ClientCertKey           string
 	ClientCertKeyPassphrase string
+	KafkaVersion            string
 	TLSEnabled              bool
 	SkipTLSVerify           bool
 	SASLUsername            string
@@ -95,7 +96,17 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 
 func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V2_7_0_0
+
+	if c.KafkaVersion != "" {
+		version, err := sarama.ParseKafkaVersion(c.KafkaVersion)
+		if err != nil {
+			return kafkaConfig, fmt.Errorf("error parsing kafka version '%s': %w", c.KafkaVersion, err)
+		}
+		kafkaConfig.Version = version
+	} else {
+		kafkaConfig.Version = sarama.V2_7_0_0
+	}
+
 	kafkaConfig.ClientID = "terraform-provider-kafka"
 	kafkaConfig.Admin.Timeout = time.Duration(c.Timeout) * time.Second
 	kafkaConfig.Metadata.Full = true // the default, but just being clear
@@ -275,6 +286,7 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.ClientCert,
 		"*****",
 		"*****",
+		config.KafkaVersion,
 		config.TLSEnabled,
 		config.SkipTLSVerify,
 		config.SASLUsername,
