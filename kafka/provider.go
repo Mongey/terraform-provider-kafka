@@ -66,6 +66,11 @@ func Provider() *schema.Provider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_IAM_AWS_REGION", nil),
 				Description: "AWS region where MSK is deployed.",
+			"kafka_version": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_VERSION", "2.7.0"),
+				Description: "The version of Kafka protocol to use in `$MAJOR.$MINOR.$PATCH` format. Some features may not be available on older versions. Default is 2.7.0.",
 			},
 			"sasl_aws_role_arn": {
 				Type:        schema.TypeString,
@@ -160,6 +165,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		ClientCert:              d.Get("client_cert").(string),
 		ClientCertKey:           d.Get("client_key").(string),
 		ClientCertKeyPassphrase: d.Get("client_key_passphrase").(string),
+		KafkaVersion:            d.Get("kafka_version").(string),
 		SkipTLSVerify:           d.Get("skip_tls_verify").(bool),
 		SASLAWSRegion:           d.Get("sasl_aws_region").(string),
 		SASLUsername:            d.Get("sasl_username").(string),
