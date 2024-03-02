@@ -30,7 +30,10 @@ func (c *LazyClient) init() error {
 		log.Printf("[TRACE] lazy client init %s", c.initErr)
 	}
 	if c.initErr == sarama.ErrBrokerNotAvailable || c.initErr == sarama.ErrOutOfBrokers {
+		log.Printf("[ERROR] Cannot connect to Kafka broker(s) %v", *(c.Config.BootstrapServers))
+		log.Printf("[ERROR] Check if Kafka broker(s) are up and running")
 		if c.Config.TLSEnabled {
+			log.Printf("[ERROR] Check if Kafka broker(s) are reachable from this machine using TLS")
 			tlsError := c.checkTLSConfig()
 			if tlsError != nil {
 				return fmt.Errorf("%w\n%s", tlsError, c.initErr)
@@ -48,14 +51,29 @@ func (c *LazyClient) checkTLSConfig() error {
 	}
 
 	brokers := *(c.Config.BootstrapServers)
-	broker := brokers[0]
-	tlsConf := kafkaConfig.Net.TLS.Config
-	conn, err := tls.Dial("tcp", broker, tlsConf)
-	if err != nil {
-		return err
+	errs := make([]error, 0, len(brokers))
+
+	for i := 0; i < len(brokers); i++ {
+		broker := brokers[i]
+		tlsConf := kafkaConfig.Net.TLS.Config
+		conn, err := tls.Dial("tcp", broker, tlsConf)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+
+		err = conn.Handshake()
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
 	}
 
-	return conn.Handshake()
+	if len(errs) > 0 {
+		return fmt.Errorf("TLS handshake failed for all brokers: %v", errs)
+	}
+
+	return nil
 }
 
 func (c *LazyClient) CreateTopic(t Topic) error {

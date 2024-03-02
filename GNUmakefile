@@ -16,7 +16,6 @@ testacc:
 	KAFKA_CLIENT_KEY_PASSPHRASE=test-pass \
 	KAFKA_SKIP_VERIFY=false \
 	KAFKA_ENABLE_TLS=true \
-	TF_LOG=DEBUG \
 	TF_ACC=1 go test ./kafka -v $(TESTARGS) -timeout 9m -count=1
 
 .PHONY: build test testacc
