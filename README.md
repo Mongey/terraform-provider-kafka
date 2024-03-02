@@ -225,12 +225,65 @@ resource "kafka_user_scram_credential" "test" {
 
 #### Properties
 
-| Property             | Description                                    |
-| -------------------- | ---------------------------------------------- |
-| `username`        | The username                         |
-| `scram_mechanism`        | The SCRAM mechanism (SCRAM-SHA-256 or SCRAM-SHA-512)          |
-| `scram_iterations`             | The number of SCRAM iterations (must be >= 4096). Default: 4096       |
-| `password` | The password for the user |
+| Property            | Description                                                     |
+|---------------------|-----------------------------------------------------------------|
+| `username`          | The username                                                    |
+| `scram_mechanism`   | The SCRAM mechanism (SCRAM-SHA-256 or SCRAM-SHA-512)            |
+| `scram_iterations`  | The number of SCRAM iterations (must be >= 4096). Default: 4096 |
+| `password`          | The password for the user                                       |
+
+## Data Sources
+### `kafka_topic`
+
+A data source for getting information about a kafka topic.
+
+#### Example
+
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9092"]
+}
+data "kafka_topic" "test" {
+  name = "test_topic_name"
+}
+output "output_test" {
+  value = data.kafka_topic.test.partitions
+```
+
+### `kafka_topics`
+
+A data source for getting a list of all available Kafka topics. The object topic return will have the same property of the kafka_topic data source
+#### Example
+
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9092"]
+}
+data "kafka_topics" "test" {
+}
+output "output_test_topic_name" {
+  value = data.kafka_topics.test[0].name
+}
+output "output_test_topic_partitions" {
+  value = data.kafka_topics.test[0].partitions
+}
+output "output_test_topic_replication_factor" {
+  value = data.kafka_topics.test[0].replication_factor
+}
+output "output_test_topic_config" {
+  value = data.kafka_topics.test[0].config["retention.ms"]
+}
+```
+
+#### Properties
+
+| Property            | Description                                                     |
+|---------------------|-----------------------------------------------------------------|
+| `list`              | The list containing all kafka topics                            |
+| `username`          | The username                                                    |
+| `scram_mechanism`   | The SCRAM mechanism (SCRAM-SHA-256 or SCRAM-SHA-512)            |
+| `scram_iterations`  | The number of SCRAM iterations (must be >= 4096). Default: 4096 |
+| `password`          | The password for the user                                       |
 
 ## Requirements
 * [>= Kafka 1.0.0][3]
