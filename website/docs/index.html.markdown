@@ -107,4 +107,3 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 * `sasl_aws_profile` - (Optional) AWS profile name to use.
 
 * `sasl_aws_creds_debug` - (Optional) Set this to true to turn AWS credentials debug.
->>>>>>> origin/master
