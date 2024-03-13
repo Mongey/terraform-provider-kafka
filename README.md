@@ -116,7 +116,7 @@ provider "kafka" {
 | `sasl_mechanism`        | Mechanism for SASL authentication. Allowed values are plain, aws-iam, scram-sha512 and scram-sha256                   | `plain`    |
 | `sasl_aws_region`       | AWS region for IAM authentication.                                                                                    | `""`       |
 | `sasl_aws_role_arn`     | Arn of AWS IAM role to assume for IAM authentication.                                                                 | `""`       |
-| `sasl_aws_profile`      | AWS profile to use for IAM authentication.                                                                            | `""`    |
+| `sasl_aws_profile`      | AWS profile to use for IAM authentication.                                                                            | `""`       |
 | `sasl_aws_creds_debug`  | Enable debug logging for AWS authentication.                                                                          | `false`    |
 
 
