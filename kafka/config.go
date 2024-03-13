@@ -28,14 +28,25 @@ type Config struct {
 	SASLPassword            string
 	SASLMechanism           string
 	SASLAWSRegion           string
+	SASLAWSRoleArn          string
+	SASLAWSProfile          string
+	SASLAWSCredsDebug       bool
 }
 
-type MSKAccessTokenProvider struct {
-	region string
-}
-
-func (m *MSKAccessTokenProvider) Token() (*sarama.AccessToken, error) {
-	token, _, err := signer.GenerateAuthToken(context.TODO(), m.region)
+func (c *Config) Token() (*sarama.AccessToken, error) {
+	signer.AwsDebugCreds = c.SASLAWSCredsDebug
+	var token string
+	var err error
+	if c.SASLAWSRoleArn != "" {
+		log.Printf("[INFO] Generating auth token with a role '%s' in '%s'", c.SASLAWSRoleArn, c.SASLAWSRegion)
+		token, _, err = signer.GenerateAuthTokenFromRole(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, "terraform-kafka-provider")
+	} else if c.SASLAWSProfile != "" {
+		log.Printf("[INFO] Generating auth token using profile '%s' in '%s'", c.SASLAWSProfile, c.SASLAWSRegion)
+		token, _, err = signer.GenerateAuthTokenFromProfile(context.TODO(), c.SASLAWSRegion, c.SASLAWSProfile)
+	} else {
+		log.Printf("[INFO] Generating auth token in '%s'", c.SASLAWSRegion)
+		token, _, err = signer.GenerateAuthToken(context.TODO(), c.SASLAWSRegion)
+	}
 	return &sarama.AccessToken{Token: token}, err
 }
 
@@ -67,7 +78,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 			if region == "" {
 				log.Fatalf("[ERROR] aws region must be configured or AWS_REGION environment variable must be set to use aws-iam sasl mechanism")
 			}
-			kafkaConfig.Net.SASL.TokenProvider = &MSKAccessTokenProvider{region: region}
+			kafkaConfig.Net.SASL.TokenProvider = c
 		case "plain":
 		default:
 			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\" or \"plain\"", c.SASLMechanism)
@@ -213,6 +224,9 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.SASLUsername,
 		"*****",
 		config.SASLMechanism,
+		config.SASLAWSProfile,
+		config.SASLAWSRoleArn,
+		config.SASLAWSCredsDebug,
 	}
 	return copy
 }
