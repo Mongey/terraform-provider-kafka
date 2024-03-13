@@ -16,40 +16,40 @@ func Provider() *schema.Provider {
 				Required:    true,
 				Description: "A list of kafka brokers",
 			},
-			"ca_cert_file": &schema.Schema{
+			"ca_cert_file": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CA_CERT", nil),
 				Description: "Path to a CA certificate file to validate the server's certificate.",
 				Deprecated:  "This parameter is now deprecated and will be removed in a later release, please use `ca_cert` instead.",
 			},
-			"client_cert_file": &schema.Schema{
+			"client_cert_file": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_CERT", nil),
 				Description: "Path to a file containing the client certificate.",
 				Deprecated:  "This parameter is now deprecated and will be removed in a later release, please use `client_cert` instead.",
 			},
-			"client_key_file": &schema.Schema{
+			"client_key_file": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY", nil),
 				Description: "Path to a file containing the private key that the certificate was issued for.",
 				Deprecated:  "This parameter is now deprecated and will be removed in a later release, please use `client_key` instead.",
 			},
-			"ca_cert": &schema.Schema{
+			"ca_cert": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CA_CERT", nil),
 				Description: "CA certificate file to validate the server's certificate.",
 			},
-			"client_cert": &schema.Schema{
+			"client_cert": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_CERT", nil),
 				Description: "The client certificate.",
 			},
-			"client_key": &schema.Schema{
+			"client_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY", nil),
@@ -61,43 +61,61 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY_PASSPHRASE", nil),
 				Description: "The passphrase for the private key that the certificate was issued for.",
 			},
-			"sasl_aws_region": &schema.Schema{
+			"sasl_aws_region": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_IAM_AWS_REGION", nil),
 				Description: "AWS region where MSK is deployed.",
 			},
-			"sasl_username": &schema.Schema{
+			"sasl_aws_role_arn": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("AWS_ROLE_ARN", nil),
+				Description: "Arn of an AWS IAM role to assume",
+			},
+			"sasl_aws_profile": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("AWS_PROFILE", nil),
+				Description: "AWS profile name to use",
+			},
+			"sasl_aws_creds_debug": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("AWS_CREDS_DEBUG", "false"),
+				Description: "Set this to true to turn AWS credentials debug.",
+			},
+			"sasl_username": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_USERNAME", nil),
 				Description: "Username for SASL authentication.",
 			},
-			"sasl_password": &schema.Schema{
+			"sasl_password": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_PASSWORD", nil),
 				Description: "Password for SASL authentication.",
 			},
-			"sasl_token_url": &schema.Schema{
+			"sasl_token_url": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_TOKEN_URL", nil),
 				Description: "The url to retrieve oauth2 tokens from, when using sasl mechanism oauthbearer",
 			},
-			"sasl_mechanism": &schema.Schema{
+			"sasl_mechanism": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_MECHANISM", "plain"),
 				Description: "SASL mechanism, can be plain, scram-sha512, scram-sha256, aws-iam",
 			},
-			"skip_tls_verify": &schema.Schema{
+			"skip_tls_verify": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SKIP_VERIFY", "false"),
 				Description: "Set this to true only if the target Kafka server is an insecure development instance.",
 			},
-			"tls_enabled": &schema.Schema{
+			"tls_enabled": {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_ENABLE_TLS", "true"),
@@ -147,6 +165,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SASLUsername:            d.Get("sasl_username").(string),
 		SASLPassword:            d.Get("sasl_password").(string),
 		SASLTokenUrl:            d.Get("sasl_token_url").(string),
+		SASLAWSRoleArn:          d.Get("sasl_aws_role_arn").(string),
+		SASLAWSProfile:          d.Get("sasl_aws_profile").(string),
+		SASLAWSCredsDebug:       d.Get("sasl_aws_creds_debug").(bool),
 		SASLMechanism:           saslMechanism,
 		TLSEnabled:              d.Get("tls_enabled").(bool),
 		Timeout:                 d.Get("timeout").(int),
