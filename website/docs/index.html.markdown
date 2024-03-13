@@ -54,4 +54,12 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 * `sasl_password` - (Optional) Password for SASL authentication. Can be set through the `KAFKA_SASL_PASSWORD` environment variable.
 
 * `sasl_mechanism` - (Optional) Mechanism for SASL authentication. Allowed values
-  are `plain`, `scram-sha512` and `scram-sha256`. Default `plain`. Can be set through the `KAFKA_SASL_MECHANISM` environment variable.
+  are `plain`, `scram-sha512`, `scram-sha256` and `aws-iam`. Default `plain`. Can be set through the `KAFKA_SASL_MECHANISM` environment variable.
+
+* `sasl_aws_region` - (Optional) AWS region where MSK is deployed. Required when sasl_mechanism is aws-iam.
+
+* `sasl_aws_role_arn` - (Optional) IAM role ARN to Assume.
+
+* `sasl_aws_profile` - (Optional) AWS profile name to use.
+
+* `sasl_aws_creds_debug` - (Optional) Set this to true to turn AWS credentials debug.
