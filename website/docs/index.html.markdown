@@ -24,6 +24,49 @@ provider "kafka" {
 }
 ```
 
+Example provider with TLS client authentication.
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9092"]
+  ca_cert           = file("../secrets/ca.crt")
+  client_cert       = file("../secrets/terraform-cert.pem")
+  client_key        = file("../secrets/terraform.pem")
+  tls_enabled       = true
+}
+```
+
+Example provider with aws-iam(Assume role) client authentication.
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9098"]
+  tls_enabled       = true
+  sasl_mechanism    = "aws-iam"
+  sasl_aws_region   = "us-east-1"
+  sasl_aws_role_arn = "arn:aws:iam::account:role/role-name"
+}
+```
+
+Example provider with aws-iam(Aws Profile) client authentication.
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9098"]
+  tls_enabled       = true
+  sasl_mechanism    = "aws-iam"
+  sasl_aws_region   = "us-east-1"
+  sasl_aws_profile  = "dev"
+}
+```
+
+Example provider with aws-iam(Static Creds) client authentication. You have to export `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`(Optional if you are using temp creds)
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9098"]
+  tls_enabled       = true
+  sasl_mechanism    = "aws-iam"
+  sasl_aws_region   = "us-east-1"
+}
+```
+
 ## Argument Reference
 
 In addition to [generic `provider` arguments](https://www.terraform.io/docs/configuration/providers.html)
