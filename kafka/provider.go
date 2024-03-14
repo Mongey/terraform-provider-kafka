@@ -66,6 +66,7 @@ func Provider() *schema.Provider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_IAM_AWS_REGION", nil),
 				Description: "AWS region where MSK is deployed.",
+			},
 			"kafka_version": {
 				Type:        schema.TypeString,
 				Optional:    true,
