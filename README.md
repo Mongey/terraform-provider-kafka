@@ -111,7 +111,6 @@ provider "kafka" {
 ```
 
 Due to Redpanda not implementing some Metadata APIs, we need to force the Kafka version to use when creating the provider.
->>>>>>> d9b1386 (Add support for Kafka version configuration)
 
 | Property                | Description                                                                                                           | Default    |
 | -------------------     | --------------------------------------------------------------------------------------------------------------------- | ---------- |
