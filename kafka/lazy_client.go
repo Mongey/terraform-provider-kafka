@@ -130,6 +130,15 @@ func (c *LazyClient) CreateACL(s StringlyTypedACL) error {
 	return c.inner.CreateACL(s)
 }
 
+func (c *LazyClient) InvalidateACLCache() error {
+	err := c.init()
+	if err != nil {
+		return err
+	}
+	c.inner.InvalidateACLCache()
+	return nil
+}
+
 func (c *LazyClient) ListACLs() ([]*sarama.ResourceAcls, error) {
 	err := c.init()
 	if err != nil {

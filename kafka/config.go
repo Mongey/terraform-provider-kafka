@@ -115,6 +115,10 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig.Net.Proxy.Enable = true
 	kafkaConfig.Net.Proxy.Dialer = proxy.FromEnvironment()
 
+	kafkaConfig.Net.ReadTimeout = time.Duration(c.Timeout) * time.Second
+	kafkaConfig.Net.WriteTimeout = time.Duration(c.Timeout) * time.Second
+	kafkaConfig.Metadata.Timeout = time.Duration(c.Timeout) * time.Second
+
 	if c.saslEnabled() {
 		switch c.SASLMechanism {
 		case "scram-sha512":

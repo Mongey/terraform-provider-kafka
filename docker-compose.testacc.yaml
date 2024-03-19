@@ -4,7 +4,7 @@ services:
   testacc:
     build: .
     environment:
-      KAFKA_BOOTSTRAP_SERVER: kafka1:9090,kafka2:9090,kafka3:9090
+      KAFKA_BOOTSTRAP_SERVERS: kafka1:9090,kafka2:9090,kafka3:9090
     entrypoint:
       - make
       - testacc
