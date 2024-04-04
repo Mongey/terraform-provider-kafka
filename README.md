@@ -70,18 +70,67 @@ provider "kafka" {
 }
 ```
 
+Example provider with aws-iam(Assume role) client authentication.
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9098"]
+  tls_enabled       = true
+  sasl_mechanism    = "aws-iam"
+  sasl_aws_region   = "us-east-1"
+  sasl_aws_role_arn = "arn:aws:iam::account:role/role-name"
+}
+```
+
+Example provider with aws-iam(Aws Profile) client authentication.
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9098"]
+  tls_enabled       = true
+  sasl_mechanism    = "aws-iam"
+  sasl_aws_region   = "us-east-1"
+  sasl_aws_profile  = "dev"
+}
+```
+
+Example provider with aws-iam(Static Creds) client authentication. You have to export `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`(Optional if you are using temp creds)
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9098"]
+  tls_enabled       = true
+  sasl_mechanism    = "aws-iam"
+  sasl_aws_region   = "us-east-1"
+}
+```
+#### Compatibility with Redpanda
+
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9092"]
+  kafka_version = "2.1.0"
+}
+```
+
+Due to Redpanda not implementing some Metadata APIs, we need to force the Kafka version to use when creating the provider.
+
 | Property                | Description                                                                                                           | Default    |
 | -------------------     | --------------------------------------------------------------------------------------------------------------------- | ---------- |
 | `bootstrap_servers`     | A list of host:port addresses that will be used to discover the full set of alive brokers                             | `Required` |
-| `ca_cert`               | The CA certificate or path to a CA certificate file in `PEM` format to validate the server's certificate.                             | `""`       |
+| `ca_cert`               | The CA certificate or path to a CA certificate file in `PEM` format to validate the server's certificate.             | `""`       |
 | `client_cert`           | The client certificate or path to a file containing the client certificate in `PEM` format. Use for Client authentication to Kafka.<br>If you have Intermediate CA certificate(s) append them to `client_cert`.| `""`       |
 | `client_key`            | The private key or path to a file containing the private key that the client certificate was issued for.              | `""`       |
 | `client_key_passphrase` | The passphrase for the private key that the certificate was issued for.                                               | `""`       |
+| `kafka_version`         | The version of Kafka protocol to use in `$MAJOR.$MINOR.$PATCH` format. Some features may not be available on older versions.  | `""`       |
 | `tls_enabled`           | Enable communication with the Kafka Cluster over TLS.                                                                 | `true`     |
 | `skip_tls_verify`       | Skip TLS verification.                                                                                                | `false`    |
 | `sasl_username`         | Username for SASL authentication.                                                                                     | `""`       |
 | `sasl_password`         | Password for SASL authentication.                                                                                     | `""`       |
-| `sasl_mechanism`        | Mechanism for SASL authentication. Allowed values are plain, scram-sha512 and scram-sha256                            | `plain`    |
+| `sasl_mechanism`        | Mechanism for SASL authentication. Allowed values are `plain`, `aws-iam`,  `scram-sha256`, `scram-sha512` or `oauthbearer`      | `plain`    |
+| `sasl_aws_region`       | AWS region for IAM authentication.                                                                                    | `""`       |
+| `sasl_aws_role_arn`     | Arn of AWS IAM role to assume for IAM authentication.                                                                 | `""`       |
+| `sasl_aws_profile`      | AWS profile to use for IAM authentication.                                                                            | `""`       |
+| `sasl_aws_creds_debug`  | Enable debug logging for AWS authentication.                                                                          | `false`    |
+| `sasl_token_url`        | The url to retrieve oauth2 tokens from, when using sasl mechanism `oauthbearer`                                         | `""`    |
+
 
 ## Resources
 ### `kafka_topic`

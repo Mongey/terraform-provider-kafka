@@ -13,6 +13,8 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
 	"golang.org/x/net/proxy"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 type Config struct {
@@ -22,26 +24,89 @@ type Config struct {
 	ClientCert              string
 	ClientCertKey           string
 	ClientCertKeyPassphrase string
+	KafkaVersion            string
 	TLSEnabled              bool
 	SkipTLSVerify           bool
 	SASLUsername            string
 	SASLPassword            string
 	SASLMechanism           string
 	SASLAWSRegion           string
+	SASLAWSRoleArn          string
+	SASLAWSProfile          string
+	SASLAWSCredsDebug       bool
+	SASLTokenUrl            string
 }
 
-type MSKAccessTokenProvider struct {
-	region string
+type OAuth2Config interface {
+	Token(ctx context.Context) (*oauth2.Token, error)
 }
 
-func (m *MSKAccessTokenProvider) Token() (*sarama.AccessToken, error) {
-	token, _, err := signer.GenerateAuthToken(context.TODO(), m.region)
+type oauthbearerTokenProvider struct {
+	tokenExpiration time.Time
+	token           string
+	oauth2Config    OAuth2Config
+}
+
+func newOauthbearerTokenProvider(oauth2Config OAuth2Config) *oauthbearerTokenProvider {
+	return &oauthbearerTokenProvider{
+		tokenExpiration: time.Time{},
+		token:           "",
+		oauth2Config:    oauth2Config,
+	}
+}
+
+func (o *oauthbearerTokenProvider) Token() (*sarama.AccessToken, error) {
+	var accessToken string
+	var err error
+	currentTime := time.Now()
+	ctx := context.Background()
+
+	if o.token != "" && currentTime.Before(o.tokenExpiration.Add(time.Duration(-2)*time.Second)) {
+		accessToken = o.token
+		err = nil
+	} else {
+		token, _err := o.oauth2Config.Token(ctx)
+		err = _err
+		if err == nil {
+			accessToken = token.AccessToken
+			o.token = token.AccessToken
+			o.tokenExpiration = token.Expiry
+		}
+	}
+
+	return &sarama.AccessToken{Token: accessToken}, err
+}
+
+func (c *Config) Token() (*sarama.AccessToken, error) {
+	signer.AwsDebugCreds = c.SASLAWSCredsDebug
+	var token string
+	var err error
+	if c.SASLAWSRoleArn != "" {
+		log.Printf("[INFO] Generating auth token with a role '%s' in '%s'", c.SASLAWSRoleArn, c.SASLAWSRegion)
+		token, _, err = signer.GenerateAuthTokenFromRole(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, "terraform-kafka-provider")
+	} else if c.SASLAWSProfile != "" {
+		log.Printf("[INFO] Generating auth token using profile '%s' in '%s'", c.SASLAWSProfile, c.SASLAWSRegion)
+		token, _, err = signer.GenerateAuthTokenFromProfile(context.TODO(), c.SASLAWSRegion, c.SASLAWSProfile)
+	} else {
+		log.Printf("[INFO] Generating auth token in '%s'", c.SASLAWSRegion)
+		token, _, err = signer.GenerateAuthToken(context.TODO(), c.SASLAWSRegion)
+	}
 	return &sarama.AccessToken{Token: token}, err
 }
 
 func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.V2_7_0_0
+
+	if c.KafkaVersion != "" {
+		version, err := sarama.ParseKafkaVersion(c.KafkaVersion)
+		if err != nil {
+			return kafkaConfig, fmt.Errorf("error parsing kafka version '%s': %w", c.KafkaVersion, err)
+		}
+		kafkaConfig.Version = version
+	} else {
+		kafkaConfig.Version = sarama.V2_7_0_0
+	}
+
 	kafkaConfig.ClientID = "terraform-provider-kafka"
 	kafkaConfig.Admin.Timeout = time.Duration(c.Timeout) * time.Second
 	kafkaConfig.Metadata.Full = true // the default, but just being clear
@@ -71,7 +136,22 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 			if region == "" {
 				log.Fatalf("[ERROR] aws region must be configured or AWS_REGION environment variable must be set to use aws-iam sasl mechanism")
 			}
-			kafkaConfig.Net.SASL.TokenProvider = &MSKAccessTokenProvider{region: region}
+			kafkaConfig.Net.SASL.TokenProvider = c
+		case "oauthbearer":
+			kafkaConfig.Net.SASL.Mechanism = sarama.SASLMechanism(sarama.SASLTypeOAuth)
+			tokenUrl := c.SASLTokenUrl
+			if tokenUrl == "" {
+				tokenUrl = os.Getenv("TOKEN_URL")
+			}
+			if tokenUrl == "" {
+				log.Fatalf("[ERROR] token url must be configured or TOKEN_URL environment variable must be set to use oauthbearer sasl mechanism")
+			}
+			oauth2Config := clientcredentials.Config{
+				TokenURL:     tokenUrl,
+				ClientID:     c.SASLUsername,
+				ClientSecret: c.SASLPassword,
+			}
+			kafkaConfig.Net.SASL.TokenProvider = newOauthbearerTokenProvider(&oauth2Config)
 		case "plain":
 		default:
 			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\" or \"plain\"", c.SASLMechanism)
@@ -97,7 +177,6 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 			c.CACert,
 			c.ClientCertKeyPassphrase,
 		)
-
 		if err != nil {
 			return kafkaConfig, err
 		}
@@ -120,11 +199,11 @@ func NewTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*t
 
 func parsePemOrLoadFromFile(input string) (*pem.Block, []byte, error) {
 	// attempt to parse
-	var inputBytes = []byte(input)
+	inputBytes := []byte(input)
 	inputBlock, _ := pem.Decode(inputBytes)
 
 	if inputBlock == nil {
-		//attempt to load from file
+		// attempt to load from file
 		log.Printf("[INFO] Attempting to load from file '%s'", input)
 		var err error
 		inputBytes, err = os.ReadFile(input)
@@ -211,12 +290,17 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.ClientCert,
 		"*****",
 		"*****",
+		config.KafkaVersion,
 		config.TLSEnabled,
 		config.SkipTLSVerify,
-		config.SASLAWSRegion,
 		config.SASLUsername,
 		"*****",
 		config.SASLMechanism,
+		config.SASLAWSRegion,
+		config.SASLAWSProfile,
+		config.SASLAWSRoleArn,
+		config.SASLAWSCredsDebug,
+		config.SASLTokenUrl,
 	}
 	return copy
 }

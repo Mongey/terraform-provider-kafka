@@ -266,7 +266,6 @@ func (c *Client) UpdateTopic(topic Topic) error {
 	}
 
 	res, err := broker.AlterConfigs(r)
-
 	if err != nil {
 		return err
 	}
@@ -381,7 +380,6 @@ func (c *Client) buildAssignment(t Topic) (*[][]int32, error) {
 
 	allReplicas := c.allReplicas()
 	newRF := t.ReplicationFactor
-	rand.Seed(time.Now().UnixNano())
 
 	assignment := make([][]int32, len(partitions))
 	for _, p := range partitions {
@@ -618,6 +616,7 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 func (c *Client) getDescribeAclsRequestAPIVersion() int16 {
 	return int16(c.versionForKey(29, 1))
 }
+
 func (c *Client) getCreateAclsRequestAPIVersion() int16 {
 	return int16(c.versionForKey(30, 1))
 }
