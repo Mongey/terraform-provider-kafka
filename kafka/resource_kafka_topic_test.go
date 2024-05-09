@@ -175,6 +175,77 @@ func TestAcc_TopicAlterReplicationFactor(t *testing.T) {
 	})
 }
 
+func TestAcc_TopicAlterBetweenManagedReplicationFactorAndUnmanaged(t *testing.T) {
+	t.Parallel()
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	topicName := fmt.Sprintf("syslog-%s", u)
+	bs := testBootstrapServers[0]
+
+	keyEncoder := sarama.StringEncoder("same key -> same partition -> same ordering")
+	messages := []*sarama.ProducerMessage{
+		{
+			Topic: topicName,
+			Key:   keyEncoder,
+			Value: sarama.StringEncoder("Krusty"),
+		},
+		{
+			Topic: topicName,
+			Key:   keyEncoder,
+			Value: sarama.StringEncoder("Krab"),
+		},
+		{
+			Topic: topicName,
+			Key:   keyEncoder,
+			Value: sarama.StringEncoder("Pizza"),
+		},
+	}
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckTopicDestroy,
+		Steps: []r.TestStep{
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_updateRF, topicName, 1, 3)),
+				Check: r.ComposeTestCheckFunc(
+					testResourceTopic_produceMessages(messages),
+					testResourceTopic_initialCheck),
+			},
+			{
+				// Test altering from unmanaged replication factor to managed replication factor with same values
+				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_managedReplicationFactor, topicName, 1, 3)),
+				Check: r.ComposeTestCheckFunc(
+					testResourceTopic_updateManagedRFCheck,
+					testResourceTopic_checkSameMessages(messages)),
+			},
+			{
+				// Test updating partitions in managed replication factor
+				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_managedReplicationFactor, topicName, 1, 4)),
+				Check: r.ComposeTestCheckFunc(
+					testResourceTopic_updateManagedRFCheck,
+					testResourceTopic_checkSameMessages(messages)),
+			},
+			{
+				// Test updating replication factor while managed replication factor
+				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_managedReplicationFactor, topicName, 2, 4)),
+				Check: r.ComposeTestCheckFunc(
+					testResourceTopic_updateManagedRFCheck,
+					testResourceTopic_checkSameMessages(messages)),
+			},
+			{
+				// Test switching to unmanaged replication factor
+				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_updateRF, topicName, 1, 5)),
+				Check: r.ComposeTestCheckFunc(
+					testResourceTopic_updateRFCheck,
+					testResourceTopic_checkSameMessages(messages)),
+			},
+		},
+	})
+}
+
 func testResourceTopic_noConfigCheck(s *terraform.State) error {
 	resourceState := s.Modules[0].Resources["kafka_topic.test"]
 	if resourceState == nil {
@@ -354,6 +425,30 @@ func testResourceTopic_updateRFCheck(s *terraform.State) error {
 	return nil
 }
 
+func testResourceTopic_updateManagedRFCheck(s *terraform.State) error {
+	resourceState := s.Modules[0].Resources["kafka_topic.test"]
+	instanceState := resourceState.Primary
+	client := testProvider.Meta().(*LazyClient)
+	topicName := instanceState.Attributes["name"]
+
+	parsed, err := strconv.ParseInt(instanceState.Attributes["partitions"], 10, 32)
+	if err != nil {
+		return err
+	}
+	expectedPartitions := int32(parsed)
+
+	topic, err := client.ReadTopic(topicName, true)
+	if err != nil {
+		return err
+	}
+
+	if actual := topic.Partitions; actual != expectedPartitions {
+		return fmt.Errorf("expected %d partitions, but got %d", expectedPartitions, actual)
+	}
+
+	return nil
+}
+
 func testResourceTopic_checkSameMessages(producedMessages []*sarama.ProducerMessage) r.TestCheckFunc {
 	return func(s *terraform.State) error {
 		resourceState := s.Modules[0].Resources["kafka_topic.test"]
@@ -502,6 +597,20 @@ resource "kafka_topic" "test" {
   name               = "%s"
   replication_factor = %d
   partitions         = %d
+
+  config = {
+    "retention.ms" = "11111"
+    "segment.ms" = "22222"
+  }
+}
+`
+
+const testResourceTopic_managedReplicationFactor = `
+resource "kafka_topic" "test" {
+  name               = "%s"
+  replication_factor = %d
+  partitions         = %d
+  managed_replication_factor = true
 
   config = {
     "retention.ms" = "11111"

@@ -36,11 +36,20 @@ func kafkaTopicResource() *schema.Resource {
 				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"replication_factor": {
-				Type:         schema.TypeInt,
-				Required:     true,
-				ForceNew:     false,
-				Description:  "Number of replicas.",
-				ValidateFunc: validation.IntAtLeast(1),
+				Type:             schema.TypeInt,
+				Required:         true,
+				ForceNew:         false,
+				Description:      "Number of replicas.",
+				ValidateFunc:     validation.IntAtLeast(1),
+				DiffSuppressFunc: checkManagedReplicationFactor,
+			},
+			"managed_replication_factor": {
+				Type:        schema.TypeBool,
+				Required:    false,
+				Optional:    true,
+				ForceNew:    false,
+				Default:     false,
+				Description: "Replication factor is managed by server-side.",
 			},
 			"config": {
 				Type:        schema.TypeMap,
@@ -101,8 +110,11 @@ func topicUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		return diag.FromErr(err)
 	}
 
-	// update replica count of existing partitions before adding new ones
-	if d.HasChange("replication_factor") {
+	managedReplicationFactor := d.Get("managed_replication_factor").(bool)
+	if managedReplicationFactor {
+		log.Printf("[INFO] Ignoring replication factor")
+	} else if d.HasChange("replication_factor") {
+		// update replica count of existing partitions before adding new ones
 		oi, ni := d.GetChange("replication_factor")
 		oldRF := oi.(int)
 		newRF := ni.(int)
@@ -131,7 +143,7 @@ func topicUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		}
 	}
 
-	if err := waitForTopicRefresh(ctx, c, d.Id(), t); err != nil {
+	if err := waitForTopicRefresh(ctx, c, d.Id(), t, managedReplicationFactor); err != nil {
 		return diag.FromErr(err)
 	}
 
@@ -170,12 +182,12 @@ func waitForRFUpdate(ctx context.Context, client *LazyClient, topic string) erro
 	return nil
 }
 
-func waitForTopicRefresh(ctx context.Context, client *LazyClient, topic string, expected Topic) error {
+func waitForTopicRefresh(ctx context.Context, client *LazyClient, topic string, expected Topic, managedReplicationFactor bool) error {
 	timeout := time.Duration(client.Config.Timeout) * time.Second
 	stateConf := &retry.StateChangeConf{
 		Pending:      []string{"Updating"},
 		Target:       []string{"Ready"},
-		Refresh:      topicRefreshFunc(client, topic, expected),
+		Refresh:      topicRefreshFunc(client, topic, expected, managedReplicationFactor),
 		Timeout:      timeout,
 		Delay:        1 * time.Second,
 		PollInterval: 1 * time.Second,
@@ -191,13 +203,19 @@ func waitForTopicRefresh(ctx context.Context, client *LazyClient, topic string, 
 	return nil
 }
 
-func topicRefreshFunc(client *LazyClient, topic string, expected Topic) retry.StateRefreshFunc {
+func topicRefreshFunc(client *LazyClient, topic string, expected Topic, managedReplicationFactor bool) retry.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
 		log.Printf("[DEBUG] waiting for topic to update %s", topic)
 		actual, err := client.ReadTopic(topic, true)
 		if err != nil {
 			log.Printf("[ERROR] could not read topic %s, %s", topic, err)
 			return actual, "Error", err
+		}
+
+		// If the managed replication factor is set by server side
+		// we should ignore the replication factor in the comparison
+		if managedReplicationFactor {
+			actual.ReplicationFactor = -1
 		}
 
 		if expected.Equal(actual) {
@@ -274,6 +292,7 @@ func topicRead(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	errSet.Set("name", topic.Name)
 	errSet.Set("partitions", topic.Partitions)
 	errSet.Set("replication_factor", topic.ReplicationFactor)
+	errSet.Set("managed_replication_factor", d.Get("managed_replication_factor"))
 	errSet.Set("config", topic.Config)
 
 	if errSet.err != nil {
@@ -302,7 +321,11 @@ func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) e
 		}
 	}
 
-	if diff.HasChange("replication_factor") {
+	managedReplicationFactor := diff.Get("managed_replication_factor").(bool)
+	if managedReplicationFactor {
+		log.Printf("[INFO] Ignoring replication factor")
+
+	} else if diff.HasChange("replication_factor") {
 		log.Printf("[INFO] Checking the diff!")
 		client := v.(*LazyClient)
 
@@ -320,4 +343,8 @@ func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) e
 	}
 
 	return nil
+}
+
+func checkManagedReplicationFactor(k, old, new string, d *schema.ResourceData) bool {
+	return d.Get("managed_replication_factor").(bool)
 }
