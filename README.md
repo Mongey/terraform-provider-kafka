@@ -272,6 +272,15 @@ resource "kafka_user_scram_credential" "test" {
 }
 ```
 
+#### Importing Existing SCRAM user credentials
+For import, use as a parameter the items separated by `|` character. Quote it to avoid shell expansion.
+
+```sh
+# Fields in shell notation are
+# ${username}|${scram_mechanism}|${password}
+terraform import kafka_user_scram_credential.test 'user1|SCRAM-SHA-256|password'
+```
+
 #### Properties
 
 | Property             | Description                                    |
