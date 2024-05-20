@@ -60,15 +60,16 @@ func kafkaUserScramCredentialResource() *schema.Resource {
 
 func importSCRAM(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	parts := strings.Split(d.Id(), "|")
-	if len(parts) == 2 {
+	if len(parts) == 3 {
 		errSet := errSetter{d: d}
 		errSet.Set("username", parts[0])
 		errSet.Set("scram_mechanism", parts[1])
+		errSet.Set("password", parts[2])
 		if errSet.err != nil {
 			return nil, errSet.err
 		}
 	} else {
-		return nil, fmt.Errorf("Failed importing resource; expected format is username|scram_mechanism - got %v segments instead of 2", len(parts))
+		return nil, fmt.Errorf("Failed importing resource; expected format is username|scram_mechanism - got %v segments instead of 3", len(parts))
 	}
 
 	return []*schema.ResourceData{d}, nil
