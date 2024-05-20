@@ -2,7 +2,9 @@ package kafka
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"strings"
 
 	"github.com/IBM/sarama"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -19,6 +21,9 @@ func kafkaUserScramCredentialResource() *schema.Resource {
 		ReadContext:   userScramCredentialRead,
 		UpdateContext: userScramCredentialUpdate,
 		DeleteContext: userScramCredentialDelete,
+		Importer: &schema.ResourceImporter{
+			StateContext: importSCRAM,
+		},
 		Schema: map[string]*schema.Schema{
 			"username": {
 				Type:        schema.TypeString,
@@ -51,6 +56,22 @@ func kafkaUserScramCredentialResource() *schema.Resource {
 			},
 		},
 	}
+}
+
+func importSCRAM(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	parts := strings.Split(d.Id(), "|")
+	if len(parts) == 2 {
+		errSet := errSetter{d: d}
+		errSet.Set("username", parts[0])
+		errSet.Set("scram_mechanism", parts[1])
+		if errSet.err != nil {
+			return nil, errSet.err
+		}
+	} else {
+		return nil, fmt.Errorf("Failed importing resource; expected format is username|scram_mechanism - got %v segments instead of 2", len(parts))
+	}
+
+	return []*schema.ResourceData{d}, nil
 }
 
 func userScramCredentialCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
