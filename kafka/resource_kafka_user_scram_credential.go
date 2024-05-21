@@ -69,7 +69,7 @@ func importSCRAM(ctx context.Context, d *schema.ResourceData, m interface{}) ([]
 			return nil, errSet.err
 		}
 	} else {
-		return nil, fmt.Errorf("Failed importing resource; expected format is username|scram_mechanism - got %v segments instead of 3", len(parts))
+		return nil, fmt.Errorf("Failed importing resource; expected format is username|scram_mechanism|password - got %v segments instead of 3", len(parts))
 	}
 
 	return []*schema.ResourceData{d}, nil
