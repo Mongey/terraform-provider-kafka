@@ -134,9 +134,9 @@ func Provider() *schema.Provider {
 				Description: "Timeout in seconds",
 			},
 			"fail_on": {
-				Type:        schema.TypeList,
-				Elem:        &schema.Schema{Type: schema.TypeString},
-				Optional:    true,
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Optional: true,
 				DefaultFunc: func() (interface{}, error) {
 					return []interface{}{}, nil
 				},
