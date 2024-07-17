@@ -272,3 +272,25 @@ func Test_newTLSConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigFailOn(t *testing.T) {
+	// Test with a value
+	cfg := &Config{FailOn: []string{"partition_lower"}}
+	if len(cfg.FailOn) != 1 {
+		t.Fatalf("expected 1 fail_on condition, got %d", len(cfg.FailOn))
+	}
+	if !Contains(cfg.FailOn, "partition_lower") {
+		t.Fatalf("expected fail_on condition 'partition_lower', got %s", cfg.FailOn[0])
+	}
+}
+
+func TestConfigFailOnEmpty(t *testing.T) {
+	// Test with an empty value
+	cfgEmpty := &Config{FailOn: []string{}}
+	if len(cfgEmpty.FailOn) != 0 {
+		t.Fatalf("expected 0 fail_on conditions, got %d", len(cfgEmpty.FailOn))
+	}
+	if cfgEmpty == nil {
+		t.Fatal("expected non-nil config")
+	}
+}

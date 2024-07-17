@@ -92,3 +92,56 @@ func bootstrapServersFromEnv() []string {
 
 	return bootstrapServers
 }
+
+func TestProviderConfigFailOnWithPartitionLower(t *testing.T) {
+	provider := Provider()
+	d := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
+		"fail_on": []interface{}{"partition_lower"},
+	})
+
+	config, err := provider.ConfigureFunc(d)
+	if err != nil {
+		t.Fatalf("could not configure provider: %v", err)
+	}
+
+	lazyClient, ok := config.(*LazyClient)
+	if !ok {
+		t.Fatalf("expected *LazyClient, got %T", config)
+	}
+
+	cfg := lazyClient.Config
+	if cfg == nil {
+		t.Fatal("expected non-nil Config")
+	}
+	if !Contains(cfg.FailOn, "partition_lower") {
+		t.Fatalf("fail_on does not contain 'partition_lower': %+v", cfg.FailOn)
+	}
+}
+
+func TestProviderConfigFailOnEmpty(t *testing.T) {
+	provider := Provider()
+	d := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
+		"fail_on": []interface{}{},
+	})
+
+	config, err := provider.ConfigureFunc(d)
+	if err != nil {
+		t.Fatalf("could not configure provider: %v", err)
+	}
+
+	lazyClient, ok := config.(*LazyClient)
+	if !ok {
+		t.Fatalf("expected *LazyClient, got %T", config)
+	}
+
+	cfg := lazyClient.Config
+	if cfg == nil {
+		t.Fatal("expected non-nil Config")
+	}
+	if len(cfg.FailOn) != 0 {
+		t.Fatalf("expected 0 fail_on conditions, got %d", len(cfg.FailOn))
+	}
+	if Contains(cfg.FailOn, "partition_lower") {
+		t.Fatalf("fail_on contains 'partition_lower' but shouldn't: %+v", cfg.FailOn)
+	}
+}

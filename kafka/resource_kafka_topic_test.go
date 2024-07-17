@@ -3,6 +3,7 @@ package kafka
 import (
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
 	"testing"
 	"time"
@@ -506,6 +507,155 @@ resource "kafka_topic" "test" {
   config = {
     "retention.ms" = "11111"
     "segment.ms" = "22222"
+  }
+}
+`
+
+func TestAcc_TopicLowerPartitions(t *testing.T) {
+	t.Parallel()
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	topicName := fmt.Sprintf("syslog-%s", u)
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckTopicDestroy,
+		Steps: []r.TestStep{
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_increasePartitionsNoFailOn, topicName)),
+				Check:  testResourceTopic_increasePartitionsCheck,
+			},
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_decreasePartitionsNoFailOn, topicName)),
+				Check:  testResourceTopic_decreasePartitionsForceNewCheck,
+			},
+		},
+	})
+}
+
+func TestAcc_TopicFailOnLowerPartitions(t *testing.T) {
+	t.Parallel()
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	topicName := fmt.Sprintf("syslog-%s", u)
+	bs := testBootstrapServers[0]
+	fail_on := []string{"partition_lower"}
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckTopicDestroy,
+		Steps: []r.TestStep{
+			{
+				Config: full_cfg(t, bs, fmt.Sprintf(testResourceTopic_increasePartitionsWithFailOn, topicName), fail_on),
+				Check:  testResourceTopic_increasePartitionsCheck,
+			},
+			{
+				Config:      full_cfg(t, bs, fmt.Sprintf(testResourceTopic_decreasePartitionsWithFailOn, topicName), fail_on),
+				ExpectError: regexp.MustCompile("decreasing the number of partitions is not allowed"),
+			},
+		},
+	})
+}
+
+func testResourceTopic_increasePartitionsCheck(s *terraform.State) error {
+	resourceState := s.Modules[0].Resources["kafka_topic.test"]
+	instanceState := resourceState.Primary
+	client := testProvider.Meta().(*LazyClient)
+
+	name := instanceState.ID
+	topic, err := client.ReadTopic(name, true)
+	if err != nil {
+		return err
+	}
+	if topic.Partitions != 2 {
+		return fmt.Errorf("partitions did not get increased to 2, got: %d", topic.Partitions)
+	}
+
+	if v, ok := topic.Config["segment.ms"]; ok && *v != "33333" {
+		return fmt.Errorf("segment.ms !=  %v", topic)
+	}
+	return nil
+}
+
+func testResourceTopic_decreasePartitionsForceNewCheck(s *terraform.State) error {
+	resourceState := s.Modules[0].Resources["kafka_topic.test"]
+	instanceState := resourceState.Primary
+
+	if instanceState == nil {
+		return fmt.Errorf("expected resource to be recreated")
+	}
+
+	client := testProvider.Meta().(*LazyClient)
+	name := instanceState.ID
+	topic, err := client.ReadTopic(name, true)
+	if err != nil {
+		return err
+	}
+
+	if topic.Partitions != 1 {
+		return fmt.Errorf("partitions did not get decreased to 1, got: %d", topic.Partitions)
+	}
+
+	if v, ok := topic.Config["segment.ms"]; ok && *v != "33333" {
+		return fmt.Errorf("segment.ms !=  %v", topic)
+	}
+	return nil
+}
+
+const testResourceTopic_increasePartitionsWithFailOn = `
+resource "kafka_topic" "test" {
+  name               = "%s"
+  replication_factor = 1
+  partitions         = 2
+
+  config = {
+    "retention.ms" = "11111"
+    "segment.ms" = "33333"
+  }
+}
+`
+
+const testResourceTopic_decreasePartitionsWithFailOn = `
+resource "kafka_topic" "test" {
+  name               = "%s"
+  replication_factor = 1
+  partitions         = 1
+
+  config = {
+    "retention.ms" = "11111"
+    "segment.ms" = "33333"
+  }
+}
+`
+
+const testResourceTopic_increasePartitionsNoFailOn = `
+resource "kafka_topic" "test" {
+  name               = "%s"
+  replication_factor = 1
+  partitions         = 2
+
+  config = {
+    "retention.ms" = "11111"
+    "segment.ms" = "33333"
+  }
+}
+`
+
+const testResourceTopic_decreasePartitionsNoFailOn = `
+resource "kafka_topic" "test" {
+  name               = "%s"
+  replication_factor = 1
+  partitions         = 1
+
+  config = {
+    "retention.ms" = "11111"
+    "segment.ms" = "33333"
   }
 }
 `
