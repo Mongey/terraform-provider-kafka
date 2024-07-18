@@ -312,7 +312,7 @@ func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
 		return err
 	}
 	if topic.Partitions != 2 {
-		return fmt.Errorf("partitions did not get increated got: %d", topic.Partitions)
+		return fmt.Errorf("partitions did not get increased got: %d", topic.Partitions)
 	}
 
 	if v, ok := topic.Config["segment.ms"]; ok && *v != "33333" {

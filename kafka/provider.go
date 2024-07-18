@@ -169,7 +169,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		return nil, fmt.Errorf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\", \"oauthbearer\" or \"plain\"", saslMechanism)
 	}
 
-	failOn := []string{}
+	var failOn []string
 	for _, v := range d.Get("fail_on").([]interface{}) {
 		failOn = append(failOn, v.(string))
 	}

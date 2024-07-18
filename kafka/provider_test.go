@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -44,10 +45,15 @@ func overrideProviderFactory() map[string]func() (*schema.Provider, error) {
 }
 
 func overrideProvider() (*schema.Provider, error) {
+	return overrideProviderFull(map[string]interface{}{})
+}
+
+func overrideProviderFull(configOverrides map[string]interface{}) (*schema.Provider, error) {
+
 	log.Println("[INFO] Setting up override for a provider")
 	provider := Provider()
 
-	rc, err := accTestProviderConfig()
+	rc, err := accTestProviderConfig(configOverrides)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +66,7 @@ func overrideProvider() (*schema.Provider, error) {
 	return provider, nil
 }
 
-func accTestProviderConfig() (*terraform.ResourceConfig, error) {
+func accTestProviderConfig(overrides map[string]interface{}) (*terraform.ResourceConfig, error) {
 	bootstrapServers := bootstrapServersFromEnv()
 	bs := make([]interface{}, len(bootstrapServers))
 
@@ -70,6 +76,24 @@ func accTestProviderConfig() (*terraform.ResourceConfig, error) {
 
 	raw := map[string]interface{}{
 		"bootstrap_servers": bs,
+	}
+
+	jsonOverrides, err := json.Marshal(overrides)
+	if err != nil {
+		panic(fmt.Sprintf("failed to marshal overrides: %v", err))
+	}
+
+	var newOverrides map[string]interface{}
+	err = json.Unmarshal(jsonOverrides, &newOverrides)
+	if err != nil {
+		panic(fmt.Sprintf("failed to unmarshal JSON: %v", err))
+	}
+
+	// Apply overrides
+	for k, v := range newOverrides {
+		if _, exists := raw[k]; !exists {
+			raw[k] = v
+		}
 	}
 
 	return terraform.NewResourceConfigRaw(raw), nil
@@ -93,55 +117,58 @@ func bootstrapServersFromEnv() []string {
 	return bootstrapServers
 }
 
-func TestProviderConfigFailOnWithPartitionLower(t *testing.T) {
-	provider := Provider()
-	d := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
-		"fail_on": []interface{}{"partition_lower"},
-	})
-
-	config, err := provider.ConfigureFunc(d)
+func ProviderChecker(t *testing.T, configOverrides map[string]interface{}) *Config {
+	provider, err := overrideProviderFull(configOverrides)
 	if err != nil {
 		t.Fatalf("could not configure provider: %v", err)
 	}
 
-	lazyClient, ok := config.(*LazyClient)
-	if !ok {
-		t.Fatalf("expected *LazyClient, got %T", config)
+	meta := provider.Meta()
+	if meta == nil {
+		t.Fatal("meta is nil")
 	}
 
-	cfg := lazyClient.Config
+	cfg := meta.(*LazyClient).Config
 	if cfg == nil {
 		t.Fatal("expected non-nil Config")
 	}
-	if !Contains(cfg.FailOn, "partition_lower") {
-		t.Fatalf("fail_on does not contain 'partition_lower': %+v", cfg.FailOn)
-	}
+
+	return cfg
 }
 
-func TestProviderConfigFailOnEmpty(t *testing.T) {
-	provider := Provider()
-	d := schema.TestResourceDataRaw(t, provider.Schema, map[string]interface{}{
-		"fail_on": []interface{}{},
-	})
+func Test_ProviderBaseConfig(t *testing.T) {
+	cfg := ProviderChecker(t, map[string]interface{}{})
 
-	config, err := provider.ConfigureFunc(d)
-	if err != nil {
-		t.Fatalf("could not configure provider: %v", err)
-	}
-
-	lazyClient, ok := config.(*LazyClient)
-	if !ok {
-		t.Fatalf("expected *LazyClient, got %T", config)
-	}
-
-	cfg := lazyClient.Config
-	if cfg == nil {
-		t.Fatal("expected non-nil Config")
-	}
 	if len(cfg.FailOn) != 0 {
 		t.Fatalf("expected 0 fail_on conditions, got %d", len(cfg.FailOn))
 	}
 	if Contains(cfg.FailOn, "partition_lower") {
 		t.Fatalf("fail_on contains 'partition_lower' but shouldn't: %+v", cfg.FailOn)
+	}
+}
+
+func Test_ProviderFailOnConfig(t *testing.T) {
+	var failOn []string
+	failOn = append(failOn, "partition_lower")
+	extraConfig := map[string]interface{}{
+		"fail_on": failOn,
+	}
+	cfg := ProviderChecker(t, extraConfig)
+
+	if len(cfg.FailOn) == 0 {
+		t.Fatalf("expected 1 fail_on conditions, got %d", len(cfg.FailOn))
+	}
+	if !Contains(cfg.FailOn, "partition_lower") {
+		t.Fatalf("fail_on missing 'partition_lower' but shouldn't: %+v", cfg.FailOn)
+	}
+}
+
+func Test_ProviderFailOnEmptyConfig(t *testing.T) {
+	cfg := ProviderChecker(t, map[string]interface{}{
+		"fail_on": []string{},
+	})
+
+	if len(cfg.FailOn) != 0 {
+		t.Fatalf("expected 0 fail_on conditions, got %d", len(cfg.FailOn))
 	}
 }

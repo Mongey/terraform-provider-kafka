@@ -290,7 +290,4 @@ func TestConfigFailOnEmpty(t *testing.T) {
 	if len(cfgEmpty.FailOn) != 0 {
 		t.Fatalf("expected 0 fail_on conditions, got %d", len(cfgEmpty.FailOn))
 	}
-	if cfgEmpty == nil {
-		t.Fatal("expected non-nil config")
-	}
 }
