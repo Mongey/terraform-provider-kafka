@@ -92,6 +92,31 @@ provider "kafka" {
 }
 ```
 
+Example provider with aws-iam(Static Creds) client authentication using explicit credentials.
+```hcl
+provider "vault" {
+  auth_login_jwt {
+    role = "jwt-role-name"
+  }
+}
+
+data "vault_aws_access_credentials" "creds" {
+  backend = "aws"
+  type    = "sts"
+  role    = "sts-role-name"
+}
+
+provider "kafka" {
+  bootstrap_servers   = ["localhost:9098"]
+  tls_enabled         = true
+  sasl_mechanism      = "aws-iam"
+  sasl_aws_region     = "us-east-1"
+  sasl_aws_access_key = data.vault_aws_access_credentials.creds.access_key
+  sasl_aws_secret_key = data.vault_aws_access_credentials.creds.secret_key
+  sasl_aws_token      = data.vault_aws_access_credentials.creds.security_token
+}
+```
+
 Example provider with aws-iam(Static Creds) client authentication. You have to export `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`(Optional if you are using temp creds)
 ```hcl
 provider "kafka" {
@@ -128,6 +153,9 @@ Due to Redpanda not implementing some Metadata APIs, we need to force the Kafka 
 | `sasl_aws_region`       | AWS region for IAM authentication.                                                                                    | `""`       |
 | `sasl_aws_role_arn`     | Arn of AWS IAM role to assume for IAM authentication.                                                                 | `""`       |
 | `sasl_aws_profile`      | AWS profile to use for IAM authentication.                                                                            | `""`       |
+| `sasl_aws_access_key`   | AWS access key.                                                                                                       | `""`       |
+| `sasl_aws_secret_key`   | AWS secret key.                                                                                                       | `""`       |
+| `sasl_aws_token`        | AWS session token.                                                                                                    | `""`       |
 | `sasl_aws_creds_debug`  | Enable debug logging for AWS authentication.                                                                          | `false`    |
 | `sasl_token_url`        | The url to retrieve oauth2 tokens from, when using sasl mechanism `oauthbearer`                                         | `""`    |
 
