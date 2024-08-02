@@ -35,7 +35,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v4
         with:
           version: latest
-          args: release --snapshot --rm-dist
+          args: release --snapshot
           key: ${{ secrets.YOUR_PRIVATE_KEY }}
         env:
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
