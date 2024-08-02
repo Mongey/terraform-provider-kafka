@@ -12,6 +12,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"golang.org/x/net/proxy"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
@@ -33,6 +34,9 @@ type Config struct {
 	SASLAWSRegion           string
 	SASLAWSRoleArn          string
 	SASLAWSProfile          string
+	SASLAWSAccessKey        string
+	SASLAWSSecretKey        string
+	SASLAWSToken            string
 	SASLAWSCredsDebug       bool
 	SASLTokenUrl            string
 }
@@ -87,6 +91,9 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 	} else if c.SASLAWSProfile != "" {
 		log.Printf("[INFO] Generating auth token using profile '%s' in '%s'", c.SASLAWSProfile, c.SASLAWSRegion)
 		token, _, err = signer.GenerateAuthTokenFromProfile(context.TODO(), c.SASLAWSRegion, c.SASLAWSProfile)
+	} else if c.SASLAWSAccessKey != "" && c.SASLAWSSecretKey != "" {
+		log.Printf("[INFO] Generating auth token using static credentials in '%s'", c.SASLAWSRegion)
+		token, _, err = signer.GenerateAuthTokenFromCredentialsProvider(context.TODO(), c.SASLAWSRegion, credentials.NewStaticCredentialsProvider(c.SASLAWSAccessKey, c.SASLAWSSecretKey, c.SASLAWSToken))
 	} else {
 		log.Printf("[INFO] Generating auth token in '%s'", c.SASLAWSRegion)
 		token, _, err = signer.GenerateAuthToken(context.TODO(), c.SASLAWSRegion)
@@ -297,8 +304,11 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		"*****",
 		config.SASLMechanism,
 		config.SASLAWSRegion,
-		config.SASLAWSProfile,
 		config.SASLAWSRoleArn,
+		config.SASLAWSProfile,
+		config.SASLAWSAccessKey,
+		"*****",
+		config.SASLAWSToken,
 		config.SASLAWSCredsDebug,
 		config.SASLTokenUrl,
 	}
