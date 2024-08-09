@@ -9,6 +9,30 @@ services:
         broker_id: 1
         listener_host: kafka1
         listener_port: 9092
+    environment:
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_LISTENERS: INTERNAL_SSL://kafka1:9090,EXTERNAL_SSL://kafka1:9092,CONTROLLER://kafka1:9093
     ports:
       - "9092:9092"
-      - "9093:9093"
+  kafka2:
+    build:
+      context: .
+      dockerfile: Dockerfile.kafka
+      args:
+        broker_id: 2
+        listener_host: kafka2
+        listener_port: 9092
+    environment:
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_PROCESS_ROLES: broker
+  kafka3:
+    build:
+      context: .
+      dockerfile: Dockerfile.kafka
+      args:
+        broker_id: 3
+        listener_host: kafka3
+        listener_port: 9092
+    environment:
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_PROCESS_ROLES: broker
