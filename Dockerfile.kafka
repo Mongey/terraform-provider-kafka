@@ -1,4 +1,4 @@
-FROM confluentinc/cp-kafka:latest
+FROM apache/kafka-native:3.8.0
 
 ARG broker_id
 ARG zookeeper_connect
