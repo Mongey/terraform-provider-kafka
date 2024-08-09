@@ -1,60 +1,14 @@
 ---
-version: '3.2'
+version: "3.2"
 services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    ports:
-      - "2181:2181"
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    extra_hosts:
-      - "moby:127.0.0.1"
-
   kafka1:
     build:
       context: .
       dockerfile: Dockerfile.kafka
       args:
         broker_id: 1
-        zookeeper_connect: zookeeper:2181
         listener_host: kafka1
         listener_port: 9092
     ports:
       - "9092:9092"
-    depends_on:
-      - zookeeper
-    extra_hosts:
-      - "moby:127.0.0.1"
-
-  kafka2:
-    build:
-      context: .
-      dockerfile: Dockerfile.kafka
-      args:
-        broker_id: 2
-        zookeeper_connect: zookeeper:2181
-        listener_host: kafka2
-        listener_port: 9093
-    ports:
-      - "9093:9092"
-    depends_on:
-      - zookeeper
-    extra_hosts:
-      - "moby:127.0.0.1"
-
-  kafka3:
-    build:
-      context: .
-      dockerfile: Dockerfile.kafka
-      args:
-        broker_id: 3
-        zookeeper_connect: zookeeper:2181
-        listener_host: kafka3
-        listener_port: 9094
-    ports:
-      - "9094:9092"
-    depends_on:
-      - zookeeper
-    extra_hosts:
-      - "moby:127.0.0.1"
+      - "9093:9093"
