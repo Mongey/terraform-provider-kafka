@@ -251,6 +251,7 @@ func testResourceTopic_produceMessages(messages []*sarama.ProducerMessage) r.Tes
 		kafkaConfig.Producer.Return.Errors = true
 		kafkaConfig.Producer.Return.Successes = true
 		kafkaConfig.Producer.RequiredAcks = sarama.WaitForAll
+		kafkaConfig.Producer.Timeout = 90 * time.Second
 
 		producer, err := sarama.NewSyncProducer(*config.BootstrapServers, kafkaConfig)
 		if err != nil {
