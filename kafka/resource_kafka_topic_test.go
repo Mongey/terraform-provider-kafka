@@ -150,8 +150,9 @@ func TestAcc_TopicAlterReplicationFactor(t *testing.T) {
 			{
 				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_updateRF, topicName, 1, 7)),
 				Check: r.ComposeTestCheckFunc(
+					testResourceTopic_initialCheck,
 					testResourceTopic_produceMessages(messages),
-					testResourceTopic_initialCheck),
+				),
 			},
 			{
 				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_updateRF, topicName, 3, 7)),
@@ -266,8 +267,13 @@ func testResourceTopic_produceMessages(messages []*sarama.ProducerMessage) r.Tes
 			}
 		}()
 
-		if err := producer.SendMessages(messages); err != nil {
-			return err
+		if errs := producer.SendMessages(messages); errs != nil {
+			for _, err := range errs.(sarama.ProducerErrors) {
+				log.Println("[ERROR] Write to kafka failed: ", err)
+				return err
+			}
+			return errs
+
 		}
 
 		return nil
