@@ -369,7 +369,9 @@ func (c *Client) AlterReplicationFactor(t Topic) error {
 		return err
 	}
 
-	return admin.AlterPartitionReassignments(t.Name, *assignment)
+	err = admin.AlterPartitionReassignments(t.Name, *assignment)
+	c.client.RefreshMetadata(t.Name)
+	return err
 }
 
 func (c *Client) buildAssignment(t Topic) (*[][]int32, error) {
