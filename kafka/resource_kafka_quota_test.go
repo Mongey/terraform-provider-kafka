@@ -24,7 +24,7 @@ func TestAcc_BasicQuota(t *testing.T) {
 		CheckDestroy:      testAccCheckQuotaDestroy,
 		Steps: []r.TestStep{
 			{
-				Config: cfgs(t, bs, fmt.Sprintf(testResourceQuota1, quotaEntityName, "4000000")),
+				Config: cfgs(bs, fmt.Sprintf(testResourceQuota1, quotaEntityName, "4000000")),
 				Check:  testResourceQuota_initialCheck,
 			},
 		},
@@ -174,7 +174,7 @@ func testAccCheckQuotaDestroy(s *terraform.State) error {
 }
 
 // lintignore:AT004
-func cfgs(t *testing.T, bs string, extraCfg string) string {
+func cfgs(bs string, extraCfg string) string {
 	return fmt.Sprintf(`
 provider "kafka" {
 	bootstrap_servers = ["%s"]

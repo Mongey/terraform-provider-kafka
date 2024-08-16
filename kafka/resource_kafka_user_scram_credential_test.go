@@ -27,7 +27,7 @@ func TestAcc_UserScramCredentialBasic(t *testing.T) {
 		CheckDestroy:      testAccCheckUserScramCredentialDestroy,
 		Steps: []r.TestStep{
 			{
-				Config: cfgs(t, bs, fmt.Sprintf(testResourceUserScramCredential_SHA256, username)),
+				Config: cfgs(bs, fmt.Sprintf(testResourceUserScramCredential_SHA256, username)),
 				Check:  testResourceUserScramCredentialCheck_withoutIterations,
 			},
 		},

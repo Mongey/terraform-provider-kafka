@@ -43,13 +43,12 @@ func dataSourceTopicRead(d *schema.ResourceData, meta interface{}) error {
 
 	client := meta.(*LazyClient)
 	topic, err := client.ReadTopic(name, true)
-
 	if err != nil {
 		log.Printf("[ERROR] Error getting topic %s from Kafka: %s", name, err)
 		_, ok := err.(TopicMissingError)
 
 		if ok {
-			return fmt.Errorf("Could not find topic '%s'", name)
+			return fmt.Errorf("could not find topic '%s'", name)
 		}
 
 		return err
