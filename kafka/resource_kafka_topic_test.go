@@ -267,13 +267,19 @@ func testResourceTopic_produceMessages(messages []*sarama.ProducerMessage) r.Tes
 			}
 		}()
 
-		if errs := producer.SendMessages(messages); errs != nil {
-			for _, err := range errs.(sarama.ProducerErrors) {
-				log.Println("[ERROR] Write to kafka failed: ", err)
-				return err
+		// rety 5 times
+		retries := 5
+		for i := 0; i < retries; i++ {
+			if errs := producer.SendMessages(messages); errs != nil {
+				for _, err := range errs.(sarama.ProducerErrors) {
+					log.Println("[ERROR] Write to kafka failed: ", err)
+					if i == retries-1 {
+						return err
+					}
+				}
+			} else {
+				return nil
 			}
-			return errs
-
 		}
 
 		return nil
