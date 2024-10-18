@@ -39,6 +39,7 @@ type Config struct {
 	SASLAWSToken            string
 	SASLAWSCredsDebug       bool
 	SASLTokenUrl            string
+	FailOn                  []string
 }
 
 type OAuth2Config interface {
@@ -311,6 +312,7 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.SASLAWSToken,
 		config.SASLAWSCredsDebug,
 		config.SASLTokenUrl,
+		config.FailOn,
 	}
 	return copy
 }
