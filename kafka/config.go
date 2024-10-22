@@ -318,6 +318,8 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.SASLMechanism,
 		config.SASLAWSRegion,
 		config.SASLAWSRoleArn,
+		"*****",
+		config.SASLAWSWebIdentityTokenFile,
 		config.SASLAWSProfile,
 		config.SASLAWSAccessKey,
 		"*****",
