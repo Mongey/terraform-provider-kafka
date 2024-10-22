@@ -33,7 +33,6 @@ type Config struct {
 	SASLMechanism               string
 	SASLAWSRegion               string
 	SASLAWSRoleArn              string
-	SASLAWSWebIdentityRoleArn   string
 	SASLAWSWebIdentityToken     string
 	SASLAWSWebIdentityTokenFile string
 	SASLAWSProfile              string
@@ -89,11 +88,8 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 	var token string
 	var webIdentityTokenBuffer []byte
 	var err error
-	if c.SASLAWSRoleArn != "" {
-		log.Printf("[INFO] Generating auth token with a role '%s' in '%s'", c.SASLAWSRoleArn, c.SASLAWSRegion)
-		token, _, err = signer.GenerateAuthTokenFromRole(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, "terraform-kafka-provider")
-	} else if c.SASLAWSWebIdentityRoleArn != "" && (c.SASLAWSWebIdentityToken != "" || c.SASLAWSWebIdentityTokenFile != "") {
-		log.Printf("[INFO] Generating auth token with a web identity role '%s' in '%s'", c.SASLAWSWebIdentityRoleArn, c.SASLAWSRegion)
+	if c.SASLAWSRoleArn != "" && (c.SASLAWSWebIdentityToken != "" || c.SASLAWSWebIdentityTokenFile != "") {
+		log.Printf("[INFO] Generating auth token with a web identity role '%s' in '%s'", c.SASLAWSRoleArn, c.SASLAWSRegion)
 		if c.SASLAWSWebIdentityTokenFile != "" {
 			webIdentityTokenBuffer, err = os.ReadFile(c.SASLAWSWebIdentityTokenFile)
 			if err != nil {
@@ -102,6 +98,9 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 			c.SASLAWSWebIdentityToken = string(webIdentityTokenBuffer)
 		}
 		token, _, err = signer.GenerateAuthTokenFromWebIdentity(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, c.SASLAWSWebIdentityToken, "terraform-kafka-provider")
+	} else if c.SASLAWSRoleArn != "" {
+		log.Printf("[INFO] Generating auth token with a role '%s' in '%s'", c.SASLAWSRoleArn, c.SASLAWSRegion)
+		token, _, err = signer.GenerateAuthTokenFromRole(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, "terraform-kafka-provider")
 	} else if c.SASLAWSProfile != "" {
 		log.Printf("[INFO] Generating auth token using profile '%s' in '%s'", c.SASLAWSProfile, c.SASLAWSRegion)
 		token, _, err = signer.GenerateAuthTokenFromProfile(context.TODO(), c.SASLAWSRegion, c.SASLAWSProfile)
