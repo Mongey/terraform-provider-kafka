@@ -101,7 +101,7 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 			}
 			c.SASLAWSWebIdentityToken = string(webIdentityTokenBuffer)
 		}
-		token, _, err = signer.GenerateAuthTokenFromWebIdentityRole(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, c.SASLAWSWebIdentityToken, "terraform-kafka-provider")
+		token, _, err = signer.GenerateAuthTokenFromWebIdentity(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, c.SASLAWSWebIdentityToken, "terraform-kafka-provider")
 	} else if c.SASLAWSProfile != "" {
 		log.Printf("[INFO] Generating auth token using profile '%s' in '%s'", c.SASLAWSProfile, c.SASLAWSRegion)
 		token, _, err = signer.GenerateAuthTokenFromProfile(context.TODO(), c.SASLAWSRegion, c.SASLAWSProfile)
