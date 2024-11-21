@@ -13,7 +13,7 @@ func migrateKafkaAclState(v int, is *terraform.InstanceState, meta interface{}) 
 		log.Println("[INFO] Found Kafka ACL v0 state; migrating to v1")
 		return migrateKafkaAclV0toV1(is)
 	default:
-		return is, fmt.Errorf("Unexpected schema version: %d", v)
+		return is, fmt.Errorf("unexpected schema version: %d", v)
 	}
 }
 
