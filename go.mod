@@ -5,7 +5,7 @@ go 1.22.7
 toolchain go1.23.4
 
 require (
-	github.com/IBM/sarama v1.43.3
+	github.com/IBM/sarama v1.44.0
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.0
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.48
 	github.com/hashicorp/go-cty v1.4.1-0.20200414143053-d3edf31b6320
@@ -89,7 +89,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/oklog/run v1.0.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.21 // indirect
+	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/posener/complete v1.2.3 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rivo/uniseg v0.4.6 // indirect
