@@ -265,17 +265,17 @@ func (c *Client) CreateACL(s StringlyTypedACL) error {
 }
 
 func stringToACLResource(in string) (out sarama.AclResourceType) {
-	if err := out.UnmarshalText([]byte(in)); err == nil {
+	if err := out.UnmarshalText([]byte(in)); err == nil && out.String() == in { // Forces case-sensitive comparison
 		return
 	}
 	return unknownConversion
 }
 
 func ACLResourceToString(in sarama.AclResourceType) string {
-	if out, err := in.MarshalText(); err == nil {
-		return string(out)
+	if in == sarama.AclResourceUnknown {
+		return "unknownConversion"
 	}
-	return "unknownConversion"
+	return in.String()
 }
 
 func stringToOperation(in string) sarama.AclOperation {
