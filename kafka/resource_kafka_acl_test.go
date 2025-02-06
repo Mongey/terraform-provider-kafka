@@ -255,8 +255,12 @@ resource "kafka_acl" "test" {
 }
 `
 
-// lintignore:AT004
 func cfg(t *testing.T, bs string, extraCfg string) string {
+	return full_cfg(t, bs, extraCfg, []string{})
+}
+
+// lintignore:AT004
+func full_cfg(t *testing.T, bs string, extraCfg string, fail_on []string) string {
 	_, err := os.ReadFile("../secrets/ca.crt")
 	if err != nil {
 		t.Fatal(err)
@@ -270,11 +274,22 @@ func cfg(t *testing.T, bs string, extraCfg string) string {
 		t.Fatal(err)
 	}
 
-	return fmt.Sprintf(`
-provider "kafka" {
-	bootstrap_servers = ["%s"]
-}
-
-%s
-`, bs, extraCfg)
+	if len(fail_on) > 0 {
+		return fmt.Sprintf(`
+		provider "kafka" {
+			bootstrap_servers = ["%s"]
+			fail_on = %q
+		}
+		
+		%s
+		`, bs, fail_on, extraCfg)
+	} else {
+		return fmt.Sprintf(`
+		provider "kafka" {
+			bootstrap_servers = ["%s"]
+		}
+		
+		%s
+		`, bs, extraCfg)
+	}
 }
