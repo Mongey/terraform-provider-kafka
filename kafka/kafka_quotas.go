@@ -113,7 +113,7 @@ func (c *Client) DescribeQuota(entityType string, entityName string) (*Quota, er
 
 	if err == nil {
 		if quotaR.ErrorCode != sarama.ErrNoError {
-			return nil, fmt.Errorf("Error describing quota %s", quotaR.ErrorCode)
+			return nil, fmt.Errorf("error describing quota %s", quotaR.ErrorCode)
 		}
 	}
 
