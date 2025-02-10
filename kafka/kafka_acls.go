@@ -264,40 +264,18 @@ func (c *Client) CreateACL(s StringlyTypedACL) error {
 	return nil
 }
 
-func stringToACLResource(in string) sarama.AclResourceType {
-	switch in {
-	case "Unknown":
-		return sarama.AclResourceUnknown
-	case "Any":
-		return sarama.AclResourceAny
-	case "Topic":
-		return sarama.AclResourceTopic
-	case "Group":
-		return sarama.AclResourceGroup
-	case "Cluster":
-		return sarama.AclResourceCluster
-	case "TransactionalID":
-		return sarama.AclResourceTransactionalID
+func stringToACLResource(in string) (out sarama.AclResourceType) {
+	if err := out.UnmarshalText([]byte(in)); err == nil && out.String() == in { // Forces case-sensitive comparison
+		return
 	}
 	return unknownConversion
 }
 
 func ACLResourceToString(in sarama.AclResourceType) string {
-	switch in {
-	case sarama.AclResourceUnknown:
-		return "Unknown"
-	case sarama.AclResourceAny:
-		return "Any"
-	case sarama.AclResourceTopic:
-		return "Topic"
-	case sarama.AclResourceGroup:
-		return "Group"
-	case sarama.AclResourceCluster:
-		return "Cluster"
-	case sarama.AclResourceTransactionalID:
-		return "TransactionalID"
+	if in == sarama.AclResourceUnknown {
+		return "unknownConversion"
 	}
-	return "unknownConversion"
+	return in.String()
 }
 
 func stringToOperation(in string) sarama.AclOperation {
