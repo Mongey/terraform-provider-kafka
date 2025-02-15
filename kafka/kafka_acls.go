@@ -434,34 +434,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 		&sarama.DescribeAclsRequest{
 			Version: int(c.getDescribeAclsRequestAPIVersion()),
 			AclFilter: sarama.AclFilter{
-				ResourceType:              sarama.AclResourceTopic,
-				ResourcePatternTypeFilter: sarama.AclPatternAny,
-				PermissionType:            sarama.AclPermissionAny,
-				Operation:                 sarama.AclOperationAny,
-			},
-		},
-		&sarama.DescribeAclsRequest{
-			Version: int(c.getDescribeAclsRequestAPIVersion()),
-			AclFilter: sarama.AclFilter{
-				ResourceType:              sarama.AclResourceGroup,
-				ResourcePatternTypeFilter: sarama.AclPatternAny,
-				PermissionType:            sarama.AclPermissionAny,
-				Operation:                 sarama.AclOperationAny,
-			},
-		},
-		&sarama.DescribeAclsRequest{
-			Version: int(c.getDescribeAclsRequestAPIVersion()),
-			AclFilter: sarama.AclFilter{
-				ResourceType:              sarama.AclResourceCluster,
-				ResourcePatternTypeFilter: sarama.AclPatternAny,
-				PermissionType:            sarama.AclPermissionAny,
-				Operation:                 sarama.AclOperationAny,
-			},
-		},
-		&sarama.DescribeAclsRequest{
-			Version: int(c.getDescribeAclsRequestAPIVersion()),
-			AclFilter: sarama.AclFilter{
-				ResourceType:              sarama.AclResourceTransactionalID,
+				ResourceType:              sarama.AclResourceAny,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
 				PermissionType:            sarama.AclPermissionAny,
 				Operation:                 sarama.AclOperationAny,
