@@ -57,17 +57,17 @@ type Client struct {
 
 func NewClient(config *Config) (*Client, error) {
 	if config == nil {
-		return nil, errors.New("Cannot create client without kafka config")
+		return nil, errors.New("cannot create client without kafka config")
 	}
 
 	log.Printf("[TRACE] configuring bootstrap_servers %v", config.copyWithMaskedSensitiveValues())
 	if config.BootstrapServers == nil {
-		return nil, fmt.Errorf("No bootstrap_servers provided")
+		return nil, fmt.Errorf("no bootstrap_servers provided")
 	}
 
 	bootstrapServers := *(config.BootstrapServers)
 	if bootstrapServers == nil {
-		return nil, fmt.Errorf("No bootstrap_servers provided")
+		return nil, fmt.Errorf("no bootstrap_servers provided")
 	}
 
 	log.Printf("[INFO] configuring kafka client with %v", config.copyWithMaskedSensitiveValues())
@@ -369,7 +369,9 @@ func (c *Client) AlterReplicationFactor(t Topic) error {
 		return err
 	}
 
-	return admin.AlterPartitionReassignments(t.Name, *assignment)
+	err = admin.AlterPartitionReassignments(t.Name, *assignment)
+	c.client.RefreshMetadata(t.Name)
+	return err
 }
 
 func (c *Client) buildAssignment(t Topic) (*[][]int32, error) {

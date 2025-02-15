@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -144,14 +145,17 @@ func TestAcc_TopicAlterReplicationFactor(t *testing.T) {
 
 	r.Test(t, r.TestCase{
 		ProviderFactories: overrideProviderFactory(),
-		PreCheck:          func() { testAccPreCheck(t) },
-		CheckDestroy:      testAccCheckTopicDestroy,
+		PreCheck: func() {
+			testAccPreCheck(t)
+		},
+		CheckDestroy: testAccCheckTopicDestroy,
 		Steps: []r.TestStep{
 			{
 				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_updateRF, topicName, 1, 7)),
 				Check: r.ComposeTestCheckFunc(
+					testResourceTopic_initialCheck,
 					testResourceTopic_produceMessages(messages),
-					testResourceTopic_initialCheck),
+				),
 			},
 			{
 				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_updateRF, topicName, 3, 7)),
@@ -250,8 +254,12 @@ func testResourceTopic_produceMessages(messages []*sarama.ProducerMessage) r.Tes
 		}
 		kafkaConfig.Producer.Return.Errors = true
 		kafkaConfig.Producer.Return.Successes = true
+		kafkaConfig.Metadata.Full = true
+
 		kafkaConfig.Producer.RequiredAcks = sarama.WaitForAll
 		kafkaConfig.Producer.Timeout = 90 * time.Second
+		kafkaConfig.Producer.Retry.Max = 5
+		kafkaConfig.Producer.Retry.Backoff = time.Second
 
 		producer, err := sarama.NewSyncProducer(*config.BootstrapServers, kafkaConfig)
 		if err != nil {
@@ -264,8 +272,21 @@ func testResourceTopic_produceMessages(messages []*sarama.ProducerMessage) r.Tes
 			}
 		}()
 
-		if err := producer.SendMessages(messages); err != nil {
-			return err
+		// rety 5 times
+		retries := 5
+		produceErrs := make([]error, 0, retries)
+		for i := 0; i < retries; i++ {
+			if errs := producer.SendMessages(messages); errs != nil {
+				produceErrs = append(produceErrs, errs)
+				for _, err := range errs.(sarama.ProducerErrors) {
+					log.Println("[ERROR] Write to kafka failed: ", err)
+					if i == retries-1 {
+						return errors.Join(produceErrs...)
+					}
+				}
+			} else {
+				return nil
+			}
 		}
 
 		return nil
