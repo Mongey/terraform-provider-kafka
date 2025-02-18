@@ -126,6 +126,16 @@ provider "kafka" {
   sasl_aws_region   = "us-east-1"
 }
 ```
+
+Example provider with aws-iam(Container Creds) client authentication. You have to export `AWS_CONTAINER_AUTHORIZATION_TOKEN_FILE` and `AWS_CONTAINER_CREDENTIALS_FULL_URI`
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9098"]
+  tls_enabled       = true
+  sasl_mechanism    = "aws-iam"
+  sasl_aws_region   = "us-east-1"
+}
+```
 #### Compatibility with Redpanda
 
 ```hcl
@@ -151,6 +161,8 @@ Due to Redpanda not implementing some Metadata APIs, we need to force the Kafka 
 | `sasl_password`         | Password for SASL authentication.                                                                                     | `""`       |
 | `sasl_mechanism`        | Mechanism for SASL authentication. Allowed values are `plain`, `aws-iam`,  `scram-sha256`, `scram-sha512` or `oauthbearer`      | `plain`    |
 | `sasl_aws_region`       | AWS region for IAM authentication.                                                                                    | `""`       |
+| `sasl_aws_container_authorization_token_file`       | Path to a file containing the AWS pod identity authorization token.                                                                                    | `""`       |
+| `sasl_aws_container_credentials_full_uri`       | URI to retrieve AWS credentials from.                                                                                    | `""`       |
 | `sasl_aws_role_arn`     | Arn of AWS IAM role to assume for IAM authentication.                                                                 | `""`       |
 | `sasl_aws_profile`      | AWS profile to use for IAM authentication.                                                                            | `""`       |
 | `sasl_aws_access_key`   | AWS access key.                                                                                                       | `""`       |
