@@ -19,26 +19,28 @@ import (
 )
 
 type Config struct {
-	BootstrapServers        *[]string
-	Timeout                 int
-	CACert                  string
-	ClientCert              string
-	ClientCertKey           string
-	ClientCertKeyPassphrase string
-	KafkaVersion            string
-	TLSEnabled              bool
-	SkipTLSVerify           bool
-	SASLUsername            string
-	SASLPassword            string
-	SASLMechanism           string
-	SASLAWSRegion           string
-	SASLAWSRoleArn          string
-	SASLAWSProfile          string
-	SASLAWSAccessKey        string
-	SASLAWSSecretKey        string
-	SASLAWSToken            string
-	SASLAWSCredsDebug       bool
-	SASLTokenUrl            string
+	BootstrapServers            *[]string
+	Timeout                     int
+	CACert                      string
+	ClientCert                  string
+	ClientCertKey               string
+	ClientCertKeyPassphrase     string
+	KafkaVersion                string
+	TLSEnabled                  bool
+	SkipTLSVerify               bool
+	SASLUsername                string
+	SASLPassword                string
+	SASLMechanism               string
+	SASLAWSRegion               string
+	SASLAWSRoleArn              string
+	SASLAWSWebIdentityToken     string
+	SASLAWSWebIdentityTokenFile string
+	SASLAWSProfile              string
+	SASLAWSAccessKey            string
+	SASLAWSSecretKey            string
+	SASLAWSToken                string
+	SASLAWSCredsDebug           bool
+	SASLTokenUrl                string
 }
 
 type OAuth2Config interface {
@@ -84,8 +86,19 @@ func (o *oauthbearerTokenProvider) Token() (*sarama.AccessToken, error) {
 func (c *Config) Token() (*sarama.AccessToken, error) {
 	signer.AwsDebugCreds = c.SASLAWSCredsDebug
 	var token string
+	var webIdentityTokenBuffer []byte
 	var err error
-	if c.SASLAWSRoleArn != "" {
+	if c.SASLAWSRoleArn != "" && (c.SASLAWSWebIdentityToken != "" || c.SASLAWSWebIdentityTokenFile != "") {
+		log.Printf("[INFO] Generating auth token with a web identity role '%s' in '%s'", c.SASLAWSRoleArn, c.SASLAWSRegion)
+		if c.SASLAWSWebIdentityTokenFile != "" {
+			webIdentityTokenBuffer, err = os.ReadFile(c.SASLAWSWebIdentityTokenFile)
+			if err != nil {
+				return nil, err
+			}
+			c.SASLAWSWebIdentityToken = string(webIdentityTokenBuffer)
+		}
+		token, _, err = signer.GenerateAuthTokenFromWebIdentity(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, c.SASLAWSWebIdentityToken, "terraform-kafka-provider")
+	} else if c.SASLAWSRoleArn != "" {
 		log.Printf("[INFO] Generating auth token with a role '%s' in '%s'", c.SASLAWSRoleArn, c.SASLAWSRegion)
 		token, _, err = signer.GenerateAuthTokenFromRole(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, "terraform-kafka-provider")
 	} else if c.SASLAWSProfile != "" {
@@ -305,6 +318,8 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.SASLMechanism,
 		config.SASLAWSRegion,
 		config.SASLAWSRoleArn,
+		"*****",
+		config.SASLAWSWebIdentityTokenFile,
 		config.SASLAWSProfile,
 		config.SASLAWSAccessKey,
 		"*****",
