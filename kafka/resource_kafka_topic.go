@@ -288,6 +288,10 @@ func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) e
 	if diff.Id() == "" {
 		return nil
 	}
+
+	client := v.(*LazyClient)
+	failOnPartitionLower := Contains(client.Config.FailOn, "partition_lower")
+
 	if diff.HasChange("partitions") {
 		log.Printf("[INFO] Partitions have changed!")
 		o, n := diff.GetChange("partitions")
@@ -295,6 +299,9 @@ func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) e
 		ni := n.(int)
 		log.Printf("[INFO] Partitions is changing from %d to %d", oi, ni)
 		if ni < oi {
+			if failOnPartitionLower {
+				return fmt.Errorf("decreasing the number of partitions is not allowed when fail_on includes 'partition_lower'")
+			}
 			log.Printf("Partitions decreased from %d to %d. Forcing new resource", oi, ni)
 			if err := diff.ForceNew("partitions"); err != nil {
 				return err
@@ -304,8 +311,6 @@ func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) e
 
 	if diff.HasChange("replication_factor") {
 		log.Printf("[INFO] Checking the diff!")
-		client := v.(*LazyClient)
-
 		canAlterRF, err := client.CanAlterReplicationFactor()
 		if err != nil {
 			return err

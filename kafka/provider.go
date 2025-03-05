@@ -151,6 +151,15 @@ func Provider() *schema.Provider {
 				Default:     120,
 				Description: "Timeout in seconds",
 			},
+			"fail_on": {
+				Type:     schema.TypeList,
+				Elem:     &schema.Schema{Type: schema.TypeString},
+				Optional: true,
+				DefaultFunc: func() (interface{}, error) {
+					return []interface{}{}, nil
+				},
+				Description: "List of conditions to fail on.",
+			},
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -178,6 +187,11 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		return nil, fmt.Errorf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\", \"oauthbearer\" or \"plain\"", saslMechanism)
 	}
 
+	var failOn []string
+	for _, v := range d.Get("fail_on").([]interface{}) {
+		failOn = append(failOn, v.(string))
+	}
+
 	config := &Config{
 		BootstrapServers:        brokers,
 		CACert:                  d.Get("ca_cert").(string),
@@ -199,6 +213,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SASLMechanism:           saslMechanism,
 		TLSEnabled:              d.Get("tls_enabled").(bool),
 		Timeout:                 d.Get("timeout").(int),
+		FailOn:                  failOn,
 	}
 
 	if config.CACert == "" {

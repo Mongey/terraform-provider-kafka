@@ -72,3 +72,13 @@ func validateDiagFunc(validateFunc func(interface{}, string) ([]string, []error)
 		return diags
 	}
 }
+
+// Contains checks if a slice contains a specific item, ignoring case.
+func Contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if strings.EqualFold(s, item) {
+			return true
+		}
+	}
+	return false
+}
