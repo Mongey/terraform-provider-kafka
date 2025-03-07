@@ -221,7 +221,7 @@ func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	stateConf := &retry.StateChangeConf{
 		Pending:      []string{"Pending"},
 		Target:       []string{"Deleted"},
-		Refresh:      topicDeleteFunc(c, d.Id(), t),
+		Refresh:      topicDeleteFunc(c, t),
 		Timeout:      300 * time.Second,
 		Delay:        3 * time.Second,
 		PollInterval: 2 * time.Second,
@@ -237,7 +237,7 @@ func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	return nil
 }
 
-func topicDeleteFunc(client *LazyClient, id string, t Topic) retry.StateRefreshFunc {
+func topicDeleteFunc(client *LazyClient, t Topic) retry.StateRefreshFunc {
 	return func() (result interface{}, s string, err error) {
 		topic, err := client.ReadTopic(t.Name, true)
 

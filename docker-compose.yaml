@@ -1,38 +1,255 @@
----
-version: "3.2"
 services:
-  kafka1:
-    build:
-      context: .
-      dockerfile: Dockerfile.kafka
-      args:
-        broker_id: 1
-        listener_host: kafka1
-        listener_port: 9092
+  controller-1:
+    image: confluentinc/cp-server:7.5.2
+    hostname: controller-1
+    container_name: controller-1
+    volumes:
+      - data-controller-1:/var/lib/kafka/data
     environment:
-      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
-      KAFKA_LISTENERS: INTERNAL_SSL://kafka1:9090,EXTERNAL_SSL://kafka1:9092,CONTROLLER://kafka1:9093
+      KAFKA_NODE_ID: 9991
+      CLUSTER_ID: Nk018hRAQFytWskYqtQduw
+      KAFKA_PROCESS_ROLES: controller
+      KAFKA_LISTENERS: CONTROLLER://controller-1:19093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: CONTROLLER
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 9991@controller-1:19093,9992@controller-2:29093,9993@controller-3:39093
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: controller-1
+      KAFKA_BROKER_RACK: rack-0
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_OFFSET_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_CONFLUENT_METADATA_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+    cap_add:
+      - NET_ADMIN
     ports:
-      - "9092:9092"
-  kafka2:
-    build:
-      context: .
-      dockerfile: Dockerfile.kafka
-      args:
-        broker_id: 2
-        listener_host: kafka2
-        listener_port: 9092
+      - 19093:19093
+
+  controller-2:
+    image: confluentinc/cp-server:7.5.2
+    hostname: controller-2
+    container_name: controller-2
+    volumes:
+      - data-controller-2:/var/lib/kafka/data
     environment:
-      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
-      KAFKA_PROCESS_ROLES: broker
-  kafka3:
-    build:
-      context: .
-      dockerfile: Dockerfile.kafka
-      args:
-        broker_id: 3
-        listener_host: kafka3
-        listener_port: 9092
+      KAFKA_NODE_ID: 9992
+      CLUSTER_ID: Nk018hRAQFytWskYqtQduw
+      KAFKA_PROCESS_ROLES: controller
+      KAFKA_LISTENERS: CONTROLLER://controller-2:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: CONTROLLER
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 9991@controller-1:19093,9992@controller-2:29093,9993@controller-3:39093
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: controller-2
+      KAFKA_BROKER_RACK: rack-0
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_OFFSET_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_CONFLUENT_METADATA_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 29093:29093
+
+  controller-3:
+    image: confluentinc/cp-server:7.5.2
+    hostname: controller-3
+    container_name: controller-3
+    volumes:
+      - data-controller-3:/var/lib/kafka/data
     environment:
-      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_NODE_ID: 9993
+      CLUSTER_ID: Nk018hRAQFytWskYqtQduw
+      KAFKA_PROCESS_ROLES: controller
+      KAFKA_LISTENERS: CONTROLLER://controller-3:39093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: CONTROLLER
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 9991@controller-1:19093,9992@controller-2:29093,9993@controller-3:39093
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: controller-3
+      KAFKA_BROKER_RACK: rack-0
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_OFFSET_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_CONFLUENT_METADATA_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 39093:39093
+
+  kafka-1:
+    image: confluentinc/cp-server:7.5.2
+    hostname: kafka-1
+    container_name: kafka-1
+    volumes:
+      - data-kafka-1:/var/lib/kafka/data
+    healthcheck:
+      test: curl -fail --silent http://kafka-1:8090/kafka/v3/clusters/ --output /dev/null || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      - controller-1
+      - controller-2
+      - controller-3
+    environment:
+      KAFKA_LISTENERS: DOCKER://kafka-1:9092, EXTERNAL://:19092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: DOCKER://kafka-1:9092, EXTERNAL://localhost:19092
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 10001
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_BROKER_RACK: rack-0
+      # KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_NODE_ID: 1
+      CLUSTER_ID: Nk018hRAQFytWskYqtQduw
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 9991@controller-1:19093,9992@controller-2:29093,9993@controller-3:39093
       KAFKA_PROCESS_ROLES: broker
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 19092:19092
+      - 10001:10001
+
+  kafka-2:
+    image: confluentinc/cp-server:7.5.2
+    hostname: kafka-2
+    container_name: kafka-2
+    volumes:
+      - data-kafka-2:/var/lib/kafka/data
+    healthcheck:
+      test: curl -fail --silent http://kafka-2:8090/kafka/v3/clusters/ --output /dev/null || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      - controller-1
+      - controller-2
+      - controller-3
+    environment:
+      KAFKA_LISTENERS: DOCKER://kafka-2:9092, EXTERNAL://:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: DOCKER://kafka-2:9092, EXTERNAL://localhost:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 10002
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_BROKER_RACK: rack-0
+      # KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_NODE_ID: 2
+      CLUSTER_ID: Nk018hRAQFytWskYqtQduw
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 9991@controller-1:19093,9992@controller-2:29093,9993@controller-3:39093
+      KAFKA_PROCESS_ROLES: broker
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 29092:29092
+      - 10002:10002
+
+  kafka-3:
+    image: confluentinc/cp-server:7.5.2
+    hostname: kafka-3
+    container_name: kafka-3
+    volumes:
+      - data-kafka-3:/var/lib/kafka/data
+    healthcheck:
+      test: curl -fail --silent http://kafka-3:8090/kafka/v3/clusters/ --output /dev/null || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      - controller-1
+      - controller-2
+      - controller-3
+    environment:
+      KAFKA_LISTENERS: DOCKER://kafka-3:9092, EXTERNAL://:39092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: DOCKER://kafka-3:9092, EXTERNAL://localhost:39092
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 10003
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_BROKER_RACK: rack-0
+      # KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_NODE_ID: 3
+      CLUSTER_ID: Nk018hRAQFytWskYqtQduw
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 9991@controller-1:19093,9992@controller-2:29093,9993@controller-3:39093
+      KAFKA_PROCESS_ROLES: broker
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 39092:39092
+      - 10003:10003
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.2
+    hostname: schema-registry
+    container_name: schema-registry
+    healthcheck:
+      test: curl -fail --silent http://schema-registry:8081/subjects --output /dev/null || exit 1
+      interval: 10s
+      retries: 20
+      start_period: 20s
+    depends_on:
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      kafka-3:
+        condition: service_healthy
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+    ports:
+      - 8081:8081
+
+  control-center:
+    image: confluentinc/cp-enterprise-control-center:7.5.2
+    hostname: control-center
+    container_name: control-center
+    depends_on:
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      kafka-3:
+        condition: service_healthy
+    environment:
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
+      CONTROL_CENTER_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      CONTROL_CENTER_REPLICATION_FACTOR: 3
+    ports:
+      - 9021:9021
+volumes:
+  data-controller-1:
+  data-controller-2:
+  data-controller-3:
+  data-kafka-1:
+  data-kafka-2:
+  data-kafka-3:
