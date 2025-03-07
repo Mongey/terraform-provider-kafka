@@ -13,32 +13,35 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/endpointcreds"
 	"golang.org/x/net/proxy"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
 type Config struct {
-	BootstrapServers        *[]string
-	Timeout                 int
-	CACert                  string
-	ClientCert              string
-	ClientCertKey           string
-	ClientCertKeyPassphrase string
-	KafkaVersion            string
-	TLSEnabled              bool
-	SkipTLSVerify           bool
-	SASLUsername            string
-	SASLPassword            string
-	SASLMechanism           string
-	SASLAWSRegion           string
-	SASLAWSRoleArn          string
-	SASLAWSProfile          string
-	SASLAWSAccessKey        string
-	SASLAWSSecretKey        string
-	SASLAWSToken            string
-	SASLAWSCredsDebug       bool
-	SASLTokenUrl            string
+	BootstrapServers                       *[]string
+	Timeout                                int
+	CACert                                 string
+	ClientCert                             string
+	ClientCertKey                          string
+	ClientCertKeyPassphrase                string
+	KafkaVersion                           string
+	TLSEnabled                             bool
+	SkipTLSVerify                          bool
+	SASLUsername                           string
+	SASLPassword                           string
+	SASLMechanism                          string
+	SASLAWSContainerAuthorizationTokenFile string
+	SASLAWSContainerCredentialsFullUri     string
+	SASLAWSRegion                          string
+	SASLAWSRoleArn                         string
+	SASLAWSProfile                         string
+	SASLAWSAccessKey                       string
+	SASLAWSSecretKey                       string
+	SASLAWSToken                           string
+	SASLAWSCredsDebug                      bool
+	SASLTokenUrl                           string
 }
 
 type OAuth2Config interface {
@@ -85,7 +88,20 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 	signer.AwsDebugCreds = c.SASLAWSCredsDebug
 	var token string
 	var err error
-	if c.SASLAWSRoleArn != "" {
+
+	if c.SASLAWSContainerAuthorizationTokenFile != "" && c.SASLAWSContainerCredentialsFullUri != "" {
+		log.Printf("[INFO] Generating auth token using container credentials in '%s'", c.SASLAWSRegion)
+		var containerAuthorizationToken []byte
+		containerAuthorizationToken, err = os.ReadFile(c.SASLAWSContainerAuthorizationTokenFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read authorization token file: %w", err)
+		}
+		tokenOpt := func(o *endpointcreds.Options) {
+			o.AuthorizationToken = string(containerAuthorizationToken)
+		}
+		credProvider := endpointcreds.New(c.SASLAWSContainerCredentialsFullUri, tokenOpt)
+		token, _, err = signer.GenerateAuthTokenFromCredentialsProvider(context.TODO(), c.SASLAWSRegion, credProvider)
+	} else if c.SASLAWSRoleArn != "" {
 		log.Printf("[INFO] Generating auth token with a role '%s' in '%s'", c.SASLAWSRoleArn, c.SASLAWSRegion)
 		token, _, err = signer.GenerateAuthTokenFromRole(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, "terraform-kafka-provider")
 	} else if c.SASLAWSProfile != "" {
@@ -303,6 +319,8 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.SASLUsername,
 		"*****",
 		config.SASLMechanism,
+		config.SASLAWSContainerAuthorizationTokenFile,
+		config.SASLAWSContainerCredentialsFullUri,
 		config.SASLAWSRegion,
 		config.SASLAWSRoleArn,
 		config.SASLAWSProfile,
