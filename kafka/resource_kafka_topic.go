@@ -54,7 +54,7 @@ func kafkaTopicResource() *schema.Resource {
 				Optional:    true,
 				Default:     false,
 				Description: "Forces resource deletion even if errors occur during deletion.",
-			},
+			}, // This parameter allows removing the resource from state when the Kafka cluster is unavailable
 		},
 	}
 }
