@@ -9,16 +9,6 @@ import (
 
 // Create a package-level variable that can be used in tests
 
-func testTopicFromData(d *schema.ResourceData) Topic {
-	topic := Topic{
-		Name:              d.Get("name").(string),
-		ReplicationFactor: int16(d.Get("replication_factor").(int)),
-		Partitions:        int32(d.Get("partitions").(int)),
-	}
-
-	return topic
-}
-
 func TestTopicForceDelete(t *testing.T) {
 	// Create a test topic
 	topic := &Topic{
