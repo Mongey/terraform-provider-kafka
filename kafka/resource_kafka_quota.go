@@ -94,6 +94,10 @@ func quotaDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	err := c.AlterQuota(quota)
 	if err != nil {
 		log.Println("[ERROR] Failed to delete Quota")
+		if c.Config().ForceDelete {
+			log.Printf("[WARN] Force deleting quota %s despite error: %s", quota, err)
+			return nil
+		}
 		return diag.FromErr(err)
 	}
 

@@ -97,6 +97,57 @@ func TestAcc_ACLDeletedOutsideOfTerraform(t *testing.T) {
 	})
 }
 
+func TestAcc_ACLForceDelete(t *testing.T) {
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC not set, skipping acceptance test")
+		return
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		Providers:                testAccProviders,
+		PreventPostDestroyRefresh: true,
+		CheckDestroy:             testAccCheckACLDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testResourceACL_initialConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckACLExists("kafka_acl.test"),
+				),
+			},
+			{
+				// Stop Kafka to simulate a cluster being unavailable
+				PreConfig: func() {
+					client := testAccProvider.Meta().(*LazyClient)
+					// Save the original bootstrap servers for restoration after
+					originalServers := client.config.BootstrapServers
+					
+					// Set invalid bootstrap servers to simulate unavailable cluster
+					invalidServers := []string{"unavailable-host:9092"}
+					client.config.BootstrapServers = &invalidServers
+					
+					// Restore after test
+					t.Cleanup(func() {
+						client.config.BootstrapServers = originalServers
+					})
+				},
+				Config: testResourceACL_forceDeleteConfig,
+				Check: resource.ComposeTestCheckFunc(
+					// The ACL shouldn't exist in Terraform state anymore
+					// because it was force deleted
+					func(s *terraform.State) error {
+						_, ok := s.RootModule().Resources["kafka_acl.test"]
+						if ok {
+							return fmt.Errorf("kafka_acl.test still exists in state after force delete")
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckAclDestroy(name string) error {
 	client := testProvider.Meta().(*LazyClient)
 	err := client.InvalidateACLCache()
@@ -255,6 +306,18 @@ resource "kafka_acl" "test" {
 }
 `
 
+const testResourceACL_forceDeleteConfig = `
+provider "kafka" {
+  bootstrap_servers = ["localhost:9092"]
+  force_delete = true
+}
+
+resource "kafka_acl" "test" {
+  resource_name       = "syslog"
+  resource_type       = "Topic"
+  acl_principal       = "User:Alice"
+  acl_host            = "*"
+  acl_operation       = "Write"
 // lintignore:AT004
 func cfg(t *testing.T, bs string, extraCfg string) string {
 	_, err := os.ReadFile("../secrets/ca.crt")

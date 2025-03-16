@@ -214,6 +214,13 @@ func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 
 	err := c.DeleteTopic(t.Name)
 	if err != nil {
+		// If force_delete is enabled and we're encountering a connection error,
+		// ignore the error and proceed with resource deletion
+		if c.Config().ForceDelete {
+			log.Printf("[WARN] Force deleting topic %s despite error: %s", t.Name, err)
+			d.SetId("")
+			return nil
+		}
 		return diag.FromErr(err)
 	}
 
@@ -229,6 +236,13 @@ func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	}
 	_, err = stateConf.WaitForStateContext(ctx)
 	if err != nil {
+		// If force_delete is enabled and we're encountering a connection error,
+		// ignore the error and proceed with resource deletion
+		if c.Config().ForceDelete {
+			log.Printf("[WARN] Force deleting topic %s despite error waiting for deletion: %s", t.Name, err)
+			d.SetId("")
+			return nil
+		}
 		return diag.FromErr(fmt.Errorf("Error waiting for topic (%s) to delete: %s", d.Id(), err))
 	}
 

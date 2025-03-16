@@ -3,6 +3,7 @@ package kafka
 import (
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -59,33 +60,6 @@ func TestAcc_TopicConfigUpdate(t *testing.T) {
 			},
 		},
 	})
-}
-
-func testAccCheckTopicDestroy(s *terraform.State) error {
-	resourceState := s.Modules[0].Resources["kafka_topic.test"]
-	if resourceState == nil {
-		return fmt.Errorf("resource not found in state")
-	}
-
-	instanceState := resourceState.Primary
-	if instanceState == nil {
-		return fmt.Errorf("resource has no primary instance")
-	}
-
-	name := instanceState.ID
-
-	if name != instanceState.Attributes["name"] {
-		return fmt.Errorf("id doesn't match name")
-	}
-
-	client := testProvider.Meta().(*LazyClient)
-	_, err := client.ReadTopic(name, true)
-
-	if _, ok := err.(TopicMissingError); !ok {
-		return err
-	}
-
-	return nil
 }
 
 func TestAcc_TopicUpdatePartitions(t *testing.T) {
@@ -173,6 +147,86 @@ func TestAcc_TopicAlterReplicationFactor(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAcc_TopicForceDelete(t *testing.T) {
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC not set, skipping acceptance test")
+		return
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		Providers:                testAccProviders,
+		PreventPostDestroyRefresh: true,
+		CheckDestroy:             testAccCheckTopicDestroy,
+		Steps: []resource.TestStep{
+			{
+				Config: testResourceTopic_initialConfig,
+				Check: resource.ComposeTestCheckFunc(
+					testAccCheckTopicExists("kafka_topic.test"),
+					resource.TestCheckResourceAttr(
+						"kafka_topic.test", "name", "syslog"),
+				),
+			},
+			{
+				// Stop Kafka to simulate a cluster being unavailable
+				PreConfig: func() {
+					client := testAccProvider.Meta().(*LazyClient)
+					// Save the original bootstrap servers for restoration after
+					originalServers := client.config.BootstrapServers
+					
+					// Set invalid bootstrap servers to simulate unavailable cluster
+					invalidServers := []string{"unavailable-host:9092"}
+					client.config.BootstrapServers = &invalidServers
+					
+					// Restore after test
+					t.Cleanup(func() {
+						client.config.BootstrapServers = originalServers
+					})
+				},
+				Config: testResourceTopic_forceDeleteConfig,
+				Check: resource.ComposeTestCheckFunc(
+					// The topic shouldn't exist in Terraform state anymore
+					// because it was force deleted
+					func(s *terraform.State) error {
+						_, ok := s.RootModule().Resources["kafka_topic.test"]
+						if ok {
+							return fmt.Errorf("kafka_topic.test still exists in state after force delete")
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccCheckTopicDestroy(s *terraform.State) error {
+	resourceState := s.Modules[0].Resources["kafka_topic.test"]
+	if resourceState == nil {
+		return fmt.Errorf("resource not found in state")
+	}
+
+	instanceState := resourceState.Primary
+	if instanceState == nil {
+		return fmt.Errorf("resource has no primary instance")
+	}
+
+	name := instanceState.ID
+
+	if name != instanceState.Attributes["name"] {
+		return fmt.Errorf("id doesn't match name")
+	}
+
+	client := testProvider.Meta().(*LazyClient)
+	_, err := client.ReadTopic(name, true)
+
+	if _, ok := err.(TopicMissingError); !ok {
+		return err
+	}
+
+	return nil
 }
 
 func testResourceTopic_noConfigCheck(s *terraform.State) error {
@@ -508,5 +562,18 @@ resource "kafka_topic" "test" {
     "retention.ms" = "11111"
     "segment.ms" = "22222"
   }
+}
+`
+
+const testResourceTopic_forceDeleteConfig = `
+provider "kafka" {
+  bootstrap_servers = ["localhost:9092"]
+  force_delete = true
+}
+
+resource "kafka_topic" "test" {
+  name               = "syslog"
+  replication_factor = 1
+  partitions         = 1
 }
 `

@@ -53,7 +53,7 @@ provider "kafka" {
   tls_enabled       = true
   sasl_mechanism    = "aws-iam"
   sasl_aws_region   = "us-east-1"
-  sasl_aws_profile  = "dev"
+  sasl_aws_profile  = "profile-name"
 }
 ```
 
@@ -89,6 +89,14 @@ provider "kafka" {
   tls_enabled       = true
   sasl_mechanism    = "aws-iam"
   sasl_aws_region   = "us-east-1"
+}
+```
+
+Example provider with force_delete option for ephemeral environments.
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9092"]
+  force_delete      = true
 }
 ```
 
@@ -138,3 +146,7 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 * `sasl_aws_token` - (Optional) AWS session token. Can be set through the `AWS_SESSION_TOKEN` environment variable.
 
 * `sasl_aws_creds_debug` - (Optional) Set this to true to turn AWS credentials debug.
+
+* `force_delete` - (Optional) Force resource deletion even when the Kafka cluster is unavailable. 
+  Useful for ephemeral environments where Kafka clusters might be deleted before resources.
+  Default `false`.

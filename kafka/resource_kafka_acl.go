@@ -87,6 +87,12 @@ func aclDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 
 	err := c.DeleteACL(a)
 	if err != nil {
+		// If force_delete is enabled and we're encountering a connection error,
+		// ignore the error and proceed with resource deletion
+		if c.Config().ForceDelete {
+			log.Printf("[WARN] Force deleting ACL %s despite error: %s", a, err)
+			return nil
+		}
 		return diag.FromErr(err)
 	}
 	return nil
