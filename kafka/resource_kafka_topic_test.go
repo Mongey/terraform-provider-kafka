@@ -572,11 +572,13 @@ resource "kafka_topic" "test" {
 
 const testResourceTopic_forceDeleteConfig = `
 provider "kafka" {
+  alias = "force_delete"
   bootstrap_servers = ["localhost:9092"]
   force_delete = true
 }
 
 resource "kafka_topic" "test" {
+  provider = kafka.force_delete
   name               = "%s"
   replication_factor = 1
   partitions         = 1

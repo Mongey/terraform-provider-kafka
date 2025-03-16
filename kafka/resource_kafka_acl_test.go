@@ -103,14 +103,21 @@ func TestAcc_ACLForceDelete(t *testing.T) {
 		return
 	}
 
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	aclResourceName := fmt.Sprintf("syslog-%s", u)
+	bs := testBootstrapServers[0]
+
 	r.Test(t, r.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		ProviderFactories:        overrideProviderFactory(),
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
 		PreventPostDestroyRefresh: true,
-		CheckDestroy:             func(s *terraform.State) error { return testAccCheckAclDestroy("syslog") },
+		CheckDestroy:             func(s *terraform.State) error { return testAccCheckAclDestroy(aclResourceName) },
 		Steps: []r.TestStep{
 			{
-				Config: testResourceACL_initialConfig,
+				Config: cfg(t, bs, fmt.Sprintf(testResourceACL_initialConfig, aclResourceName)),
 				Check: r.ComposeTestCheckFunc(
 					testResourceACL_initialCheck,
 				),
@@ -131,7 +138,7 @@ func TestAcc_ACLForceDelete(t *testing.T) {
 						client.config.BootstrapServers = originalServers
 					})
 				},
-				Config: testResourceACL_forceDeleteConfig,
+				Config: cfg(t, bs, fmt.Sprintf(testResourceACL_forceDeleteConfig, aclResourceName)),
 				Check: r.ComposeTestCheckFunc(
 					// The ACL shouldn't exist in Terraform state anymore
 					// because it was force deleted
@@ -308,12 +315,14 @@ resource "kafka_acl" "test" {
 
 const testResourceACL_forceDeleteConfig = `
 provider "kafka" {
+  alias = "force_delete"
   bootstrap_servers = ["localhost:9092"]
   force_delete = true
 }
 
 resource "kafka_acl" "test" {
-  resource_name       = "syslog"
+  provider = kafka.force_delete
+  resource_name       = "%s"
   resource_type       = "Topic"
   acl_principal       = "User:Alice"
   acl_host            = "*"
