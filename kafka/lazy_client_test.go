@@ -34,7 +34,7 @@ func Test_LazyClientWithConfigErrors(t *testing.T) {
 		Timeout:          10,
 	}
 	c := &LazyClient{
-		Config: config,
+		config: config,
 	}
 	err := c.init()
 

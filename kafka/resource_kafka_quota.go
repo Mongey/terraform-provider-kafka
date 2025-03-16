@@ -58,7 +58,7 @@ func quotaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		Pending:      []string{"Pending"},
 		Target:       []string{"Created"},
 		Refresh:      quotaCreatedFunc(c, quota),
-		Timeout:      time.Duration(c.Config.Timeout) * time.Second,
+		Timeout:      time.Duration((*c.Config()).Timeout) * time.Second,
 		Delay:        1 * time.Second,
 		PollInterval: 2 * time.Second,
 	}

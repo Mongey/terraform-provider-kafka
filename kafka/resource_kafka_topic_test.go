@@ -155,24 +155,29 @@ func TestAcc_TopicForceDelete(t *testing.T) {
 		return
 	}
 
-	resource.Test(t, resource.TestCase{
-		PreCheck:                 func() { testAccPreCheck(t) },
-		Providers:                testAccProviders,
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	topicName := fmt.Sprintf("syslog-%s", u)
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
 		PreventPostDestroyRefresh: true,
-		CheckDestroy:             testAccCheckTopicDestroy,
-		Steps: []resource.TestStep{
+		CheckDestroy:      testAccCheckTopicDestroy,
+		Steps: []r.TestStep{
 			{
-				Config: testResourceTopic_initialConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckTopicExists("kafka_topic.test"),
-					resource.TestCheckResourceAttr(
-						"kafka_topic.test", "name", "syslog"),
+				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_initialConfig, topicName)),
+				Check: r.ComposeTestCheckFunc(
+					testResourceTopic_initialCheck,
 				),
 			},
 			{
 				// Stop Kafka to simulate a cluster being unavailable
 				PreConfig: func() {
-					client := testAccProvider.Meta().(*LazyClient)
+					client := testProvider.Meta().(*LazyClient)
 					// Save the original bootstrap servers for restoration after
 					originalServers := client.config.BootstrapServers
 					
@@ -185,8 +190,8 @@ func TestAcc_TopicForceDelete(t *testing.T) {
 						client.config.BootstrapServers = originalServers
 					})
 				},
-				Config: testResourceTopic_forceDeleteConfig,
-				Check: resource.ComposeTestCheckFunc(
+				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_forceDeleteConfig, topicName)),
+				Check: r.ComposeTestCheckFunc(
 					// The topic shouldn't exist in Terraform state anymore
 					// because it was force deleted
 					func(s *terraform.State) error {
@@ -572,7 +577,7 @@ provider "kafka" {
 }
 
 resource "kafka_topic" "test" {
-  name               = "syslog"
+  name               = "%s"
   replication_factor = 1
   partitions         = 1
 }

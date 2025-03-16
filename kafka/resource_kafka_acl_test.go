@@ -103,22 +103,22 @@ func TestAcc_ACLForceDelete(t *testing.T) {
 		return
 	}
 
-	resource.Test(t, resource.TestCase{
+	r.Test(t, r.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
-		Providers:                testAccProviders,
+		ProviderFactories:        overrideProviderFactory(),
 		PreventPostDestroyRefresh: true,
-		CheckDestroy:             testAccCheckACLDestroy,
-		Steps: []resource.TestStep{
+		CheckDestroy:             func(s *terraform.State) error { return testAccCheckAclDestroy("syslog") },
+		Steps: []r.TestStep{
 			{
 				Config: testResourceACL_initialConfig,
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckACLExists("kafka_acl.test"),
+				Check: r.ComposeTestCheckFunc(
+					testResourceACL_initialCheck,
 				),
 			},
 			{
 				// Stop Kafka to simulate a cluster being unavailable
 				PreConfig: func() {
-					client := testAccProvider.Meta().(*LazyClient)
+					client := testProvider.Meta().(*LazyClient)
 					// Save the original bootstrap servers for restoration after
 					originalServers := client.config.BootstrapServers
 					
@@ -132,7 +132,7 @@ func TestAcc_ACLForceDelete(t *testing.T) {
 					})
 				},
 				Config: testResourceACL_forceDeleteConfig,
-				Check: resource.ComposeTestCheckFunc(
+				Check: r.ComposeTestCheckFunc(
 					// The ACL shouldn't exist in Terraform state anymore
 					// because it was force deleted
 					func(s *terraform.State) error {
@@ -318,7 +318,10 @@ resource "kafka_acl" "test" {
   acl_principal       = "User:Alice"
   acl_host            = "*"
   acl_operation       = "Write"
-// lintignore:AT004
+  acl_permission_type = "Deny"
+}
+`
+
 func cfg(t *testing.T, bs string, extraCfg string) string {
 	_, err := os.ReadFile("../secrets/ca.crt")
 	if err != nil {

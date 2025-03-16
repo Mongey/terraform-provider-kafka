@@ -66,7 +66,7 @@ func topicCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		Pending:      []string{"Pending"},
 		Target:       []string{"Created"},
 		Refresh:      topicCreateFunc(c, t),
-		Timeout:      time.Duration(c.Config.Timeout) * time.Second,
+		Timeout:      time.Duration((*c.Config()).Timeout) * time.Second,
 		Delay:        1 * time.Second,
 		PollInterval: 2 * time.Second,
 	}
@@ -150,7 +150,7 @@ func waitForRFUpdate(ctx context.Context, client *LazyClient, topic string) erro
 		}
 	}
 
-	timeout := time.Duration(client.Config.Timeout) * time.Second
+	timeout := time.Duration((*client.Config()).Timeout) * time.Second
 	stateConf := &retry.StateChangeConf{
 		Pending:      []string{"Updating"},
 		Target:       []string{"Ready"},
@@ -171,7 +171,7 @@ func waitForRFUpdate(ctx context.Context, client *LazyClient, topic string) erro
 }
 
 func waitForTopicRefresh(ctx context.Context, client *LazyClient, topic string, expected Topic) error {
-	timeout := time.Duration(client.Config.Timeout) * time.Second
+	timeout := time.Duration((*client.Config()).Timeout) * time.Second
 	stateConf := &retry.StateChangeConf{
 		Pending:      []string{"Updating"},
 		Target:       []string{"Ready"},
