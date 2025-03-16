@@ -19,14 +19,6 @@ jobs:
           go-version: 1.22.x
       - run: make test
 
-  #lint:
-  #runs-on: ubuntu-latest
-  #steps:
-  #- uses: actions/checkout@v4
-  #- uses: bflad/tfproviderlint-github-action@master
-  #with:
-  #args: ./...
-
   golangci:
     name: lint
     runs-on: ubuntu-latest
