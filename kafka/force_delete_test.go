@@ -7,6 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+// Create a package-level variable that can be used in tests
+
 func testTopicFromData(d *schema.ResourceData) Topic {
 	topic := Topic{
 		Name:              d.Get("name").(string),
@@ -41,15 +43,16 @@ func TestTopicForceDelete(t *testing.T) {
 	})
 	d.SetId(topic.Name)
 	
-	// Mock the metaToTopic function by using our own helper
-	origMetaToTopic := metaToTopic
-	metaToTopic = func(d *schema.ResourceData, meta interface{}) Topic {
+	// Set our test function
+	testMetaToTopicFunc = func(d *schema.ResourceData, meta interface{}) Topic {
 		return *topic
 	}
-	defer func() { metaToTopic = origMetaToTopic }()
 	
-	// Call the topicDelete function
+	// Call the topicDelete function with our test function
 	diags := topicDelete(context.Background(), d, client)
+	
+	// Reset our test function
+	testMetaToTopicFunc = nil
 	
 	// Verify no errors
 	if diags != nil && diags.HasError() {

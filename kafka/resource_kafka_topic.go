@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"testing"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -329,8 +328,4 @@ func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) e
 	}
 
 	return nil
-}
-
-func metaToTopic(d *schema.ResourceData, meta interface{}) Topic {
-	// ... existing implementation ...
 }

@@ -8,6 +8,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
+// This variable is set in tests to mock the metaToTopic function
+var testMetaToTopicFunc func(d *schema.ResourceData, meta interface{}) Topic
+
 type Topic struct {
 	Name              string
 	Partitions        int32
@@ -66,6 +69,11 @@ func isDefault(tc *sarama.ConfigEntry, version int) bool {
 }
 
 func metaToTopic(d *schema.ResourceData, meta interface{}) Topic {
+	// If we're in a test and the test function is set, use it
+	if testMetaToTopicFunc != nil {
+		return testMetaToTopicFunc(d, meta)
+	}
+	
 	topicName := d.Get("name").(string)
 	partitions := d.Get("partitions").(int)
 	replicationFactor := d.Get("replication_factor").(int)
