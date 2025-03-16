@@ -141,16 +141,17 @@ func userScramCredentialDelete(ctx context.Context, d *schema.ResourceData, meta
 	c := meta.(*LazyClient)
 	userScramCredential := parseUserScramCredential(d)
 
+	// Check if force_delete is enabled before attempting operations that might fail
+	if c.Config().ForceDelete {
+		log.Printf("[WARN] Force delete option enabled for user scram credential for user %s", 
+			userScramCredential.Name)
+		// Just return success and let Terraform remove the resource from state
+		return nil
+	}
+
 	err := c.DeleteUserScramCredential(userScramCredential)
 	if err != nil {
 		log.Println("[ERROR] Failed to delete user scram credential")
-		// If force_delete is enabled and we're encountering a connection error,
-		// ignore the error and proceed with resource deletion
-		if c.Config().ForceDelete {
-			log.Printf("[WARN] Force deleting user scram credential for user %s despite error: %s", 
-				userScramCredential.Name, err)
-			return nil
-		}
 		return diag.FromErr(err)
 	}
 

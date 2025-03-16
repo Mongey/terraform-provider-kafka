@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"testing"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -212,15 +213,16 @@ func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	c := meta.(*LazyClient)
 	t := metaToTopic(d, meta)
 
+	// Check if force_delete is enabled before attempting operations that might fail
+	if c.Config().ForceDelete {
+		log.Printf("[WARN] Force delete option enabled for topic %s", t.Name)
+		// Just remove the resource from state and return
+		d.SetId("")
+		return nil
+	}
+
 	err := c.DeleteTopic(t.Name)
 	if err != nil {
-		// If force_delete is enabled and we're encountering a connection error,
-		// ignore the error and proceed with resource deletion
-		if c.Config().ForceDelete {
-			log.Printf("[WARN] Force deleting topic %s despite error: %s", t.Name, err)
-			d.SetId("")
-			return nil
-		}
 		return diag.FromErr(err)
 	}
 
@@ -236,13 +238,6 @@ func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	}
 	_, err = stateConf.WaitForStateContext(ctx)
 	if err != nil {
-		// If force_delete is enabled and we're encountering a connection error,
-		// ignore the error and proceed with resource deletion
-		if c.Config().ForceDelete {
-			log.Printf("[WARN] Force deleting topic %s despite error waiting for deletion: %s", t.Name, err)
-			d.SetId("")
-			return nil
-		}
 		return diag.FromErr(fmt.Errorf("Error waiting for topic (%s) to delete: %s", d.Id(), err))
 	}
 
@@ -334,4 +329,8 @@ func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) e
 	}
 
 	return nil
+}
+
+func metaToTopic(d *schema.ResourceData, meta interface{}) Topic {
+	// ... existing implementation ...
 }

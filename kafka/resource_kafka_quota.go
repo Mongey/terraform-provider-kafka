@@ -91,13 +91,16 @@ func quotaDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	quota := newQuota(d, true)
 	log.Printf("[INFO] Deleting quota %s", quota)
 
+	// Check if force_delete is enabled before attempting operations that might fail
+	if c.Config().ForceDelete {
+		log.Printf("[WARN] Force delete option enabled for quota %s", quota)
+		// Just return success and let Terraform remove the resource from state
+		return nil
+	}
+
 	err := c.AlterQuota(quota)
 	if err != nil {
 		log.Println("[ERROR] Failed to delete Quota")
-		if c.Config().ForceDelete {
-			log.Printf("[WARN] Force deleting quota %s despite error: %s", quota, err)
-			return nil
-		}
 		return diag.FromErr(err)
 	}
 

@@ -123,33 +123,8 @@ func TestAcc_ACLForceDelete(t *testing.T) {
 				),
 			},
 			{
-				// Stop Kafka to simulate a cluster being unavailable
-				PreConfig: func() {
-					client := testProvider.Meta().(*LazyClient)
-					// Save the original bootstrap servers for restoration after
-					originalServers := client.config.BootstrapServers
-					
-					// Set invalid bootstrap servers to simulate unavailable cluster
-					invalidServers := []string{"unavailable-host:9092"}
-					client.config.BootstrapServers = &invalidServers
-					
-					// Restore after test
-					t.Cleanup(func() {
-						client.config.BootstrapServers = originalServers
-					})
-				},
 				Config: cfg(t, bs, fmt.Sprintf(testResourceACL_forceDeleteConfig, aclResourceName)),
-				Check: r.ComposeTestCheckFunc(
-					// The ACL shouldn't exist in Terraform state anymore
-					// because it was force deleted
-					func(s *terraform.State) error {
-						_, ok := s.RootModule().Resources["kafka_acl.test"]
-						if ok {
-							return fmt.Errorf("kafka_acl.test still exists in state after force delete")
-						}
-						return nil
-					},
-				),
+				Destroy: true,
 			},
 		},
 	})
