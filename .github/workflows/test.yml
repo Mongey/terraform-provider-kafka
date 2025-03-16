@@ -19,6 +19,14 @@ jobs:
           go-version: 1.22.x
       - run: make test
 
+  #lint:
+  #runs-on: ubuntu-latest
+  #steps:
+  #- uses: actions/checkout@v4
+  #- uses: bflad/tfproviderlint-github-action@master
+  #with:
+  #args: ./...
+
   golangci:
     name: lint
     runs-on: ubuntu-latest
@@ -32,9 +40,9 @@ jobs:
         with:
           args: --timeout=3m
 
-  # Run all acceptance tests with mock environment
   acctest:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -48,31 +56,7 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - name: Create secrets directory
-        run: mkdir -p secrets
-      - name: Generate test certificates
-        run: |
-          # Generate CA key and certificate
-          openssl genrsa -out secrets/ca.key 2048
-          openssl req -new -x509 -key secrets/ca.key -out secrets/ca.crt -days 365 -subj "/CN=ca"
-          
-          # Generate client key and certificate
-          openssl genrsa -out secrets/client.key 2048
-          openssl req -new -key secrets/client.key -out secrets/client.csr -subj "/CN=client"
-          openssl x509 -req -in secrets/client.csr -CA secrets/ca.crt -CAkey secrets/ca.key -CAcreateserial -out secrets/client.crt -days 365
-          
-          # Create PEM file
-          cat secrets/client.crt secrets/client.key > secrets/client.pem
-          
-          # Create terraform-cert.pem (copy of client.pem for test compatibility)
-          cp secrets/client.pem secrets/terraform-cert.pem
-          cp secrets/client.pem secrets/terraform.pem
-      - name: "Run all tests"
-        run: |
-          # Run all tests including acceptance tests
-          export TF_ACC=1
-          export KAFKA_SKIP_VERIFY=true
-          export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
-          # Add mock mode flag to skip actual Kafka connections in CI
-          export KAFKA_MOCK_MODE=true
-          go test ./kafka -v -timeout 2m
+      - name: Bring up kafka + zk
+        run: docker compose up -d --wait
+      - name: "Run tests"
+        run: sleep 10 && make testacc

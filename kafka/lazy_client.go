@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 	"sync"
 
 	"github.com/IBM/sarama"
@@ -20,7 +22,15 @@ func (c *LazyClient) init() error {
 	var err error
 
 	c.once.Do(func() {
-		c.inner, err = NewClient(c.config)
+		// Check if we should use mock mode
+		mockMode := strings.ToLower(os.Getenv("KAFKA_MOCK_MODE")) == "true"
+		
+		if mockMode {
+			log.Printf("[INFO] Using mock Kafka client because KAFKA_MOCK_MODE=true")
+			c.inner, err = NewMockClient(c.config)
+		} else {
+			c.inner, err = NewClient(c.config)
+		}
 		c.initErr = err
 	})
 
