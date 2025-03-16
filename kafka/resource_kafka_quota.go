@@ -39,6 +39,13 @@ func kafkaQuotaResource() *schema.Resource {
 				Description: "A map of string k/v properties.",
 				Elem:        schema.TypeFloat,
 			},
+			"force_delete": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				ForceNew:    true,
+				Description: "Forces resource deletion even if errors occur during deletion.",
+			},
 		},
 	}
 }
@@ -89,10 +96,21 @@ func quotaCreatedFunc(client *LazyClient, q Quota) retry.StateRefreshFunc {
 func quotaDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*LazyClient)
 	quota := newQuota(d, true)
+	forceDelete := d.Get("force_delete").(bool)
+	
 	log.Printf("[INFO] Deleting quota %s", quota)
 
 	err := c.AlterQuota(quota)
 	if err != nil {
+		log.Printf("[ERROR] Error deleting quota %s: %s", quota, err)
+		
+		// If force_delete is enabled, we'll allow removing from state even when the Kafka cluster is unavailable
+		if forceDelete {
+			log.Printf("[WARN] Force deleting quota %s from state due to force_delete=true", quota)
+			d.SetId("")
+			return nil
+		}
+		
 		log.Println("[ERROR] Failed to delete Quota")
 		return diag.FromErr(err)
 	}

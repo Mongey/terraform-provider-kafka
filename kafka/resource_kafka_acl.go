@@ -59,6 +59,13 @@ func kafkaACLResource() *schema.Resource {
 				Required: true,
 				ForceNew: true,
 			},
+			"force_delete": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				ForceNew:    true,
+				Description: "Forces resource deletion even if errors occur during deletion.",
+			},
 		},
 	}
 }
@@ -83,10 +90,21 @@ func aclCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 func aclDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*LazyClient)
 	a := aclInfo(d)
+	forceDelete := d.Get("force_delete").(bool)
+	
 	log.Printf("[INFO] Deleting ACL %s", a)
 
 	err := c.DeleteACL(a)
 	if err != nil {
+		log.Printf("[ERROR] Error deleting ACL %s: %s", a, err)
+		
+		// If force_delete is enabled, we'll allow removing from state even when the Kafka cluster is unavailable
+		if forceDelete {
+			log.Printf("[WARN] Force deleting ACL %s from state due to force_delete=true", a)
+			d.SetId("")
+			return nil
+		}
+		
 		return diag.FromErr(err)
 	}
 	return nil

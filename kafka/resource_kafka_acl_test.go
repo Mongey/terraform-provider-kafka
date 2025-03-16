@@ -97,6 +97,36 @@ func TestAcc_ACLDeletedOutsideOfTerraform(t *testing.T) {
 	})
 }
 
+func TestAcc_ACLForceDelete(t *testing.T) {
+	t.Parallel()
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	aclResourceName := fmt.Sprintf("syslog-%s", u)
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      func(s *terraform.State) error { return testAccCheckAclDestroy(aclResourceName) },
+		Steps: []r.TestStep{
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceACL_withForceDelete, aclResourceName)),
+				Check: r.ComposeTestCheckFunc(
+					r.TestCheckResourceAttr("kafka_acl.test", "resource_name", aclResourceName),
+					r.TestCheckResourceAttr("kafka_acl.test", "resource_type", "Topic"),
+					r.TestCheckResourceAttr("kafka_acl.test", "acl_principal", "User:Alice"),
+					r.TestCheckResourceAttr("kafka_acl.test", "acl_host", "*"),
+					r.TestCheckResourceAttr("kafka_acl.test", "acl_operation", "Write"),
+					r.TestCheckResourceAttr("kafka_acl.test", "acl_permission_type", "Allow"),
+					r.TestCheckResourceAttr("kafka_acl.test", "force_delete", "true"),
+				),
+			},
+		},
+	})
+}
+
 func testAccCheckAclDestroy(name string) error {
 	client := testProvider.Meta().(*LazyClient)
 	err := client.InvalidateACLCache()
@@ -252,6 +282,18 @@ resource "kafka_acl" "test" {
 	acl_host                     = "*"
 	acl_operation                = "Write"
 	acl_permission_type          = "Deny"
+}
+`
+
+const testResourceACL_withForceDelete = `
+resource "kafka_acl" "test" {
+	resource_name = "%s"
+	resource_type = "Topic"
+	acl_principal = "User:Alice"
+	acl_host = "*"
+	acl_operation = "Write"
+	acl_permission_type = "Allow"
+	force_delete = true
 }
 `
 

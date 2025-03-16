@@ -49,6 +49,12 @@ func kafkaTopicResource() *schema.Resource {
 				Description: "A map of string k/v attributes.",
 				Elem:        schema.TypeString,
 			},
+			"force_delete": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Forces resource deletion even if errors occur during deletion.",
+			},
 		},
 	}
 }
@@ -211,9 +217,19 @@ func topicRefreshFunc(client *LazyClient, topic string, expected Topic) retry.St
 func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	c := meta.(*LazyClient)
 	t := metaToTopic(d, meta)
+	forceDelete := d.Get("force_delete").(bool)
 
 	err := c.DeleteTopic(t.Name)
 	if err != nil {
+		log.Printf("[ERROR] Error deleting topic %s from Kafka: %s", t.Name, err)
+		
+		// If force_delete is enabled, we'll allow removing from state even when the Kafka cluster is unavailable
+		if forceDelete {
+			log.Printf("[WARN] Force deleting topic %s from state due to force_delete=true", t.Name)
+			d.SetId("")
+			return nil
+		}
+		
 		return diag.FromErr(err)
 	}
 
@@ -229,6 +245,15 @@ func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	}
 	_, err = stateConf.WaitForStateContext(ctx)
 	if err != nil {
+		log.Printf("[ERROR] Error waiting for topic (%s) to delete: %s", d.Id(), err)
+		
+		// If force_delete is enabled, we'll allow removing from state even when waiting for deletion times out
+		if forceDelete {
+			log.Printf("[WARN] Force deleting topic %s from state due to force_delete=true", t.Name)
+			d.SetId("")
+			return nil
+		}
+		
 		return diag.FromErr(fmt.Errorf("Error waiting for topic (%s) to delete: %s", d.Id(), err))
 	}
 

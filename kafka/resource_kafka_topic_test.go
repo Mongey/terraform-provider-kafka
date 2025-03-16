@@ -61,33 +61,6 @@ func TestAcc_TopicConfigUpdate(t *testing.T) {
 	})
 }
 
-func testAccCheckTopicDestroy(s *terraform.State) error {
-	resourceState := s.Modules[0].Resources["kafka_topic.test"]
-	if resourceState == nil {
-		return fmt.Errorf("resource not found in state")
-	}
-
-	instanceState := resourceState.Primary
-	if instanceState == nil {
-		return fmt.Errorf("resource has no primary instance")
-	}
-
-	name := instanceState.ID
-
-	if name != instanceState.Attributes["name"] {
-		return fmt.Errorf("id doesn't match name")
-	}
-
-	client := testProvider.Meta().(*LazyClient)
-	_, err := client.ReadTopic(name, true)
-
-	if _, ok := err.(TopicMissingError); !ok {
-		return err
-	}
-
-	return nil
-}
-
 func TestAcc_TopicUpdatePartitions(t *testing.T) {
 	t.Parallel()
 	u, err := uuid.GenerateUUID()
@@ -173,6 +146,60 @@ func TestAcc_TopicAlterReplicationFactor(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAcc_TopicForceDelete(t *testing.T) {
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	topicName := fmt.Sprintf("syslog-%s", u)
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckTopicDestroy,
+		Steps: []r.TestStep{
+			{
+				Config: testResourceTopic_withForceDelete(topicName, bs),
+				Check: r.ComposeTestCheckFunc(
+					testAccCheckTopicExists("kafka_topic.test"),
+					r.TestCheckResourceAttr("kafka_topic.test", "name", topicName),
+					r.TestCheckResourceAttr("kafka_topic.test", "partitions", "1"),
+					r.TestCheckResourceAttr("kafka_topic.test", "replication_factor", "1"),
+					r.TestCheckResourceAttr("kafka_topic.test", "force_delete", "true"),
+				),
+			},
+		},
+	})
+}
+
+func testAccCheckTopicDestroy(s *terraform.State) error {
+	resourceState := s.Modules[0].Resources["kafka_topic.test"]
+	if resourceState == nil {
+		return fmt.Errorf("resource not found in state")
+	}
+
+	instanceState := resourceState.Primary
+	if instanceState == nil {
+		return fmt.Errorf("resource has no primary instance")
+	}
+
+	name := instanceState.ID
+
+	if name != instanceState.Attributes["name"] {
+		return fmt.Errorf("id doesn't match name")
+	}
+
+	client := testProvider.Meta().(*LazyClient)
+	_, err := client.ReadTopic(name, true)
+
+	if _, ok := err.(TopicMissingError); !ok {
+		return err
+	}
+
+	return nil
 }
 
 func testResourceTopic_noConfigCheck(s *terraform.State) error {
@@ -451,6 +478,21 @@ func testMessageEqual(pm *sarama.ProducerMessage, cm *sarama.ConsumerMessage) er
 	return nil
 }
 
+func testResourceTopic_withForceDelete(name, bs string) string {
+	return fmt.Sprintf(`
+provider "kafka" {
+  bootstrap_servers = ["%s"]
+}
+
+resource "kafka_topic" "test" {
+  name               = "%s"
+  replication_factor = 1
+  partitions         = 1
+  force_delete       = true
+}
+`, bs, name)
+}
+
 const testResourceTopic_noConfig = `
 resource "kafka_topic" "test" {
   name               = "%s"
@@ -510,3 +552,28 @@ resource "kafka_topic" "test" {
   }
 }
 `
+
+func testAccCheckTopicExists(n string) r.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+
+		if rs.Primary.ID == "" {
+			return fmt.Errorf("No ID is set")
+		}
+
+		client := testProvider.Meta().(*LazyClient)
+		topic, err := client.ReadTopic(rs.Primary.ID, true)
+		if err != nil {
+			return err
+		}
+
+		if topic.Name != rs.Primary.ID {
+			return fmt.Errorf("Topic not found: %s", rs.Primary.ID)
+		}
+
+		return nil
+	}
+}

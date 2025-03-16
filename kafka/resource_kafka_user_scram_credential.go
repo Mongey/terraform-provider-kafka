@@ -50,9 +50,16 @@ func kafkaUserScramCredentialResource() *schema.Resource {
 				Type:         schema.TypeString,
 				Required:     true,
 				ForceNew:     false,
-				ValidateFunc: validation.StringIsNotWhiteSpace,
-				Description:  "The password of the credential",
 				Sensitive:    true,
+				ValidateFunc: validation.StringLenBetween(1, 1024),
+				Description:  "The SCRAM credential password",
+			},
+			"force_delete": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				ForceNew:    true,
+				Description: "Forces resource deletion even if errors occur during deletion.",
 			},
 		},
 	}
@@ -140,9 +147,19 @@ func userScramCredentialDelete(ctx context.Context, d *schema.ResourceData, meta
 	log.Printf("[INFO] Deleting user scram credential")
 	c := meta.(*LazyClient)
 	userScramCredential := parseUserScramCredential(d)
+	forceDelete := d.Get("force_delete").(bool)
 
 	err := c.DeleteUserScramCredential(userScramCredential)
 	if err != nil {
+		log.Printf("[ERROR] Error deleting user scram credential: %s", err)
+		
+		// If force_delete is enabled, we'll allow removing from state even when the Kafka cluster is unavailable
+		if forceDelete {
+			log.Printf("[WARN] Force deleting user scram credential from state due to force_delete=true")
+			d.SetId("")
+			return nil
+		}
+		
 		log.Println("[ERROR] Failed to delete user scram credential")
 		return diag.FromErr(err)
 	}
