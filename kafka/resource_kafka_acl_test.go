@@ -97,6 +97,39 @@ func TestAcc_ACLDeletedOutsideOfTerraform(t *testing.T) {
 	})
 }
 
+func TestAcc_ACLForceDelete(t *testing.T) {
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC not set, skipping acceptance test")
+		return
+	}
+
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	aclResourceName := fmt.Sprintf("syslog-%s", u)
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		PreventPostDestroyRefresh: true,
+		CheckDestroy:             func(s *terraform.State) error { return testAccCheckAclDestroy(aclResourceName) },
+		Steps: []r.TestStep{
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceACL_initialConfig, aclResourceName)),
+				Check: r.ComposeTestCheckFunc(
+					testResourceACL_initialCheck,
+				),
+			},
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceACL_forceDeleteConfig, aclResourceName)),
+				Destroy: true,
+			},
+		},
+	})
+}
+
 func testAccCheckAclDestroy(name string) error {
 	client := testProvider.Meta().(*LazyClient)
 	err := client.InvalidateACLCache()
@@ -255,7 +288,24 @@ resource "kafka_acl" "test" {
 }
 `
 
-// lintignore:AT004
+const testResourceACL_forceDeleteConfig = `
+provider "kafka" {
+  alias = "force_delete"
+  bootstrap_servers = ["localhost:9092"]
+  force_delete = true
+}
+
+resource "kafka_acl" "test" {
+  provider = kafka.force_delete
+  resource_name       = "%s"
+  resource_type       = "Topic"
+  acl_principal       = "User:Alice"
+  acl_host            = "*"
+  acl_operation       = "Write"
+  acl_permission_type = "Deny"
+}
+`
+
 func cfg(t *testing.T, bs string, extraCfg string) string {
 	_, err := os.ReadFile("../secrets/ca.crt")
 	if err != nil {

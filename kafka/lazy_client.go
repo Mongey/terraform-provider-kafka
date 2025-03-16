@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 	"sync"
 
 	"github.com/IBM/sarama"
@@ -13,24 +15,32 @@ type LazyClient struct {
 	once    sync.Once
 	initErr error
 	inner   *Client
-	Config  *Config
+	config  *Config
 }
 
 func (c *LazyClient) init() error {
 	var err error
 
 	c.once.Do(func() {
-		c.inner, err = NewClient(c.Config)
+		// Check if we should use mock mode
+		mockMode := strings.ToLower(os.Getenv("KAFKA_MOCK_MODE")) == "true"
+		
+		if mockMode {
+			log.Printf("[INFO] Using mock Kafka client because KAFKA_MOCK_MODE=true")
+			c.inner, err = NewMockClient(c.config)
+		} else {
+			c.inner, err = NewClient(c.config)
+		}
 		c.initErr = err
 	})
 
-	if c.Config != nil {
-		log.Printf("[TRACE] lazy client init %s; config, %v", c.initErr, c.Config.copyWithMaskedSensitiveValues())
+	if c.config != nil {
+		log.Printf("[TRACE] lazy client init %s; config, %v", c.initErr, c.config.copyWithMaskedSensitiveValues())
 	} else {
 		log.Printf("[TRACE] lazy client init %s", c.initErr)
 	}
 	if c.initErr == sarama.ErrBrokerNotAvailable || c.initErr == sarama.ErrOutOfBrokers {
-		if c.Config.TLSEnabled {
+		if c.config.TLSEnabled {
 			tlsError := c.checkTLSConfig()
 			if tlsError != nil {
 				return fmt.Errorf("%w\n%s", tlsError, c.initErr)
@@ -42,12 +52,12 @@ func (c *LazyClient) init() error {
 }
 
 func (c *LazyClient) checkTLSConfig() error {
-	kafkaConfig, err := c.Config.newKafkaConfig()
+	kafkaConfig, err := c.config.newKafkaConfig()
 	if err != nil {
 		return err
 	}
 
-	brokers := *(c.Config.BootstrapServers)
+	brokers := *(c.config.BootstrapServers)
 	broker := brokers[0]
 	tlsConf := kafkaConfig.Net.TLS.Config
 	conn, err := tls.Dial("tcp", broker, tlsConf)
@@ -188,9 +198,13 @@ func (c *LazyClient) DescribeUserScramCredential(username string, mechanism stri
 }
 
 func (c *LazyClient) DeleteUserScramCredential(userScramCredential UserScramCredential) error {
-	err := c.init()
-	if err != nil {
+	if err := c.init(); err != nil {
 		return err
 	}
 	return c.inner.DeleteUserScramCredential(userScramCredential)
+}
+
+// Config returns the Config object for this LazyClient
+func (c *LazyClient) Config() *Config {
+	return c.config
 }

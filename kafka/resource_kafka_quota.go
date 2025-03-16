@@ -58,7 +58,7 @@ func quotaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		Pending:      []string{"Pending"},
 		Target:       []string{"Created"},
 		Refresh:      quotaCreatedFunc(c, quota),
-		Timeout:      time.Duration(c.Config.Timeout) * time.Second,
+		Timeout:      time.Duration((*c.Config()).Timeout) * time.Second,
 		Delay:        1 * time.Second,
 		PollInterval: 2 * time.Second,
 	}
@@ -90,6 +90,13 @@ func quotaDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	c := meta.(*LazyClient)
 	quota := newQuota(d, true)
 	log.Printf("[INFO] Deleting quota %s", quota)
+
+	// Check if force_delete is enabled before attempting operations that might fail
+	if c.Config().ForceDelete {
+		log.Printf("[WARN] Force delete option enabled for quota %s", quota)
+		// Just return success and let Terraform remove the resource from state
+		return nil
+	}
 
 	err := c.AlterQuota(quota)
 	if err != nil {

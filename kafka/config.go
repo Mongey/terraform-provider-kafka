@@ -22,6 +22,7 @@ import (
 type Config struct {
 	BootstrapServers                       *[]string
 	Timeout                                int
+	SocketTimeoutMs                        int
 	CACert                                 string
 	ClientCert                             string
 	ClientCertKey                          string
@@ -42,6 +43,7 @@ type Config struct {
 	SASLAWSToken                           string
 	SASLAWSCredsDebug                      bool
 	SASLTokenUrl                           string
+	ForceDelete                            bool
 }
 
 type OAuth2Config interface {
@@ -309,6 +311,7 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 	copy := Config{
 		config.BootstrapServers,
 		config.Timeout,
+		config.SocketTimeoutMs,
 		config.CACert,
 		config.ClientCert,
 		"*****",
@@ -329,6 +332,7 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.SASLAWSToken,
 		config.SASLAWSCredsDebug,
 		config.SASLTokenUrl,
+		config.ForceDelete,
 	}
 	return copy
 }

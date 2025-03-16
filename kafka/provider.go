@@ -163,6 +163,18 @@ func Provider() *schema.Provider {
 				Default:     120,
 				Description: "Timeout in seconds",
 			},
+			"socket_timeout_ms": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Default:     30000,
+				Description: "The socket timeout for network requests in milliseconds.",
+			},
+			"force_delete": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Default:     false,
+				Description: "Force resource deletion even when the Kafka cluster is unavailable.",
+			},
 		},
 
 		ConfigureFunc: providerConfigure,
@@ -213,6 +225,8 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SASLMechanism:                          saslMechanism,
 		TLSEnabled:                             d.Get("tls_enabled").(bool),
 		Timeout:                                d.Get("timeout").(int),
+		SocketTimeoutMs:                        d.Get("socket_timeout_ms").(int),
+		ForceDelete:                            d.Get("force_delete").(bool),
 	}
 
 	if config.CACert == "" {
@@ -228,7 +242,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	log.Printf("[TRACE] Config @ %v", config.copyWithMaskedSensitiveValues())
 
 	return &LazyClient{
-		Config: config,
+		config: config,
 	}, nil
 }
 

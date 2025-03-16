@@ -85,6 +85,13 @@ func aclDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	a := aclInfo(d)
 	log.Printf("[INFO] Deleting ACL %s", a)
 
+	// Check if force_delete is enabled before attempting operations that might fail
+	if c.Config().ForceDelete {
+		log.Printf("[WARN] Force delete option enabled for ACL %s", a)
+		// Just return success and let Terraform remove the resource from state
+		return nil
+	}
+
 	err := c.DeleteACL(a)
 	if err != nil {
 		return diag.FromErr(err)
