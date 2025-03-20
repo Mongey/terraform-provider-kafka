@@ -30,9 +30,11 @@ func (a Quota) String() string {
 	return a.ID()
 }
 
+const entityDefault = "entity-default"
+
 func (a Quota) ID() string {
 	if a.EntityName == "" {
-		return strings.Join([]string{"default", a.EntityType}, "|")
+		return strings.Join([]string{entityDefault, a.EntityType}, "|")
 	}
 	return strings.Join([]string{a.EntityName, a.EntityType}, "|")
 }
