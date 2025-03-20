@@ -295,7 +295,7 @@ resource "kafka_quota" "default_user_quota" {
 
 | Property             | Description                                                                                         |
 | -------------------- | --------------------------------------------------------------------------------------------------- |
-| `entity_name`        | The name of the entity (if entity_name is not provided, it will create default-entity Kafka quota)  |
+| `entity_name`        | The name of the entity (if entity_name is not provided, it will create entity-default Kafka quota)  |
 | `entity_type`        | The entity type (client-id, user, ip)                                                               |
 | `config`             | A map of string attributes for the entity                                                           |
 

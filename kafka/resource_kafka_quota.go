@@ -23,7 +23,7 @@ func kafkaQuotaResource() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				ForceNew:    true,
-				Description: "The name of the entity (if entity_name is not provided, it will create default-entity Kafka quota)",
+				Description: "The name of the entity (if entity_name is not provided, it will create entity-default Kafka quota)",
 			},
 			"entity_type": {
 				Type:             schema.TypeString,
