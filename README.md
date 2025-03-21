@@ -281,15 +281,23 @@ resource "kafka_quota" "test" {
     "producer_byte_rate" = "3500000"
   }
 }
+
+resource "kafka_quota" "default_user_quota" {
+  entity_type = "user"
+  config = {
+    "consumer_byte_rate" = "2000000"
+    "producer_byte_rate" = "1500000"
+  }
+}
 ```
 
 #### Properties
 
-| Property             | Description                                    |
-| -------------------- | ---------------------------------------------- |
-| `entity_name`        | The name of the entity                         |
-| `entity_type`        | The entity type (client-id, user, ip)          |
-| `config`             | A map of string attributes for the entity      |
+| Property             | Description                                                                                         |
+| -------------------- | --------------------------------------------------------------------------------------------------- |
+| `entity_name`        | The name of the entity (if entity_name is not provided, it will create entity-default Kafka quota)  |
+| `entity_type`        | The entity type (client-id, user, ip)                                                               |
+| `config`             | A map of string attributes for the entity                                                           |
 
 ### `kafka_user_scram_credential`
 A resource for managing Kafka SCRAM user credentials.

@@ -27,10 +27,15 @@ type Quota struct {
 }
 
 func (a Quota) String() string {
-	return strings.Join([]string{a.EntityName, a.EntityType}, "|")
+	return a.ID()
 }
 
+const entityDefault = "entity-default"
+
 func (a Quota) ID() string {
+	if a.EntityName == "" {
+		return strings.Join([]string{entityDefault, a.EntityType}, "|")
+	}
 	return strings.Join([]string{a.EntityName, a.EntityType}, "|")
 }
 
@@ -41,10 +46,18 @@ func (c *Client) AlterQuota(quota Quota, validateOnly bool) error {
 		return err
 	}
 
-	entity := sarama.QuotaEntityComponent{
-		EntityType: sarama.QuotaEntityType(quota.EntityType),
-		MatchType:  sarama.QuotaMatchExact,
-		Name:       quota.EntityName,
+	var entity sarama.QuotaEntityComponent
+	if quota.EntityName == "" {
+		entity = sarama.QuotaEntityComponent{
+			EntityType: sarama.QuotaEntityType(quota.EntityType),
+			MatchType:  sarama.QuotaMatchDefault,
+		}
+	} else {
+		entity = sarama.QuotaEntityComponent{
+			EntityType: sarama.QuotaEntityType(quota.EntityType),
+			MatchType:  sarama.QuotaMatchExact,
+			Name:       quota.EntityName,
+		}
 	}
 
 	configs := quota.Ops
@@ -92,10 +105,18 @@ func (c *Client) DescribeQuota(entityType string, entityName string) (*Quota, er
 		return nil, err
 	}
 
-	entity := sarama.QuotaFilterComponent{
-		EntityType: sarama.QuotaEntityType(entityType),
-		MatchType:  sarama.QuotaMatchExact,
-		Match:      entityName,
+	var entity sarama.QuotaFilterComponent
+	if entityName == "" {
+		entity = sarama.QuotaFilterComponent{
+			EntityType: sarama.QuotaEntityType(entityType),
+			MatchType:  sarama.QuotaMatchDefault,
+		}
+	} else {
+		entity = sarama.QuotaFilterComponent{
+			EntityType: sarama.QuotaEntityType(entityType),
+			MatchType:  sarama.QuotaMatchExact,
+			Match:      entityName,
+		}
 	}
 
 	request := &sarama.DescribeClientQuotasRequest{
