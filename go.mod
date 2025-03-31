@@ -2,7 +2,7 @@ module github.com/Mongey/terraform-provider-kafka
 
 go 1.23.0
 
-toolchain go1.23.4
+toolchain go1.24.1
 
 require (
 	github.com/IBM/sarama v1.45.2-0.20250319225116-d6ca80a198c4
@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/terraform-plugin-docs v0.20.1
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.35.0
 	github.com/xdg/scram v1.0.5
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	golang.org/x/oauth2 v0.24.0
 )
 
