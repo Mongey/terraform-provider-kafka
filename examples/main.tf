@@ -58,3 +58,12 @@ resource "kafka_quota" "quota1" {
     "producer_byte_rate" = "3500000"
   }
 }
+
+resource "kafka_quota" "default_user_quota" {
+  // omit the entity_name to set the default quota
+  entity_type = "user"
+  config = {
+    "consumer_byte_rate" = "2000000"
+    "producer_byte_rate" = "1500000"
+  }
+}

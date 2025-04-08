@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 type TopicMissingError struct {
@@ -21,6 +21,28 @@ type void struct{}
 
 var member void
 
+type aclCache struct {
+	acls  []*sarama.ResourceAcls
+	mutex sync.RWMutex
+	valid bool
+}
+
+type aclDeletionQueue struct {
+	filters   []*sarama.AclFilter
+	after     time.Duration
+	timer     *time.Timer
+	mutex     sync.Mutex
+	waitChans []chan error
+}
+
+type aclCreationQueue struct {
+	creations []*sarama.AclCreation
+	after     time.Duration
+	timer     *time.Timer
+	mutex     sync.Mutex
+	waitChans []chan error
+}
+
 type Client struct {
 	client        sarama.Client
 	kafkaConfig   *sarama.Config
@@ -28,6 +50,9 @@ type Client struct {
 	supportedAPIs map[int]int
 	topics        map[string]void
 	topicsMutex   sync.RWMutex
+	aclCache
+	aclDeletionQueue
+	aclCreationQueue
 }
 
 func NewClient(config *Config) (*Client, error) {
@@ -63,6 +88,12 @@ func NewClient(config *Config) (*Client, error) {
 		client:      c,
 		config:      config,
 		kafkaConfig: kc,
+		aclDeletionQueue: aclDeletionQueue{
+			after: time.Millisecond * 500,
+		},
+		aclCreationQueue: aclCreationQueue{
+			after: time.Millisecond * 500,
+		},
 	}
 
 	err = client.populateAPIVersions()
@@ -235,7 +266,6 @@ func (c *Client) UpdateTopic(topic Topic) error {
 	}
 
 	res, err := broker.AlterConfigs(r)
-
 	if err != nil {
 		return err
 	}
@@ -350,7 +380,6 @@ func (c *Client) buildAssignment(t Topic) (*[][]int32, error) {
 
 	allReplicas := c.allReplicas()
 	newRF := t.ReplicationFactor
-	rand.Seed(time.Now().UnixNano())
 
 	assignment := make([][]int32, len(partitions))
 	for _, p := range partitions {
@@ -543,7 +572,7 @@ func (c *Client) versionForKey(apiKey, wantedMaxVersion int) int {
 	return 0
 }
 
-//topicConfig retrives the non-default config map for a topic
+// topicConfig retrives the non-default config map for a topic
 func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	conf := map[string]*string{}
 	request := &sarama.DescribeConfigsRequest{
@@ -587,6 +616,7 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 func (c *Client) getDescribeAclsRequestAPIVersion() int16 {
 	return int16(c.versionForKey(29, 1))
 }
+
 func (c *Client) getCreateAclsRequestAPIVersion() int16 {
 	return int16(c.versionForKey(30, 1))
 }

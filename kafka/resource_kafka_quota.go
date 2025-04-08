@@ -2,9 +2,12 @@ package kafka
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
@@ -18,9 +21,9 @@ func kafkaQuotaResource() *schema.Resource {
 		Schema: map[string]*schema.Schema{
 			"entity_name": {
 				Type:        schema.TypeString,
-				Required:    true,
+				Optional:    true,
 				ForceNew:    true,
-				Description: "The name of the entity",
+				Description: "The name of the entity (if entity_name is not provided, it will create entity-default Kafka quota)",
 			},
 			"entity_type": {
 				Type:             schema.TypeString,
@@ -51,10 +54,36 @@ func quotaCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		return diag.FromErr(err)
 	}
 
+	stateConf := &retry.StateChangeConf{
+		Pending:      []string{"Pending"},
+		Target:       []string{"Created"},
+		Refresh:      quotaCreatedFunc(c, quota),
+		Timeout:      time.Duration(c.Config.Timeout) * time.Second,
+		Delay:        1 * time.Second,
+		PollInterval: 2 * time.Second,
+	}
+
+	if _, err := stateConf.WaitForStateContext(ctx); err != nil {
+		return diag.FromErr(fmt.Errorf("error waiting for quota (%s) to be created: %s", quota.ID(), err))
+	}
+
 	d.SetId(quota.ID())
-	quotaRead(ctx, d, meta)
 
 	return nil
+}
+
+func quotaCreatedFunc(client *LazyClient, q Quota) retry.StateRefreshFunc {
+	return func() (result interface{}, s string, err error) {
+		fq, err := client.DescribeQuota(q.EntityType, q.EntityName)
+		switch e := err.(type) {
+		case QuotaMissingError:
+			return fq, "Pending", nil
+		case nil:
+			return fq, "Created", nil
+		default:
+			return fq, "Error", e
+		}
+	}
 }
 
 func quotaDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
@@ -74,7 +103,7 @@ func quotaDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 func quotaRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	log.Println("[INFO] Reading Quota")
 	c := meta.(*LazyClient)
-	
+
 	entityType := d.Get("entity_type").(string)
 	entityName := d.Get("entity_name").(string)
 	log.Printf("[INFO] Reading Quota %s", entityName)

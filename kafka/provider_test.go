@@ -70,6 +70,7 @@ func accTestProviderConfig() (*terraform.ResourceConfig, error) {
 
 	raw := map[string]interface{}{
 		"bootstrap_servers": bs,
+		"kafka_version":     "3.8.0",
 	}
 
 	return terraform.NewResourceConfigRaw(raw), nil

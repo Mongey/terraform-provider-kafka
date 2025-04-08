@@ -25,5 +25,3 @@ description: |-
 - `id` (String) The ID of this resource.
 - `partitions` (Number) Number of partitions.
 - `replication_factor` (Number) Number of replicas.
-
-

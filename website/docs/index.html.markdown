@@ -24,6 +24,74 @@ provider "kafka" {
 }
 ```
 
+Example provider with TLS client authentication.
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9092"]
+  ca_cert           = file("../secrets/ca.crt")
+  client_cert       = file("../secrets/terraform-cert.pem")
+  client_key        = file("../secrets/terraform.pem")
+  tls_enabled       = true
+}
+```
+
+Example provider with aws-iam(Assume role) client authentication.
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9098"]
+  tls_enabled       = true
+  sasl_mechanism    = "aws-iam"
+  sasl_aws_region   = "us-east-1"
+  sasl_aws_role_arn = "arn:aws:iam::account:role/role-name"
+}
+```
+
+Example provider with aws-iam(Aws Profile) client authentication.
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9098"]
+  tls_enabled       = true
+  sasl_mechanism    = "aws-iam"
+  sasl_aws_region   = "us-east-1"
+  sasl_aws_profile  = "dev"
+}
+```
+
+Example provider with aws-iam(Static Creds) client authentication using explicit credentials.
+```hcl
+provider "vault" {
+  auth_login_jwt {
+    role = "jwt-role-name"
+  }
+}
+
+data "vault_aws_access_credentials" "creds" {
+  backend = "aws"
+  type    = "sts"
+  role    = "sts-role-name"
+}
+
+provider "kafka" {
+  bootstrap_servers   = ["localhost:9098"]
+  tls_enabled         = true
+  sasl_mechanism      = "aws-iam"
+  sasl_aws_region     = "us-east-1"
+  sasl_aws_access_key = data.vault_aws_access_credentials.creds.access_key
+  sasl_aws_secret_key = data.vault_aws_access_credentials.creds.secret_key
+  sasl_aws_token      = data.vault_aws_access_credentials.creds.security_token
+}
+```
+
+Example provider with aws-iam(Static Creds) client authentication. You have to export `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`(Optional if you are using temp creds)
+```hcl
+provider "kafka" {
+  bootstrap_servers = ["localhost:9098"]
+  tls_enabled       = true
+  sasl_mechanism    = "aws-iam"
+  sasl_aws_region   = "us-east-1"
+}
+```
+
 ## Argument Reference
 
 In addition to [generic `provider` arguments](https://www.terraform.io/docs/configuration/providers.html)
@@ -53,5 +121,20 @@ In addition to [generic `provider` arguments](https://www.terraform.io/docs/conf
 
 * `sasl_password` - (Optional) Password for SASL authentication. Can be set through the `KAFKA_SASL_PASSWORD` environment variable.
 
-* `sasl_mechanism` - (Optional) Mechanism for SASL authentication. Allowed values
-  are `plain`, `scram-sha512` and `scram-sha256`. Default `plain`. Can be set through the `KAFKA_SASL_MECHANISM` environment variable.
+* `sasl_token_url` - (Optional) The url to retrieve oauth2 tokens from, when using sasl mechanism oauthbearer. Can be set through the `KAFKA_SASL_TOKEN_URL` environment variable.
+
+* `sasl_mechanism` - (Optional) Mechanism for SASL authentication. Allowed values are `plain`, `scram-sha512`, `scram-sha256`, `aws-iam` or `oauthbearer`. Default `plain`. Can be set through the `KAFKA_SASL_MECHANISM` environment variable.
+
+* `sasl_aws_region` - (Optional) AWS region where MSK is deployed. Required when sasl_mechanism is aws-iam.
+
+* `sasl_aws_role_arn` - (Optional) IAM role ARN to Assume.
+
+* `sasl_aws_profile` - (Optional) AWS profile name to use.
+
+* `sasl_aws_access_key` - (Optional) AWS access key. Can be set through the `AWS_ACCESS_KEY_ID` environment variable.
+
+* `sasl_aws_secret_key` - (Optional) AWS secret key. Can be set through the `AWS_SECRET_ACCESS_KEY` environment variable.
+
+* `sasl_aws_token` - (Optional) AWS session token. Can be set through the `AWS_SESSION_TOKEN` environment variable.
+
+* `sasl_aws_creds_debug` - (Optional) Set this to true to turn AWS credentials debug.

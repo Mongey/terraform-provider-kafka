@@ -28,8 +28,14 @@ description: |-
 - `client_key` (String) The private key that the certificate was issued for.
 - `client_key_file` (String, Deprecated) Path to a file containing the private key that the certificate was issued for.
 - `client_key_passphrase` (String) The passphrase for the private key that the certificate was issued for.
-- `sasl_mechanism` (String) SASL mechanism, can be plain, scram-sha512, scram-sha256
+- `kafka_version` (String) The version of Kafka protocol to use in `$MAJOR.$MINOR.$PATCH` format. Some features may not be available on older versions. Default is 2.7.0.
+- `sasl_aws_creds_debug` (Boolean) Set this to true to turn AWS credentials debug.
+- `sasl_aws_profile` (String) AWS profile name to use
+- `sasl_aws_region` (String) AWS region where MSK is deployed.
+- `sasl_aws_role_arn` (String) Arn of an AWS IAM role to assume
+- `sasl_mechanism` (String) SASL mechanism, can be plain, scram-sha512, scram-sha256, aws-iam
 - `sasl_password` (String) Password for SASL authentication.
+- `sasl_token_url` (String) The url to retrieve oauth2 tokens from, when using sasl mechanism oauthbearer
 - `sasl_username` (String) Username for SASL authentication.
 - `skip_tls_verify` (Boolean) Set this to true only if the target Kafka server is an insecure development instance.
 - `timeout` (Number) Timeout in seconds

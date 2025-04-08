@@ -6,7 +6,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 type LazyClient struct {
@@ -128,6 +128,15 @@ func (c *LazyClient) CreateACL(s StringlyTypedACL) error {
 		return err
 	}
 	return c.inner.CreateACL(s)
+}
+
+func (c *LazyClient) InvalidateACLCache() error {
+	err := c.init()
+	if err != nil {
+		return err
+	}
+	c.inner.InvalidateACLCache()
+	return nil
 }
 
 func (c *LazyClient) ListACLs() ([]*sarama.ResourceAcls, error) {

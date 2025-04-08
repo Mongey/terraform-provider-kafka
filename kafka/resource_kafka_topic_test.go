@@ -11,7 +11,7 @@ import (
 	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 func TestAcc_BasicTopic(t *testing.T) {
@@ -251,6 +251,7 @@ func testResourceTopic_produceMessages(messages []*sarama.ProducerMessage) r.Tes
 		kafkaConfig.Producer.Return.Errors = true
 		kafkaConfig.Producer.Return.Successes = true
 		kafkaConfig.Producer.RequiredAcks = sarama.WaitForAll
+		kafkaConfig.Producer.Timeout = 90 * time.Second
 
 		producer, err := sarama.NewSyncProducer(*config.BootstrapServers, kafkaConfig)
 		if err != nil {

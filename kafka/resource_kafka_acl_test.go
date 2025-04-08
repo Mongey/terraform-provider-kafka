@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	uuid "github.com/hashicorp/go-uuid"
 	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -99,6 +99,10 @@ func TestAcc_ACLDeletedOutsideOfTerraform(t *testing.T) {
 
 func testAccCheckAclDestroy(name string) error {
 	client := testProvider.Meta().(*LazyClient)
+	err := client.InvalidateACLCache()
+	if err != nil {
+		return err
+	}
 	acls, err := client.ListACLs()
 	if err != nil {
 		return err
@@ -165,7 +169,10 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 
 func testResourceACL_updateCheck(s *terraform.State) error {
 	client := testProvider.Meta().(*LazyClient)
-
+	err := client.InvalidateACLCache()
+	if err != nil {
+		return err
+	}
 	acls, err := client.ListACLs()
 	if err != nil {
 		return err
@@ -215,7 +222,7 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 		return fmt.Errorf("Should be for *")
 	}
 	if acl.Acls[0].PermissionType != sarama.AclPermissionDeny {
-		return fmt.Errorf("Should be Deny, not %v", acl.Acls[0].PermissionType)
+		return fmt.Errorf("should be Deny, not %v", acl.Acls[0].PermissionType.String())
 	}
 
 	if acl.Resource.ResourcePatternType != sarama.AclPatternPrefixed {
