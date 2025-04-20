@@ -205,7 +205,12 @@ func testAccCheckQuotaDestroy(s *terraform.State) error {
 	entityType := instanceState.Attributes["entity_type"]
 	entityName := instanceState.Attributes["entity_name"]
 
-	client := testProvider.Meta().(*LazyClient)
+	meta := testProvider.Meta()
+	if meta == nil {
+		return fmt.Errorf("provider Meta() returned nil")
+	}
+
+	client := meta.(*LazyClient)
 	_, err := client.DescribeQuota(entityType, entityName)
 
 	if _, ok := err.(QuotaMissingError); !ok {
