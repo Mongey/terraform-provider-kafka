@@ -127,7 +127,12 @@ func (c *LazyClient) CreateACL(s StringlyTypedACL) error {
 	if err != nil {
 		return err
 	}
-	return c.inner.CreateACL(s)
+	log.Printf("[DEBUG] Triggering ACL creation for %s", s)
+	err = c.inner.CreateACL(s)
+	if err != nil {
+		log.Printf("[ERROR] Failed to create ACL: %s", err)
+	}
+	return err
 }
 
 func (c *LazyClient) InvalidateACLCache() error {
