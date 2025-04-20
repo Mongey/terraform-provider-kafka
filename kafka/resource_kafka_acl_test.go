@@ -98,7 +98,12 @@ func TestAcc_ACLDeletedOutsideOfTerraform(t *testing.T) {
 }
 
 func testAccCheckAclDestroy(name string) error {
-	client := testProvider.Meta().(*LazyClient)
+	meta := testProvider.Meta()
+	if meta == nil {
+		return fmt.Errorf("provider Meta() returned nil")
+	}
+
+	client := meta.(*LazyClient)
 	err := client.InvalidateACLCache()
 	if err != nil {
 		return err
