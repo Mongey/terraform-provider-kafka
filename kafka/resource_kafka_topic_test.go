@@ -192,7 +192,12 @@ func testResourceTopic_noConfigCheck(s *terraform.State) error {
 		return fmt.Errorf("id doesn't match name")
 	}
 
-	client := testProvider.Meta().(*LazyClient)
+	meta := testProvider.Meta()
+	if meta == nil {
+		return fmt.Errorf("provider Meta() returned nil")
+	}
+
+	client := meta.(*LazyClient)
 	topic, err := client.ReadTopic(name, true)
 
 	if err != nil {
@@ -222,7 +227,12 @@ func testResourceTopic_initialCheck(s *terraform.State) error {
 		return fmt.Errorf("id doesn't match name")
 	}
 
-	client := testProvider.Meta().(*LazyClient)
+	meta := testProvider.Meta()
+	if meta == nil {
+		return fmt.Errorf("provider Meta() returned nil")
+	}
+
+	client := meta.(*LazyClient)
 	topic, err := client.ReadTopic(name, true)
 	if err != nil {
 		return err
@@ -241,7 +251,12 @@ func testResourceTopic_initialCheck(s *terraform.State) error {
 
 func testResourceTopic_produceMessages(messages []*sarama.ProducerMessage) r.TestCheckFunc {
 	return func(s *terraform.State) error {
-		c := testProvider.Meta().(*LazyClient)
+		meta := testProvider.Meta()
+		if meta == nil {
+			return fmt.Errorf("provider Meta() returned nil")
+		}
+
+		c := meta.(*LazyClient)
 
 		config := c.inner.config
 		kafkaConfig, err := config.newKafkaConfig()
@@ -275,7 +290,13 @@ func testResourceTopic_produceMessages(messages []*sarama.ProducerMessage) r.Tes
 func testResourceTopic_updateCheck(s *terraform.State) error {
 	resourceState := s.Modules[0].Resources["kafka_topic.test"]
 	instanceState := resourceState.Primary
-	client := testProvider.Meta().(*LazyClient)
+
+	meta := testProvider.Meta()
+	if meta == nil {
+		return fmt.Errorf("provider Meta() returned nil")
+	}
+
+	client := meta.(*LazyClient)
 	name := instanceState.ID
 
 	if name != instanceState.Attributes["name"] {
@@ -304,7 +325,13 @@ func testResourceTopic_updateCheck(s *terraform.State) error {
 func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
 	resourceState := s.Modules[0].Resources["kafka_topic.test"]
 	instanceState := resourceState.Primary
-	client := testProvider.Meta().(*LazyClient)
+
+	meta := testProvider.Meta()
+	if meta == nil {
+		return fmt.Errorf("provider Meta() returned nil")
+	}
+
+	client := meta.(*LazyClient)
 
 	name := instanceState.ID
 	topic, err := client.ReadTopic(name, true)
@@ -324,7 +351,13 @@ func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
 func testResourceTopic_updateRFCheck(s *terraform.State) error {
 	resourceState := s.Modules[0].Resources["kafka_topic.test"]
 	instanceState := resourceState.Primary
-	client := testProvider.Meta().(*LazyClient)
+
+	meta := testProvider.Meta()
+	if meta == nil {
+		return fmt.Errorf("provider Meta() returned nil")
+	}
+
+	client := meta.(*LazyClient)
 	topicName := instanceState.Attributes["name"]
 
 	parsed, err := strconv.ParseInt(instanceState.Attributes["replication_factor"], 10, 16)
@@ -359,7 +392,13 @@ func testResourceTopic_checkSameMessages(producedMessages []*sarama.ProducerMess
 	return func(s *terraform.State) error {
 		resourceState := s.Modules[0].Resources["kafka_topic.test"]
 		instanceState := resourceState.Primary
-		client := testProvider.Meta().(*LazyClient)
+
+		meta := testProvider.Meta()
+		if meta == nil {
+			return fmt.Errorf("provider Meta() returned nil")
+		}
+
+		client := meta.(*LazyClient)
 		topicName := instanceState.Attributes["name"]
 
 		consumer, err := sarama.NewConsumerFromClient(client.inner.client)
