@@ -6,7 +6,7 @@ toolchain go1.23.4
 
 require (
 	github.com/IBM/sarama v1.45.2-0.20250319225116-d6ca80a198c4
-	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.1
+	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.2
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.62
 	github.com/hashicorp/go-cty v1.5.0
 	github.com/hashicorp/go-uuid v1.0.3
