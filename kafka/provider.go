@@ -91,6 +91,12 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("AWS_ROLE_ARN", nil),
 				Description: "Arn of an AWS IAM role to assume",
 			},
+			"sasl_aws_external_id": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "",
+				Description: "External ID of the AWS IAM role to assume",
+			},
 			"sasl_aws_profile": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -205,6 +211,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SASLPassword:                           d.Get("sasl_password").(string),
 		SASLTokenUrl:                           d.Get("sasl_token_url").(string),
 		SASLAWSRoleArn:                         d.Get("sasl_aws_role_arn").(string),
+		SASLAWSExternalId:                      d.Get("sasl_aws_external_id").(string),
 		SASLAWSProfile:                         d.Get("sasl_aws_profile").(string),
 		SASLAWSAccessKey:                       d.Get("sasl_aws_access_key").(string),
 		SASLAWSSecretKey:                       d.Get("sasl_aws_secret_key").(string),

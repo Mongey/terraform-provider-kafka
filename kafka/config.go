@@ -36,6 +36,7 @@ type Config struct {
 	SASLAWSContainerCredentialsFullUri     string
 	SASLAWSRegion                          string
 	SASLAWSRoleArn                         string
+	SASLAWSExternalId                      string
 	SASLAWSProfile                         string
 	SASLAWSAccessKey                       string
 	SASLAWSSecretKey                       string
@@ -103,7 +104,7 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 		token, _, err = signer.GenerateAuthTokenFromCredentialsProvider(context.TODO(), c.SASLAWSRegion, credProvider)
 	} else if c.SASLAWSRoleArn != "" {
 		log.Printf("[INFO] Generating auth token with a role '%s' in '%s'", c.SASLAWSRoleArn, c.SASLAWSRegion)
-		token, _, err = signer.GenerateAuthTokenFromRole(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, "terraform-kafka-provider")
+		token, _, err = signer.GenerateAuthTokenFromRoleWithExternalId(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, "terraform-kafka-provider", c.SASLAWSExternalId)
 	} else if c.SASLAWSProfile != "" {
 		log.Printf("[INFO] Generating auth token using profile '%s' in '%s'", c.SASLAWSProfile, c.SASLAWSRegion)
 		token, _, err = signer.GenerateAuthTokenFromProfile(context.TODO(), c.SASLAWSRegion, c.SASLAWSProfile)
@@ -323,6 +324,7 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.SASLAWSContainerCredentialsFullUri,
 		config.SASLAWSRegion,
 		config.SASLAWSRoleArn,
+		"*****",
 		config.SASLAWSProfile,
 		config.SASLAWSAccessKey,
 		"*****",
