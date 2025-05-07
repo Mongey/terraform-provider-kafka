@@ -57,6 +57,42 @@ func TestAcc_QuotaConfigUpdate(t *testing.T) {
 	})
 }
 
+func TestAcc_DefaultEntityBasicQuota(t *testing.T) {
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckQuotaDestroy,
+		Steps: []r.TestStep{
+			{
+				Config: cfgs(t, bs, fmt.Sprintf(testResourceQuotaDefault, "4000000")),
+				Check:  testResourceQuota_initialCheck,
+			},
+		},
+	})
+}
+
+func TestAcc_DefaultEntityQuotaConfigUpdate(t *testing.T) {
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckQuotaDestroy,
+		Steps: []r.TestStep{
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceQuotaDefault, "4000000")),
+				Check:  testResourceQuota_initialCheck,
+			},
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceQuotaDefault, "3000000")),
+				Check:  testResourceQuota_updateCheck,
+			},
+		},
+	})
+}
+
 func testResourceQuota_initialCheck(s *terraform.State) error {
 	resourceState := s.Modules[0].Resources["kafka_quota.test1"]
 	if resourceState == nil {
@@ -79,6 +115,9 @@ func testResourceQuota_initialCheck(s *terraform.State) error {
 
 	id := instanceState.ID
 	qID := fmt.Sprintf("%s|%s", entityName, entityType)
+	if entityName == "" {
+		qID = fmt.Sprintf("%s|%s", entityDefault, entityType)
+	}
 
 	if id != qID {
 		return fmt.Errorf("id doesn't match for %s, got %s", id, qID)
@@ -125,6 +164,9 @@ func testResourceQuota_updateCheck(s *terraform.State) error {
 
 	id := instanceState.ID
 	qID := fmt.Sprintf("%s|%s", entityName, entityType)
+	if entityName == "" {
+		qID = fmt.Sprintf("%s|%s", entityDefault, entityType)
+	}
 
 	if id != qID {
 		return fmt.Errorf("id doesn't match for %s, got %s", id, qID)
@@ -163,7 +205,12 @@ func testAccCheckQuotaDestroy(s *terraform.State) error {
 	entityType := instanceState.Attributes["entity_type"]
 	entityName := instanceState.Attributes["entity_name"]
 
-	client := testProvider.Meta().(*LazyClient)
+	meta := testProvider.Meta()
+	if meta == nil {
+		return fmt.Errorf("provider Meta() returned nil")
+	}
+
+	client := meta.(*LazyClient)
 	_, err := client.DescribeQuota(entityType, entityName)
 
 	if _, ok := err.(QuotaMissingError); !ok {
@@ -187,6 +234,16 @@ provider "kafka" {
 const testResourceQuota1 = `
 resource "kafka_quota" "test1" {
   entity_name               = "%s"
+  entity_type               = "client-id"
+  config = {
+    "consumer_byte_rate" = "%s"
+	"producer_byte_rate" = "2500000"
+  }
+}
+`
+
+const testResourceQuotaDefault = `
+resource "kafka_quota" "test1" {
   entity_type               = "client-id"
   config = {
     "consumer_byte_rate" = "%s"

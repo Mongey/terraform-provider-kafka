@@ -171,7 +171,12 @@ func testAccCheckUserScramCredentialDestroy(s *terraform.State) error {
 	username := instanceState.Attributes["username"]
 	mechanism := instanceState.Attributes["scram_mechanism"]
 
-	client := testProvider.Meta().(*LazyClient)
+	meta := testProvider.Meta()
+	if meta == nil {
+		return fmt.Errorf("provider Meta() returned nil")
+	}
+
+	client := meta.(*LazyClient)
 	_, err := client.DescribeUserScramCredential(username, mechanism)
 
 	if _, ok := err.(UserScramCredentialMissingError); !ok {
