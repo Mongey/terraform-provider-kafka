@@ -237,6 +237,13 @@ func (c *Client) DeleteTopic(t string) error {
 		Topics:  []string{t},
 		Timeout: timeout,
 	}
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
+		req.Version = 3
+	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V0_11_0_0) {
+		req.Version = 2
+	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V0_10_2_0) {
+		req.Version = 1
+	}
 	res, err := broker.DeleteTopics(req)
 	if err == nil {
 		for k, e := range res.TopicErrorCodes {
@@ -263,6 +270,10 @@ func (c *Client) UpdateTopic(topic Topic) error {
 	r := &sarama.AlterConfigsRequest{
 		Resources:    configToResources(topic),
 		ValidateOnly: false,
+	}
+
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
+		r.Version = 1
 	}
 
 	res, err := broker.AlterConfigs(r)
@@ -300,6 +311,13 @@ func (c *Client) CreateTopic(t Topic) error {
 		},
 		Timeout: timeout,
 	}
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
+		req.Version = 3
+	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V0_11_0_0) {
+		req.Version = 2
+	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V0_10_2_0) {
+		req.Version = 1
+	}
 	res, err := broker.CreateTopics(req)
 
 	if err == nil {
@@ -332,6 +350,11 @@ func (c *Client) AddPartitions(t Topic) error {
 		Timeout:         timeout,
 		ValidateOnly:    false,
 	}
+
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
+		req.Version = 1
+	}
+
 	log.Printf("[INFO] Adding partitions to %s in Kafka", t.Name)
 	res, err := broker.CreatePartitions(req)
 	if err == nil {
@@ -588,6 +611,14 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	broker, err := c.client.Controller()
 	if err != nil {
 		return conf, err
+	}
+
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V1_1_0_0) {
+		request.Version = 1
+	}
+
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
+		request.Version = 2
 	}
 
 	cr, err := broker.DescribeConfigs(request)
