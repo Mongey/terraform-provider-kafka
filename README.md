@@ -347,3 +347,4 @@ terraform import kafka_user_scram_credential.test 'user1|SCRAM-SHA-256|password'
 [third-party-plugins]: https://www.terraform.io/docs/configuration/providers.html#third-party-plugins
 [install-go]: https://golang.org/doc/install#install
 [topic-config]: https://kafka.apache.org/documentation/#topicconfigs 
+### Pull request demo boi Itachibx em dang hoc devops
