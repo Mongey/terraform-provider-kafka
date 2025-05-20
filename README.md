@@ -92,6 +92,18 @@ provider "kafka" {
 }
 ```
 
+Example provider with aws-iam(Aws Profile in non-default aws_shared_config_file path) client authentication.
+```hcl
+provider "kafka" {
+  bootstrap_servers             = ["localhost:9098"]
+  tls_enabled                   = true
+  sasl_mechanism                = "aws-iam"
+  sasl_aws_region               = "us-east-1"
+  sasl_aws_profile              = "dev"
+  sasl_aws_shared_config_files  = ["/path/to/custom/aws/config"]
+}
+```
+
 Example provider with aws-iam(Static Creds) client authentication using explicit credentials.
 ```hcl
 provider "vault" {
@@ -165,6 +177,7 @@ Due to Redpanda not implementing some Metadata APIs, we need to force the Kafka 
 | `sasl_aws_container_credentials_full_uri`       | URI to retrieve AWS credentials from.                                                                                    | `""`       |
 | `sasl_aws_role_arn`     | Arn of AWS IAM role to assume for IAM authentication.                                                                 | `""`       |
 | `sasl_aws_profile`      | AWS profile to use for IAM authentication.                                                                            | `""`       |
+| `sasl_aws_shared_config_files` | List of paths to AWS shared config files                                                                       | `""`     |
 | `sasl_aws_access_key`   | AWS access key.                                                                                                       | `""`       |
 | `sasl_aws_secret_key`   | AWS secret key.                                                                                                       | `""`       |
 | `sasl_aws_token`        | AWS session token.                                                                                                    | `""`       |

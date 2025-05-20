@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -43,6 +44,7 @@ type Config struct {
 	SASLAWSToken                           string
 	SASLAWSCredsDebug                      bool
 	SASLTokenUrl                           string
+	SASLAWSSharedConfigFiles               []string
 }
 
 type OAuth2Config interface {
@@ -106,8 +108,13 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 		log.Printf("[INFO] Generating auth token with a role '%s' in '%s'", c.SASLAWSRoleArn, c.SASLAWSRegion)
 		token, _, err = signer.GenerateAuthTokenFromRoleWithExternalId(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, "terraform-kafka-provider", c.SASLAWSExternalId)
 	} else if c.SASLAWSProfile != "" {
-		log.Printf("[INFO] Generating auth token using profile '%s' in '%s'", c.SASLAWSProfile, c.SASLAWSRegion)
-		token, _, err = signer.GenerateAuthTokenFromProfile(context.TODO(), c.SASLAWSRegion, c.SASLAWSProfile)
+		if len(c.SASLAWSSharedConfigFiles) > 0 {
+			log.Printf("[INFO] Generating auth token using profile '%s', shared config files '%s' in '%s'", c.SASLAWSProfile, strings.Join(c.SASLAWSSharedConfigFiles, ","), c.SASLAWSRegion)
+			token, _, err = signer.GenerateAuthTokenFromProfileWithSharedConfigFiles(context.TODO(), c.SASLAWSRegion, c.SASLAWSProfile, c.SASLAWSSharedConfigFiles)
+		} else {
+			log.Printf("[INFO] Generating auth token using profile '%s' in '%s'", c.SASLAWSProfile, c.SASLAWSRegion)
+			token, _, err = signer.GenerateAuthTokenFromProfile(context.TODO(), c.SASLAWSRegion, c.SASLAWSProfile)
+		}
 	} else if c.SASLAWSAccessKey != "" && c.SASLAWSSecretKey != "" {
 		log.Printf("[INFO] Generating auth token using static credentials in '%s'", c.SASLAWSRegion)
 		token, _, err = signer.GenerateAuthTokenFromCredentialsProvider(context.TODO(), c.SASLAWSRegion, credentials.NewStaticCredentialsProvider(c.SASLAWSAccessKey, c.SASLAWSSecretKey, c.SASLAWSToken))
@@ -331,6 +338,7 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.SASLAWSToken,
 		config.SASLAWSCredsDebug,
 		config.SASLTokenUrl,
+		config.SASLAWSSharedConfigFiles,
 	}
 	return copy
 }
