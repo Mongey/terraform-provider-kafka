@@ -220,7 +220,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SASLAWSRoleArn:                         d.Get("sasl_aws_role_arn").(string),
 		SASLAWSExternalId:                      d.Get("sasl_aws_external_id").(string),
 		SASLAWSProfile:                         d.Get("sasl_aws_profile").(string),
-		SASLAWSSharedConfigFiles:               d.Get("sasl_aws_shared_config_files").([]string),
+		SASLAWSSharedConfigFiles:               dTos("sasl_aws_shared_config_files", d),
 		SASLAWSAccessKey:                       d.Get("sasl_aws_access_key").(string),
 		SASLAWSSecretKey:                       d.Get("sasl_aws_secret_key").(string),
 		SASLAWSToken:                           d.Get("sasl_aws_token").(string),

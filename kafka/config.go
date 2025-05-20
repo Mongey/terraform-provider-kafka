@@ -44,7 +44,7 @@ type Config struct {
 	SASLAWSToken                           string
 	SASLAWSCredsDebug                      bool
 	SASLTokenUrl                           string
-	SASLAWSSharedConfigFiles               []string
+	SASLAWSSharedConfigFiles               *[]string
 }
 
 type OAuth2Config interface {
@@ -108,9 +108,9 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 		log.Printf("[INFO] Generating auth token with a role '%s' in '%s'", c.SASLAWSRoleArn, c.SASLAWSRegion)
 		token, _, err = signer.GenerateAuthTokenFromRoleWithExternalId(context.TODO(), c.SASLAWSRegion, c.SASLAWSRoleArn, "terraform-kafka-provider", c.SASLAWSExternalId)
 	} else if c.SASLAWSProfile != "" {
-		if len(c.SASLAWSSharedConfigFiles) > 0 {
-			log.Printf("[INFO] Generating auth token using profile '%s', shared config files '%s' in '%s'", c.SASLAWSProfile, strings.Join(c.SASLAWSSharedConfigFiles, ","), c.SASLAWSRegion)
-			token, _, err = signer.GenerateAuthTokenFromProfileWithSharedConfigFiles(context.TODO(), c.SASLAWSRegion, c.SASLAWSProfile, c.SASLAWSSharedConfigFiles)
+		if c.SASLAWSSharedConfigFiles != nil && len(*c.SASLAWSSharedConfigFiles) > 0 {
+			log.Printf("[INFO] Generating auth token using profile '%s', shared config files '%s' in '%s'", c.SASLAWSProfile, strings.Join(*c.SASLAWSSharedConfigFiles, ","), c.SASLAWSRegion)
+			token, _, err = signer.GenerateAuthTokenFromProfileWithSharedConfigFiles(context.TODO(), c.SASLAWSRegion, c.SASLAWSProfile, *c.SASLAWSSharedConfigFiles)
 		} else {
 			log.Printf("[INFO] Generating auth token using profile '%s' in '%s'", c.SASLAWSProfile, c.SASLAWSRegion)
 			token, _, err = signer.GenerateAuthTokenFromProfile(context.TODO(), c.SASLAWSRegion, c.SASLAWSProfile)
