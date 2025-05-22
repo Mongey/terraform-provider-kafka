@@ -47,11 +47,13 @@ func ReplicaCount(c sarama.Client, topic string, partitions []int32) (int, error
 }
 
 func configToResources(topic Topic) []*sarama.AlterConfigsResource {
+	ConfigMSKServerless := topic.Config
+	delete(ConfigMSKServerless, "cleanup.policy")
 	return []*sarama.AlterConfigsResource{
 		{
 			Type:          sarama.TopicResource,
 			Name:          topic.Name,
-			ConfigEntries: topic.Config,
+			ConfigEntries: ConfigMSKServerless,
 		},
 	}
 }
