@@ -268,7 +268,7 @@ func (c *Client) UpdateTopic(topic Topic) error {
 	}
 
 	r := &sarama.AlterConfigsRequest{
-		Resources:    configToResources(topic),
+		Resources:    configToResources(topic, c.config),
 		ValidateOnly: false,
 	}
 
