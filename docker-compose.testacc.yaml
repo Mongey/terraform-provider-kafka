@@ -9,7 +9,6 @@ services:
       - make
       - testacc
     depends_on:
-      - zookeeper
       - kafka1
       - kafka2
       - kafka3
