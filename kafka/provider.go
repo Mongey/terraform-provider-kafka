@@ -3,6 +3,7 @@ package kafka
 import (
 	"fmt"
 	"log"
+	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
@@ -209,6 +210,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		ClientCert:                             d.Get("client_cert").(string),
 		ClientCertKey:                          d.Get("client_key").(string),
 		ClientCertKeyPassphrase:                d.Get("client_key_passphrase").(string),
+		IsAWSMSKServerless:                     false,
 		KafkaVersion:                           d.Get("kafka_version").(string),
 		SkipTLSVerify:                          d.Get("skip_tls_verify").(bool),
 		SASLAWSRegion:                          d.Get("sasl_aws_region").(string),
@@ -228,6 +230,13 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SASLMechanism:                          saslMechanism,
 		TLSEnabled:                             d.Get("tls_enabled").(bool),
 		Timeout:                                d.Get("timeout").(int),
+	}
+
+	re := regexp.MustCompile(`(?i)kafka-serverless\.(.*)\.amazonaws\.com`)
+	for _, broker := range *brokers {
+		if re.MatchString(broker) {
+			config.IsAWSMSKServerless = true
+		}
 	}
 
 	if config.CACert == "" {
