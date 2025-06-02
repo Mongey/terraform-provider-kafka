@@ -27,7 +27,6 @@ type Config struct {
 	ClientCert                             string
 	ClientCertKey                          string
 	ClientCertKeyPassphrase                string
-	IsAWSMSKServerless                     bool
 	KafkaVersion                           string
 	TLSEnabled                             bool
 	SkipTLSVerify                          bool
@@ -322,7 +321,6 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.ClientCert,
 		"*****",
 		"*****",
-		config.IsAWSMSKServerless,
 		config.KafkaVersion,
 		config.TLSEnabled,
 		config.SkipTLSVerify,
