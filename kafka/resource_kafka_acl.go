@@ -99,6 +99,16 @@ func aclDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	if err != nil {
 		return diag.FromErr(err)
 	}
+	
+	// Wait for ACL to be removed from Kafka before returning
+	// This handles eventual consistency and ensures the ACL is actually deleted
+	log.Printf("[INFO] Waiting for ACL %s to be removed from Kafka", a)
+	err = waitForACLToBeDeleted(ctx, c, a)
+	if err != nil {
+		log.Printf("[ERROR] ACL deletion requested but still visible: %v", err)
+		return diag.FromErr(err)
+	}
+	
 	return nil
 }
 
@@ -270,4 +280,80 @@ func waitForACLToBeVisible(ctx context.Context, c *LazyClient, expectedACL Strin
 	}
 	
 	return fmt.Errorf("ACL %s was not visible in Kafka after %d attempts over %v", expectedACL, maxRetries, time.Duration(maxRetries)*retryInterval)
+}
+
+// waitForACLToBeDeleted waits for an ACL to be removed from Kafka after deletion
+// This handles eventual consistency issues with Kafka ACL propagation
+func waitForACLToBeDeleted(ctx context.Context, c *LazyClient, deletedACL StringlyTypedACL) error {
+	maxRetries := 10
+	retryInterval := 200 * time.Millisecond
+	
+	for i := 0; i < maxRetries; i++ {
+		// Check if context is cancelled
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+		
+		// Invalidate cache to ensure we get fresh data
+		err := c.InvalidateACLCache()
+		if err != nil {
+			return fmt.Errorf("failed to invalidate ACL cache: %w", err)
+		}
+		
+		// List all ACLs
+		acls, err := c.ListACLs()
+		if err != nil {
+			return fmt.Errorf("failed to list ACLs: %w", err)
+		}
+		
+		// Check if our ACL still exists
+		found := false
+		for _, foundACLs := range acls {
+			if foundACLs.ResourceName != deletedACL.Resource.Name {
+				continue
+			}
+			
+			for _, acl := range foundACLs.Acls {
+				foundACL := StringlyTypedACL{
+					ACL: ACL{
+						Principal:      acl.Principal,
+						Host:           acl.Host,
+						Operation:      ACLOperationToString(acl.Operation),
+						PermissionType: ACLPermissionTypeToString(acl.PermissionType),
+					},
+					Resource: Resource{
+						Type:              ACLResourceToString(foundACLs.ResourceType),
+						Name:              foundACLs.ResourceName,
+						PatternTypeFilter: foundACLs.ResourcePatternType.String(),
+					},
+				}
+				
+				// Check for exact match
+				if deletedACL.String() == foundACL.String() {
+					found = true
+					break
+				}
+			}
+			
+			if found {
+				break
+			}
+		}
+		
+		// If not found, the ACL has been successfully deleted
+		if !found {
+			log.Printf("[INFO] ACL %s has been removed from Kafka (attempt %d)", deletedACL, i+1)
+			return nil
+		}
+		
+		// If still found and not the last attempt, wait before retrying
+		if i < maxRetries-1 {
+			log.Printf("[DEBUG] ACL %s still visible, retrying in %v (attempt %d/%d)", deletedACL, retryInterval, i+1, maxRetries)
+			time.Sleep(retryInterval)
+		}
+	}
+	
+	return fmt.Errorf("ACL %s was still visible in Kafka after %d attempts over %v", deletedACL, maxRetries, time.Duration(maxRetries)*retryInterval)
 }
