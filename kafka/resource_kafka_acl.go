@@ -103,7 +103,7 @@ func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag
 		return diag.FromErr(err)
 	}
 
-	aclNotFound := true
+	found := false
 
 	for _, foundACLs := range currentACLs {
 		// find only ACLs where ResourceName matches
@@ -111,7 +111,7 @@ func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag
 			continue
 		}
 		if len(foundACLs.Acls) < 1 {
-			break
+			continue
 		}
 		log.Printf("[INFO] Found (%d) ACL(s) for Resource %s: %+v.", len(foundACLs.Acls), foundACLs.ResourceName, foundACLs)
 
@@ -132,12 +132,13 @@ func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag
 
 			// exact match
 			if a.String() == aclID.String() {
+				found = true
 				return nil
 			}
 		}
 	}
 
-	if aclNotFound {
+	if !found {
 		log.Printf("[INFO] Did not find ACL %s", a.String())
 		d.SetId("")
 	}
