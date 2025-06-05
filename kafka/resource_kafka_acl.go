@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -76,6 +77,15 @@ func aclCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	}
 
 	d.SetId(a.String())
+
+	// Wait for ACL to be visible in Kafka before returning
+	// This handles eventual consistency and ensures the ACL is actually created
+	log.Printf("[INFO] Waiting for ACL %s to be visible in Kafka", a)
+	err = waitForACLToBeVisible(ctx, c, a)
+	if err != nil {
+		log.Printf("[ERROR] ACL created but not visible: %v", err)
+		return diag.FromErr(err)
+	}
 
 	return nil
 }
@@ -195,4 +205,69 @@ func aclInfo(d *schema.ResourceData) StringlyTypedACL {
 		},
 	}
 	return s
+}
+
+// waitForACLToBeVisible waits for an ACL to be visible in Kafka after creation
+// This handles eventual consistency issues with Kafka ACL propagation
+func waitForACLToBeVisible(ctx context.Context, c *LazyClient, expectedACL StringlyTypedACL) error {
+	maxRetries := 10
+	retryInterval := 200 * time.Millisecond
+	
+	for i := 0; i < maxRetries; i++ {
+		// Check if context is cancelled
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+		
+		// Invalidate cache to ensure we get fresh data
+		err := c.InvalidateACLCache()
+		if err != nil {
+			return fmt.Errorf("failed to invalidate ACL cache: %w", err)
+		}
+		
+		// List all ACLs
+		acls, err := c.ListACLs()
+		if err != nil {
+			return fmt.Errorf("failed to list ACLs: %w", err)
+		}
+		
+		// Check if our ACL exists
+		for _, foundACLs := range acls {
+			if foundACLs.ResourceName != expectedACL.Resource.Name {
+				continue
+			}
+			
+			for _, acl := range foundACLs.Acls {
+				foundACL := StringlyTypedACL{
+					ACL: ACL{
+						Principal:      acl.Principal,
+						Host:           acl.Host,
+						Operation:      ACLOperationToString(acl.Operation),
+						PermissionType: ACLPermissionTypeToString(acl.PermissionType),
+					},
+					Resource: Resource{
+						Type:              ACLResourceToString(foundACLs.ResourceType),
+						Name:              foundACLs.ResourceName,
+						PatternTypeFilter: foundACLs.ResourcePatternType.String(),
+					},
+				}
+				
+				// Check for exact match
+				if expectedACL.String() == foundACL.String() {
+					log.Printf("[INFO] ACL %s is now visible in Kafka (attempt %d)", expectedACL, i+1)
+					return nil
+				}
+			}
+		}
+		
+		// If not found and not the last attempt, wait before retrying
+		if i < maxRetries-1 {
+			log.Printf("[DEBUG] ACL %s not yet visible, retrying in %v (attempt %d/%d)", expectedACL, retryInterval, i+1, maxRetries)
+			time.Sleep(retryInterval)
+		}
+	}
+	
+	return fmt.Errorf("ACL %s was not visible in Kafka after %d attempts over %v", expectedACL, maxRetries, time.Duration(maxRetries)*retryInterval)
 }
