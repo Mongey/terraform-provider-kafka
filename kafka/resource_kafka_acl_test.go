@@ -98,12 +98,21 @@ func TestAcc_ACLDeletedOutsideOfTerraform(t *testing.T) {
 }
 
 func testAccCheckAclDestroy(name string) error {
+	log.Printf("[INFO] Waiting for ACL deletion queue to be drained")
+	client := testProvider.Meta().(*LazyClient)
+	for _, wc := range client.inner.aclDeletionQueue.waitChans {
+		if err := <-wc; err != nil {
+			return err
+		}
+	}
+
 	meta := testProvider.Meta()
 	if meta == nil {
 		return fmt.Errorf("provider Meta() returned nil")
 	}
 
-	client := meta.(*LazyClient)
+	client = meta.(*LazyClient)
+
 	err := client.InvalidateACLCache()
 	if err != nil {
 		return err
@@ -129,6 +138,14 @@ func testAccCheckAclDestroy(name string) error {
 }
 
 func testResourceACL_initialCheck(s *terraform.State) error {
+	log.Printf("[INFO] Waiting for ACL creation queue to be drained")
+	client := testProvider.Meta().(*LazyClient)
+	for _, wc := range client.inner.aclCreationQueue.waitChans {
+		if err := <-wc; err != nil {
+			return err
+		}
+	}
+
 	resourceState := s.Modules[0].Resources["kafka_acl.test"]
 	if resourceState == nil {
 		return fmt.Errorf("resource not found in state")
@@ -139,7 +156,8 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 		return fmt.Errorf("resource has no primary instance")
 	}
 
-	client := testProvider.Meta().(*LazyClient)
+	client = testProvider.Meta().(*LazyClient)
+
 	acls, err := client.ListACLs()
 	if err != nil {
 		return err
@@ -173,11 +191,15 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 }
 
 func testResourceACL_updateCheck(s *terraform.State) error {
+	log.Printf("[INFO] Waiting for ACL update queue to be drained")
 	client := testProvider.Meta().(*LazyClient)
-	err := client.InvalidateACLCache()
-	if err != nil {
-		return err
+	for _, wc := range client.inner.aclCreationQueue.waitChans {
+		if err := <-wc; err != nil {
+			return err
+		}
 	}
+
+	client.InvalidateACLCache()
 	acls, err := client.ListACLs()
 	if err != nil {
 		return err
