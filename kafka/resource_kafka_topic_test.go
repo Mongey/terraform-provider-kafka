@@ -20,7 +20,7 @@ func TestAcc_BasicTopic(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	topicName := fmt.Sprintf("syslog-%s", u)
+	topicName := fmt.Sprintf("prd.syslog-%s", u)
 	bs := testBootstrapServers[0]
 	r.Test(t, r.TestCase{
 		ProviderFactories: overrideProviderFactory(),
@@ -41,7 +41,7 @@ func TestAcc_TopicConfigUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	topicName := fmt.Sprintf("syslog-%s", u)
+	topicName := fmt.Sprintf("prd.syslog-%s", u)
 	bs := testBootstrapServers[0]
 
 	r.Test(t, r.TestCase{
@@ -94,7 +94,7 @@ func TestAcc_TopicUpdatePartitions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	topicName := fmt.Sprintf("syslog-%s", u)
+	topicName := fmt.Sprintf("prd.syslog-%s", u)
 	bs := testBootstrapServers[0]
 
 	r.Test(t, r.TestCase{
@@ -120,7 +120,7 @@ func TestAcc_TopicAlterReplicationFactor(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	topicName := fmt.Sprintf("syslog-%s", u)
+	topicName := fmt.Sprintf("prd.syslog-%s", u)
 	bs := testBootstrapServers[0]
 
 	keyEncoder := sarama.StringEncoder("same key -> same partition -> same ordering")
