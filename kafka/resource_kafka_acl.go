@@ -107,7 +107,7 @@ func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag
 
 	for _, foundACLs := range currentACLs {
 		// find only ACLs where ResourceName matches
-		if foundACLs.ResourceName != a.Resource.Name {
+		if foundACLs.ResourceName != a.Name {
 			continue
 		}
 		if len(foundACLs.Acls) < 1 {

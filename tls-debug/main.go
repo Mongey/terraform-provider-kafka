@@ -8,8 +8,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/Mongey/terraform-provider-kafka/kafka"
 	"github.com/IBM/sarama"
+	"github.com/Mongey/terraform-provider-kafka/kafka"
 )
 
 func main() {
