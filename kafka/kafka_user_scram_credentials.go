@@ -74,16 +74,16 @@ func (c *Client) DescribeUserScramCredential(username string, mechanism string) 
 
 	num := len(results)
 	if num != 1 {
-		return nil, fmt.Errorf("Got %d results (expected 1) when describing user scram credential %s", num, username)
+		return nil, fmt.Errorf("got %d results (expected 1) when describing user scram credential %s", num, username)
 	}
 
 	res := results[0]
 	if res.ErrorCode == 91 { // RESOURCE_NOT_FOUND
-		msg := fmt.Sprintf("User scram credential %s could not be found", username)
+		msg := fmt.Sprintf("user scram credential %s could not be found", username)
 		return nil, UserScramCredentialMissingError{msg: msg}
 	}
 	if res.ErrorCode != sarama.ErrNoError {
-		return nil, fmt.Errorf("Error describing user scram credential %s: %s", username, res.ErrorCode)
+		return nil, fmt.Errorf("error describing user scram credential %s: %s", username, res.ErrorCode)
 	}
 	for _, info := range res.CredentialInfos {
 		if info.Mechanism.String() == mechanism {
@@ -96,7 +96,7 @@ func (c *Client) DescribeUserScramCredential(username string, mechanism string) 
 		}
 	}
 
-	msg := fmt.Sprintf("User scram credential %s with mechanism %s could not be found", username, mechanism)
+	msg := fmt.Sprintf("user scram credential %s with mechanism %s could not be found", username, mechanism)
 	return nil, UserScramCredentialMissingError{msg: msg}
 }
 
