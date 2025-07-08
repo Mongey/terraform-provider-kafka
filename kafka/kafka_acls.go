@@ -28,7 +28,7 @@ type StringlyTypedACL struct {
 }
 
 func (a StringlyTypedACL) String() string {
-	return strings.Join([]string{a.ACL.Principal, a.ACL.Host, a.ACL.Operation, a.ACL.PermissionType, a.Resource.Type, a.Resource.Name, a.Resource.PatternTypeFilter}, "|")
+	return strings.Join([]string{a.ACL.Principal, a.ACL.Host, a.ACL.Operation, a.ACL.PermissionType, a.Type, a.Name, a.PatternTypeFilter}, "|")
 }
 
 func tfToAclCreation(s StringlyTypedACL) (*sarama.AclCreation, error) {
@@ -42,13 +42,13 @@ func tfToAclCreation(s StringlyTypedACL) (*sarama.AclCreation, error) {
 	if pType == unknownConversion {
 		return acl, fmt.Errorf("Unknown permission type: %s", s.ACL.PermissionType)
 	}
-	rType := stringToACLResource(s.Resource.Type)
+	rType := stringToACLResource(s.Type)
 	if rType == unknownConversion {
-		return acl, fmt.Errorf("Unknown resource type: %s", s.Resource.Type)
+		return acl, fmt.Errorf("Unknown resource type: %s", s.Type)
 	}
-	patternType := stringToACLPrefix(s.Resource.PatternTypeFilter)
+	patternType := stringToACLPrefix(s.PatternTypeFilter)
 	if patternType == unknownConversion {
-		return acl, fmt.Errorf("Unknown pattern type filter: '%s'", s.Resource.PatternTypeFilter)
+		return acl, fmt.Errorf("Unknown pattern type filter: '%s'", s.PatternTypeFilter)
 	}
 
 	acl.Acl = sarama.Acl{
@@ -59,7 +59,7 @@ func tfToAclCreation(s StringlyTypedACL) (*sarama.AclCreation, error) {
 	}
 	acl.Resource = sarama.Resource{
 		ResourceType:        rType,
-		ResourceName:        s.Resource.Name,
+		ResourceName:        s.Name,
 		ResourcePatternType: patternType,
 	}
 
@@ -72,7 +72,7 @@ func tfToAclFilter(s StringlyTypedACL) (sarama.AclFilter, error) {
 	f := sarama.AclFilter{
 		Principal:    &s.ACL.Principal,
 		Host:         &s.ACL.Host,
-		ResourceName: &s.Resource.Name,
+		ResourceName: &s.Name,
 	}
 
 	op := stringToOperation(s.ACL.Operation)
@@ -87,15 +87,15 @@ func tfToAclFilter(s StringlyTypedACL) (sarama.AclFilter, error) {
 	}
 	f.PermissionType = pType
 
-	rType := stringToACLResource(s.Resource.Type)
+	rType := stringToACLResource(s.Type)
 	if rType == unknownConversion {
-		return f, fmt.Errorf("Unknown resource type: %s", s.Resource.Type)
+		return f, fmt.Errorf("Unknown resource type: %s", s.Type)
 	}
 	f.ResourceType = rType
 
-	patternType := stringToACLPrefix(s.Resource.PatternTypeFilter)
+	patternType := stringToACLPrefix(s.PatternTypeFilter)
 	if patternType == unknownConversion {
-		return f, fmt.Errorf("Unknown pattern type filter: '%s'", s.Resource.PatternTypeFilter)
+		return f, fmt.Errorf("Unknown pattern type filter: '%s'", s.PatternTypeFilter)
 	}
 	f.ResourcePatternTypeFilter = patternType
 
