@@ -220,8 +220,7 @@ func testAccCheckQuotaDestroy(s *terraform.State) error {
 	return nil
 }
 
-// lintignore:AT004
-func cfgs(t *testing.T, bs string, extraCfg string) string {
+func cfgs(_ *testing.T, bs string, extraCfg string) string {
 	return fmt.Sprintf(`
 provider "kafka" {
 	bootstrap_servers = ["%s"]

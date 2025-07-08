@@ -419,10 +419,8 @@ func (c *Client) DescribeACLs(s StringlyTypedACL) ([]*sarama.ResourceAcls, error
 		return nil, err
 	}
 
-	if err == nil {
-		if aclsR.Err != sarama.ErrNoError {
-			return nil, fmt.Errorf("%s", aclsR.Err)
-		}
+	if aclsR.Err != sarama.ErrNoError {
+		return nil, fmt.Errorf("%s", aclsR.Err)
 	}
 
 	return aclsR.ResourceAcls, err
@@ -453,7 +451,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	}
 
 	allResources := []*sarama.DescribeAclsRequest{
-		&sarama.DescribeAclsRequest{
+		{
 			Version: int(c.getDescribeAclsRequestAPIVersion()),
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceTopic,
@@ -462,7 +460,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 				Operation:                 sarama.AclOperationAny,
 			},
 		},
-		&sarama.DescribeAclsRequest{
+		{
 			Version: int(c.getDescribeAclsRequestAPIVersion()),
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceGroup,
@@ -471,7 +469,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 				Operation:                 sarama.AclOperationAny,
 			},
 		},
-		&sarama.DescribeAclsRequest{
+		{
 			Version: int(c.getDescribeAclsRequestAPIVersion()),
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceCluster,
@@ -480,7 +478,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 				Operation:                 sarama.AclOperationAny,
 			},
 		},
-		&sarama.DescribeAclsRequest{
+		{
 			Version: int(c.getDescribeAclsRequestAPIVersion()),
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceTransactionalID,
@@ -502,10 +500,8 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 
 		log.Printf("[TRACE] ThrottleTime: %d", aclsR.ThrottleTime)
 
-		if err == nil {
-			if aclsR.Err != sarama.ErrNoError {
-				return nil, fmt.Errorf("%s", aclsR.Err)
-			}
+		if aclsR.Err != sarama.ErrNoError {
+			return nil, fmt.Errorf("%s", aclsR.Err)
 		}
 
 		res = append(res, aclsR.ResourceAcls...)

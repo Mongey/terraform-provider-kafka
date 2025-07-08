@@ -36,7 +36,7 @@ func kafkaTopicDataSource() *schema.Resource {
 	}
 }
 
-func dataSourceTopicRead(d *schema.ResourceData, meta interface{}) error {
+func dataSourceTopicRead(d *schema.ResourceData, meta any) error {
 	// Unlike the resource topicRead, there is no pre-existing ID. We must use the 'name' to look up the resource.
 	// See https://learn.hashicorp.com/tutorials/terraform/provider-create?in=terraform/providers#implement-read
 	name := d.Get("name").(string)
