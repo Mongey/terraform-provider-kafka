@@ -91,6 +91,12 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("AWS_ROLE_ARN", nil),
 				Description: "Arn of an AWS IAM role to assume",
 			},
+			"sasl_aws_external_id": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "",
+				Description: "External ID of the AWS IAM role to assume",
+			},
 			"sasl_aws_profile": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -120,6 +126,13 @@ func Provider() *schema.Provider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("AWS_CREDS_DEBUG", "false"),
 				Description: "Set this to true to turn AWS credentials debug.",
+			},
+			"sasl_aws_shared_config_files": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+				DefaultFunc: schema.EnvDefaultFunc("AWS_SHARED_CONFIG_FILES", nil),
+				Description: "List of paths to AWS shared config files.",
 			},
 			"sasl_username": {
 				Type:        schema.TypeString,
@@ -205,7 +218,9 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SASLPassword:                           d.Get("sasl_password").(string),
 		SASLTokenUrl:                           d.Get("sasl_token_url").(string),
 		SASLAWSRoleArn:                         d.Get("sasl_aws_role_arn").(string),
+		SASLAWSExternalId:                      d.Get("sasl_aws_external_id").(string),
 		SASLAWSProfile:                         d.Get("sasl_aws_profile").(string),
+		SASLAWSSharedConfigFiles:               dTos("sasl_aws_shared_config_files", d),
 		SASLAWSAccessKey:                       d.Get("sasl_aws_access_key").(string),
 		SASLAWSSecretKey:                       d.Get("sasl_aws_secret_key").(string),
 		SASLAWSToken:                           d.Get("sasl_aws_token").(string),
