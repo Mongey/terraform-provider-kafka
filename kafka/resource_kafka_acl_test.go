@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/IBM/sarama"
 	uuid "github.com/hashicorp/go-uuid"
@@ -49,6 +50,8 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 						},
 					}
 					err := client.DeleteACL(acl)
+					// wait for the ACL queue to drain
+					time.Sleep(time.Second)
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -140,33 +143,46 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 	}
 
 	client := testProvider.Meta().(*LazyClient)
+	// Invalidate cache to ensure we get fresh ACL data
+	err := client.InvalidateACLCache()
+	if err != nil {
+		return err
+	}
+	
 	acls, err := client.ListACLs()
 	if err != nil {
 		return err
 	}
 
-	if len(acls) < 1 {
-		return fmt.Errorf("There should be one acl, got %d, %v %s", len(acls), acls, err)
-	}
-
 	name := instanceState.Attributes["resource_name"]
 	log.Printf("[INFO] Searching for the ACL with resource_name %s", name)
-	acl := acls[0]
+	
+	var foundACL *sarama.ResourceAcls
 	aclCount := 0
 	for _, searchACL := range acls {
 		if searchACL.ResourceName == name {
 			log.Printf("[INFO] Found acl with resource_name %s : %v", name, searchACL)
-			acl = searchACL
+			foundACL = searchACL
 			aclCount++
 		}
 	}
 
-	if acl.Acls[0].PermissionType != sarama.AclPermissionAllow {
-		return fmt.Errorf("Should be Allow, not %v", acl.Acls[0].PermissionType)
+	if aclCount == 0 {
+		return fmt.Errorf("No ACL found for resource %s, total ACLs returned: %d", name, len(acls))
+	}
+	if aclCount > 1 {
+		return fmt.Errorf("Found %d ACLs for resource %s, expected 1", aclCount, name)
+	}
+	if len(foundACL.Acls) != 1 {
+		return fmt.Errorf("Expected 1 ACL rule for resource %s, got %d", name, len(foundACL.Acls))
 	}
 
-	if acl.Resource.ResourcePatternType != sarama.AclPatternLiteral {
-		return fmt.Errorf("Should be Literal, not %v", acl.Resource.ResourcePatternType)
+	if foundACL.Acls[0].PermissionType != sarama.AclPermissionAllow {
+		return fmt.Errorf("Should be Allow, not %v", foundACL.Acls[0].PermissionType)
+	}
+
+	if foundACL.Resource.ResourcePatternType != sarama.AclPatternLiteral {
+		return fmt.Errorf("Should be Literal, not %v", foundACL.Resource.ResourcePatternType)
 	}
 	log.Printf("[INFO] success")
 	return nil
