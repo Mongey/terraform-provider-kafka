@@ -77,25 +77,25 @@ func tfToAclFilter(s StringlyTypedACL) (sarama.AclFilter, error) {
 
 	op := stringToOperation(s.ACL.Operation)
 	if op == unknownConversion {
-		return f, fmt.Errorf("Unknown operation: %s", s.ACL.Operation)
+		return f, fmt.Errorf("unknown operation: %s", s.ACL.Operation)
 	}
 	f.Operation = op
 
 	pType := stringToAclPermissionType(s.ACL.PermissionType)
 	if pType == unknownConversion {
-		return f, fmt.Errorf("Unknown permission type: %s", s.ACL.PermissionType)
+		return f, fmt.Errorf("unknown permission type: %s", s.ACL.PermissionType)
 	}
 	f.PermissionType = pType
 
 	rType := stringToACLResource(s.Type)
 	if rType == unknownConversion {
-		return f, fmt.Errorf("Unknown resource type: %s", s.Type)
+		return f, fmt.Errorf("unknown resource type: %s", s.Type)
 	}
 	f.ResourceType = rType
 
 	patternType := stringToACLPrefix(s.PatternTypeFilter)
 	if patternType == unknownConversion {
-		return f, fmt.Errorf("Unknown pattern type filter: '%s'", s.PatternTypeFilter)
+		return f, fmt.Errorf("unknown pattern type filter: '%s'", s.PatternTypeFilter)
 	}
 	f.ResourcePatternTypeFilter = patternType
 
