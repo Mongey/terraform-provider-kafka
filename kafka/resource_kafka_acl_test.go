@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/IBM/sarama"
 	uuid "github.com/hashicorp/go-uuid"
@@ -49,6 +50,8 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 						},
 					}
 					err := client.DeleteACL(acl)
+					// wait for the ACL queue to drain
+					time.Sleep(time.Second)
 					if err != nil {
 						t.Fatal(err)
 					}
