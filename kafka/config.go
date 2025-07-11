@@ -45,6 +45,7 @@ type Config struct {
 	SASLAWSCredsDebug                      bool
 	SASLTokenUrl                           string
 	SASLAWSSharedConfigFiles               *[]string
+	SASLOAuthScopes                        []string
 }
 
 type OAuth2Config interface {
@@ -181,6 +182,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 				TokenURL:     tokenUrl,
 				ClientID:     c.SASLUsername,
 				ClientSecret: c.SASLPassword,
+				Scopes:       c.SASLOAuthScopes,
 			}
 			kafkaConfig.Net.SASL.TokenProvider = newOauthbearerTokenProvider(&oauth2Config)
 		case "plain":
@@ -339,6 +341,7 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.SASLAWSCredsDebug,
 		config.SASLTokenUrl,
 		config.SASLAWSSharedConfigFiles,
+		config.SASLOAuthScopes,
 	}
 	return copy
 }

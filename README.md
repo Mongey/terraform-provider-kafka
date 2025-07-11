@@ -183,6 +183,7 @@ Due to Redpanda not implementing some Metadata APIs, we need to force the Kafka 
 | `sasl_aws_token`        | AWS session token.                                                                                                    | `""`       |
 | `sasl_aws_creds_debug`  | Enable debug logging for AWS authentication.                                                                          | `false`    |
 | `sasl_token_url`        | The url to retrieve oauth2 tokens from, when using sasl mechanism `oauthbearer`                                         | `""`    |
+| `sasl_oauth_scopes`     | OAuth scopes to request when using the `oauthbearer` mechanism                                                         | `[]`       |
 
 
 ## Resources
