@@ -213,6 +213,10 @@ func testAccCheckQuotaDestroy(s *terraform.State) error {
 	client := meta.(*LazyClient)
 	_, err := client.DescribeQuota(entityType, entityName)
 
+	if err == nil {
+		return fmt.Errorf("quota was found")
+	}
+
 	if _, ok := err.(QuotaMissingError); !ok {
 		return fmt.Errorf("quota was found %v", err.Error())
 	}
