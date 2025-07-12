@@ -49,7 +49,7 @@ func dataSourceTopicRead(d *schema.ResourceData, meta interface{}) error {
 		_, ok := err.(TopicMissingError)
 
 		if ok {
-			return fmt.Errorf("Could not find topic '%s'", name)
+			return fmt.Errorf("could not find topic '%s'", name)
 		}
 
 		return err

@@ -34,13 +34,13 @@ func ReplicaCount(c sarama.Client, topic string, partitions []int32) (int, error
 	for _, p := range partitions {
 		replicas, err := c.Replicas(topic, p)
 		if err != nil {
-			return -1, errors.New("Could not get replicas for partition")
+			return -1, errors.New("could not get replicas for partition")
 		}
 		if count == -1 {
 			count = len(replicas)
 		}
 		if count != len(replicas) {
-			return count, fmt.Errorf("The replica count isn't the same across partitions %d != %d", count, len(replicas))
+			return count, fmt.Errorf("the replica count isn't the same across partitions %d != %d", count, len(replicas))
 		}
 	}
 	return count, nil

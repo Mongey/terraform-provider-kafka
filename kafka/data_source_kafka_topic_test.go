@@ -24,7 +24,7 @@ func TestAcc_TopicData(t *testing.T) {
 		Steps: []r.TestStep{
 			{
 				Config:      cfg(t, bs, fmt.Sprintf(testDataSourceTopic_readMissingTopic, topicName)),
-				ExpectError: regexp.MustCompile(fmt.Sprintf("Could not find topic '%s'", topicName)),
+				ExpectError: regexp.MustCompile(fmt.Sprintf("could not find topic '%s'", topicName)),
 			},
 			{
 				Config: cfg(t, bs, fmt.Sprintf(testDataSourceTopic_readExistingTopic, topicName)),

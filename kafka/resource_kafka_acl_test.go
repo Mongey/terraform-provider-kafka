@@ -59,7 +59,7 @@ func TestAcc_ACLCreateAndUpdate(t *testing.T) {
 				ExpectNonEmptyPlan: true,
 				Check: func(s *terraform.State) error {
 					if len(s.Modules[0].Resources) != 0 {
-						return fmt.Errorf("Expected no resources to exist got %d", len(s.Modules[0].Resources))
+						return fmt.Errorf("expected no resources to exist got %d", len(s.Modules[0].Resources))
 					}
 					return nil
 				},
@@ -126,7 +126,7 @@ func testAccCheckAclDestroy(name string) error {
 		}
 	}
 	if aclCount != 0 {
-		return fmt.Errorf("Expected 0 acls for ACL %s, got %d", name, aclCount)
+		return fmt.Errorf("expected 0 acls for ACL %s, got %d", name, aclCount)
 	}
 	return nil
 }
@@ -148,7 +148,7 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 	if err != nil {
 		return err
 	}
-	
+
 	acls, err := client.ListACLs()
 	if err != nil {
 		return err
@@ -156,7 +156,7 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 
 	name := instanceState.Attributes["resource_name"]
 	log.Printf("[INFO] Searching for the ACL with resource_name %s", name)
-	
+
 	var foundACL *sarama.ResourceAcls
 	aclCount := 0
 	for _, searchACL := range acls {
@@ -178,11 +178,11 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 	}
 
 	if foundACL.Acls[0].PermissionType != sarama.AclPermissionAllow {
-		return fmt.Errorf("Should be Allow, not %v", foundACL.Acls[0].PermissionType)
+		return fmt.Errorf("should be Allow, not %v", foundACL.Acls[0].PermissionType)
 	}
 
 	if foundACL.Resource.ResourcePatternType != sarama.AclPatternLiteral {
-		return fmt.Errorf("Should be Literal, not %v", foundACL.Resource.ResourcePatternType)
+		return fmt.Errorf("should be Literal, not %v", foundACL.Resource.ResourcePatternType)
 	}
 	log.Printf("[INFO] success")
 	return nil
@@ -200,7 +200,7 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 	}
 
 	if len(acls) < 1 {
-		return fmt.Errorf("There should be some acls %v %s", acls, err)
+		return fmt.Errorf("there should be some acls %v %s", acls, err)
 	}
 
 	resourceState := s.Modules[0].Resources["kafka_acl.test"]
@@ -226,28 +226,28 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 	}
 
 	if len(acl.Acls) != 1 {
-		return fmt.Errorf("There are %d ACLs when there should be 1: %v", len(acl.Acls), acl.Acls)
+		return fmt.Errorf("there are %d ACLs when there should be 1: %v", len(acl.Acls), acl.Acls)
 	}
 	if aclCount != 1 {
-		return fmt.Errorf("There should only be one acl with this resource, but there are %d", aclCount)
+		return fmt.Errorf("there should only be one acl with this resource, but there are %d", aclCount)
 	}
 	if acl.ResourceType != sarama.AclResourceTopic {
-		return fmt.Errorf("Should be for a topic")
+		return fmt.Errorf("should be for a topic")
 	}
 
 	if acl.Acls[0].Principal != "User:Alice" {
-		return fmt.Errorf("Should be for Alice")
+		return fmt.Errorf("should be for Alice")
 	}
 
 	if acl.Acls[0].Host != "*" {
-		return fmt.Errorf("Should be for *")
+		return fmt.Errorf("should be for *")
 	}
 	if acl.Acls[0].PermissionType != sarama.AclPermissionDeny {
 		return fmt.Errorf("should be Deny, not %v", acl.Acls[0].PermissionType.String())
 	}
 
 	if acl.Resource.ResourcePatternType != sarama.AclPatternPrefixed {
-		return fmt.Errorf("Should be Prefixed, not %v", acl.Resource.ResourcePatternType)
+		return fmt.Errorf("should be Prefixed, not %v", acl.Resource.ResourcePatternType)
 	}
 	return nil
 }

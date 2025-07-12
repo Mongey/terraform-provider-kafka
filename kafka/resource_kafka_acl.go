@@ -177,7 +177,7 @@ func importACL(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*s
 			return nil, errSet.err
 		}
 	} else {
-		return nil, fmt.Errorf("Failed importing resource; expected format is acl_principal|acl_host|acl_operation|acl_permission_type|resource_type|resource_name|resource_pattern_type_filter - got %v segments instead of 7", len(parts))
+		return nil, fmt.Errorf("failed importing resource; expected format is acl_principal|acl_host|acl_operation|acl_permission_type|resource_type|resource_name|resource_pattern_type_filter - got %v segments instead of 7", len(parts))
 	}
 
 	return []*schema.ResourceData{d}, nil
