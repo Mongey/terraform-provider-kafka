@@ -17,12 +17,12 @@ description: |-
 
 ### Required
 
-- `entity_name` (String) The name of the entity
 - `entity_type` (String) The type of the entity (client-id, user, ip)
 
 ### Optional
 
 - `config` (Map of Number) A map of string k/v properties.
+- `entity_name` (String) The name of the entity (if entity_name is not provided, it will create entity-default Kafka quota)
 
 ### Read-Only
 
