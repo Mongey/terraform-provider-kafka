@@ -62,13 +62,13 @@ func overrideProvider() (*schema.Provider, error) {
 
 func accTestProviderConfig() (*terraform.ResourceConfig, error) {
 	bootstrapServers := bootstrapServersFromEnv()
-	bs := make([]interface{}, len(bootstrapServers))
+	bs := make([]any, len(bootstrapServers))
 
 	for i, s := range bootstrapServers {
 		bs[i] = s
 	}
 
-	raw := map[string]interface{}{
+	raw := map[string]any{
 		"bootstrap_servers": bs,
 		"kafka_version":     "3.8.0",
 	}

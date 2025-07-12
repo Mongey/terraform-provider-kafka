@@ -53,9 +53,9 @@ func kafkaTopicResource() *schema.Resource {
 	}
 }
 
-func topicCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func topicCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	c := meta.(*LazyClient)
-	t := metaToTopic(d, meta)
+	t := metaToTopic(d)
 
 	err := c.CreateTopic(t)
 	if err != nil {
@@ -80,7 +80,7 @@ func topicCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 }
 
 func topicCreateFunc(client *LazyClient, t Topic) retry.StateRefreshFunc {
-	return func() (result interface{}, s string, err error) {
+	return func() (result any, s string, err error) {
 		topic, err := client.ReadTopic(t.Name, true)
 		switch e := err.(type) {
 		case TopicMissingError:
@@ -93,9 +93,9 @@ func topicCreateFunc(client *LazyClient, t Topic) retry.StateRefreshFunc {
 	}
 }
 
-func topicUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func topicUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	c := meta.(*LazyClient)
-	t := metaToTopic(d, meta)
+	t := metaToTopic(d)
 
 	if err := c.UpdateTopic(t); err != nil {
 		return diag.FromErr(err)
@@ -139,7 +139,7 @@ func topicUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 }
 
 func waitForRFUpdate(ctx context.Context, client *LazyClient, topic string) error {
-	refresh := func() (interface{}, string, error) {
+	refresh := func() (any, string, error) {
 		isRFUpdating, err := client.IsReplicationFactorUpdating(topic)
 		if err != nil {
 			return nil, "Error", err
@@ -192,7 +192,7 @@ func waitForTopicRefresh(ctx context.Context, client *LazyClient, topic string, 
 }
 
 func topicRefreshFunc(client *LazyClient, topic string, expected Topic) retry.StateRefreshFunc {
-	return func() (result interface{}, s string, err error) {
+	return func() (result any, s string, err error) {
 		log.Printf("[DEBUG] waiting for topic to update %s", topic)
 		actual, err := client.ReadTopic(topic, true)
 		if err != nil {
@@ -208,9 +208,9 @@ func topicRefreshFunc(client *LazyClient, topic string, expected Topic) retry.St
 	}
 }
 
-func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func topicDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	c := meta.(*LazyClient)
-	t := metaToTopic(d, meta)
+	t := metaToTopic(d)
 
 	err := c.DeleteTopic(t.Name)
 	if err != nil {
@@ -221,7 +221,7 @@ func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	stateConf := &retry.StateChangeConf{
 		Pending:      []string{"Pending"},
 		Target:       []string{"Deleted"},
-		Refresh:      topicDeleteFunc(c, d.Id(), t),
+		Refresh:      topicDeleteFunc(c, t),
 		Timeout:      300 * time.Second,
 		Delay:        3 * time.Second,
 		PollInterval: 2 * time.Second,
@@ -237,8 +237,8 @@ func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	return nil
 }
 
-func topicDeleteFunc(client *LazyClient, id string, t Topic) retry.StateRefreshFunc {
-	return func() (result interface{}, s string, err error) {
+func topicDeleteFunc(client *LazyClient, t Topic) retry.StateRefreshFunc {
+	return func() (result any, s string, err error) {
 		topic, err := client.ReadTopic(t.Name, true)
 
 		log.Printf("[DEBUG] deletetopic read %s, %v", t.Name, err)
@@ -253,7 +253,7 @@ func topicDeleteFunc(client *LazyClient, id string, t Topic) retry.StateRefreshF
 	}
 }
 
-func topicRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func topicRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	name := d.Id()
 	client := meta.(*LazyClient)
 	topic, err := client.ReadTopic(name, false)
@@ -283,7 +283,7 @@ func topicRead(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	return nil
 }
 
-func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) error {
+func customDiff(ctx context.Context, diff *schema.ResourceDiff, v any) error {
 	// Skip custom logic for resource creation.
 	if diff.Id() == "" {
 		return nil

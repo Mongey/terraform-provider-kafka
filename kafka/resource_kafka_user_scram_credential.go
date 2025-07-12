@@ -58,7 +58,7 @@ func kafkaUserScramCredentialResource() *schema.Resource {
 	}
 }
 
-func importSCRAM(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func importSCRAM(ctx context.Context, d *schema.ResourceData, m any) ([]*schema.ResourceData, error) {
 	parts := strings.Split(d.Id(), "|")
 	if len(parts) == 3 {
 		errSet := errSetter{d: d}
@@ -69,13 +69,13 @@ func importSCRAM(ctx context.Context, d *schema.ResourceData, m interface{}) ([]
 			return nil, errSet.err
 		}
 	} else {
-		return nil, fmt.Errorf("Failed importing resource; expected format is username|scram_mechanism|password - got %v segments instead of 3", len(parts))
+		return nil, fmt.Errorf("failed importing resource; expected format is username|scram_mechanism|password - got %v segments instead of 3", len(parts))
 	}
 
 	return []*schema.ResourceData{d}, nil
 }
 
-func userScramCredentialCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func userScramCredentialCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	log.Printf("[INFO] Creating user scram credential")
 	c := meta.(*LazyClient)
 	userScramCredential := parseUserScramCredential(d)
@@ -90,7 +90,7 @@ func userScramCredentialCreate(ctx context.Context, d *schema.ResourceData, meta
 	return nil
 }
 
-func userScramCredentialRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func userScramCredentialRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	log.Println("[INFO] Reading user scram credential")
 	c := meta.(*LazyClient)
 	username := d.Get("username").(string)
@@ -122,7 +122,7 @@ func userScramCredentialRead(ctx context.Context, d *schema.ResourceData, meta i
 	return nil
 }
 
-func userScramCredentialUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func userScramCredentialUpdate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	log.Printf("[INFO] Updating user scram credential")
 	c := meta.(*LazyClient)
 	userScramCredential := parseUserScramCredential(d)
@@ -136,7 +136,7 @@ func userScramCredentialUpdate(ctx context.Context, d *schema.ResourceData, meta
 	return nil
 }
 
-func userScramCredentialDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func userScramCredentialDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	log.Printf("[INFO] Deleting user scram credential")
 	c := meta.(*LazyClient)
 	userScramCredential := parseUserScramCredential(d)

@@ -64,7 +64,7 @@ func kafkaACLResource() *schema.Resource {
 	}
 }
 
-func aclCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func aclCreate(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	c := meta.(*LazyClient)
 	a := aclInfo(d)
 
@@ -90,7 +90,7 @@ func aclCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	return nil
 }
 
-func aclDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func aclDelete(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	c := meta.(*LazyClient)
 	a := aclInfo(d)
 	log.Printf("[INFO] Deleting ACL %s", a)
@@ -112,7 +112,7 @@ func aclDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 	return nil
 }
 
-func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+func aclRead(ctx context.Context, d *schema.ResourceData, meta any) diag.Diagnostics {
 	log.Println("[INFO] Reading ACL")
 	c := meta.(*LazyClient)
 	a := aclInfo(d)
@@ -162,7 +162,7 @@ func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag
 	return nil
 }
 
-func importACL(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+func importACL(ctx context.Context, d *schema.ResourceData, m any) ([]*schema.ResourceData, error) {
 	parts := strings.Split(d.Id(), "|")
 	if len(parts) == 7 {
 		errSet := errSetter{d: d}
@@ -177,7 +177,7 @@ func importACL(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*s
 			return nil, errSet.err
 		}
 	} else {
-		return nil, fmt.Errorf("Failed importing resource; expected format is acl_principal|acl_host|acl_operation|acl_permission_type|resource_type|resource_name|resource_pattern_type_filter - got %v segments instead of 7", len(parts))
+		return nil, fmt.Errorf("failed importing resource; expected format is acl_principal|acl_host|acl_operation|acl_permission_type|resource_type|resource_name|resource_pattern_type_filter - got %v segments instead of 7", len(parts))
 	}
 
 	return []*schema.ResourceData{d}, nil
@@ -188,7 +188,7 @@ type errSetter struct {
 	d   *schema.ResourceData
 }
 
-func (es *errSetter) Set(key string, value interface{}) {
+func (es *errSetter) Set(key string, value any) {
 	if es.err != nil {
 		return
 	}
@@ -219,7 +219,7 @@ func waitForACLToBeVisible(ctx context.Context, c *LazyClient, expectedACL Strin
 	maxRetries := 10
 	retryInterval := 200 * time.Millisecond
 
-	for i := 0; i < maxRetries; i++ {
+	for i := range maxRetries {
 		// Check if context is cancelled
 		select {
 		case <-ctx.Done():
@@ -284,7 +284,7 @@ func waitForACLToBeDeleted(ctx context.Context, c *LazyClient, deletedACL String
 	maxRetries := 10
 	retryInterval := 200 * time.Millisecond
 
-	for i := 0; i < maxRetries; i++ {
+	for i := range maxRetries {
 		// Check if context is cancelled
 		select {
 		case <-ctx.Done():

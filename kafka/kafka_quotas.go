@@ -132,10 +132,8 @@ func (c *Client) DescribeQuota(entityType string, entityName string) (*Quota, er
 
 	log.Printf("[TRACE] ThrottleTime: %d", quotaR.ThrottleTime)
 
-	if err == nil {
-		if quotaR.ErrorCode != sarama.ErrNoError {
-			return nil, fmt.Errorf("Error describing quota %s", quotaR.ErrorCode)
-		}
+	if quotaR.ErrorCode != sarama.ErrNoError {
+		return nil, fmt.Errorf("error describing quota %s", quotaR.ErrorCode)
 	}
 
 	if len(quotaR.Entries) < 1 {

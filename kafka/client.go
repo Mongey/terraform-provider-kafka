@@ -57,17 +57,17 @@ type Client struct {
 
 func NewClient(config *Config) (*Client, error) {
 	if config == nil {
-		return nil, errors.New("Cannot create client without kafka config")
+		return nil, errors.New("cannot create client without kafka config")
 	}
 
 	log.Printf("[TRACE] configuring bootstrap_servers %v", config.copyWithMaskedSensitiveValues())
 	if config.BootstrapServers == nil {
-		return nil, fmt.Errorf("No bootstrap_servers provided")
+		return nil, fmt.Errorf("no bootstrap_servers provided")
 	}
 
 	bootstrapServers := *(config.BootstrapServers)
 	if bootstrapServers == nil {
-		return nil, fmt.Errorf("No bootstrap_servers provided")
+		return nil, fmt.Errorf("no bootstrap_servers provided")
 	}
 
 	log.Printf("[INFO] configuring kafka client with %v", config.copyWithMaskedSensitiveValues())
@@ -122,7 +122,7 @@ func (c *Client) populateAPIVersions() error {
 
 	clusterApiVersions := make(map[int][2]int) // valid api version intervals across all brokers
 	errs := make([]error, 0)
-	for i := 0; i < len(brokers); i++ {
+	for range len(brokers) {
 		select {
 		case brokerApiVersions := <-ch:
 			updateClusterApiVersions(&clusterApiVersions, brokerApiVersions)
@@ -281,11 +281,9 @@ func (c *Client) UpdateTopic(topic Topic) error {
 		return err
 	}
 
-	if err == nil {
-		for _, e := range res.Resources {
-			if e.ErrorCode != int16(sarama.ErrNoError) {
-				return errors.New(e.ErrorMsg)
-			}
+	for _, e := range res.Resources {
+		if e.ErrorCode != int16(sarama.ErrNoError) {
+			return errors.New(e.ErrorMsg)
 		}
 	}
 
@@ -340,7 +338,7 @@ func (c *Client) AddPartitions(t Topic) error {
 
 	timeout := time.Duration(c.config.Timeout) * time.Second
 	tp := map[string]*sarama.TopicPartition{
-		t.Name: &sarama.TopicPartition{
+		t.Name: {
 			Count: t.Partitions,
 		},
 	}
