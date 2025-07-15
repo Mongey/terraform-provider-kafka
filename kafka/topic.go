@@ -3,6 +3,7 @@ package kafka
 import (
 	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/IBM/sarama"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
@@ -33,20 +34,29 @@ func ReplicaCount(c sarama.Client, topic string, partitions []int32) (int, error
 	for _, p := range partitions {
 		replicas, err := c.Replicas(topic, p)
 		if err != nil {
-			return -1, errors.New("Could not get replicas for partition")
+			return -1, errors.New("could not get replicas for partition")
 		}
 		if count == -1 {
 			count = len(replicas)
 		}
 		if count != len(replicas) {
-			return count, fmt.Errorf("The replica count isn't the same across partitions %d != %d", count, len(replicas))
+			return count, fmt.Errorf("the replica count isn't the same across partitions %d != %d", count, len(replicas))
 		}
 	}
 	return count, nil
 
 }
 
-func configToResources(topic Topic) []*sarama.AlterConfigsResource {
+func configToResources(topic Topic, c *Config) []*sarama.AlterConfigsResource {
+	if topic.Config["cleanup.policy"] != nil {
+		re := regexp.MustCompile(`(?i)kafka-serverless\.(.*)\.amazonaws\.com`)
+		for _, broker := range *c.BootstrapServers {
+			if re.MatchString(broker) {
+				// MSK Serverless does not support updating cleanup.policy
+				delete(topic.Config, "cleanup.policy")
+			}
+		}
+	}
 	return []*sarama.AlterConfigsResource{
 		{
 			Type:          sarama.TopicResource,

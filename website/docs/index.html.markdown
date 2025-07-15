@@ -57,6 +57,18 @@ provider "kafka" {
 }
 ```
 
+Example provider with aws-iam(Aws Profile in non-default aws_shared_config_file path) client authentication.
+```hcl
+provider "kafka" {
+  bootstrap_servers             = ["localhost:9098"]
+  tls_enabled                   = true
+  sasl_mechanism                = "aws-iam"
+  sasl_aws_region               = "us-east-1"
+  sasl_aws_profile              = "dev"
+  sasl_aws_shared_config_files  = ["/path/to/custom/aws/config"]
+}
+```
+
 Example provider with aws-iam(Static Creds) client authentication using explicit credentials.
 ```hcl
 provider "vault" {
