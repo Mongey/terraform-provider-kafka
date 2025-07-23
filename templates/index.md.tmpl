@@ -1,0 +1,56 @@
+---
+page_title: "{{.ProviderShortName}} Provider"
+subcategory: ""
+description: |-
+  A Terraform provider for managing Apache Kafka clusters and resources.
+---
+
+# {{.ProviderShortName}} Provider
+
+The Kafka provider is used to interact with [Apache Kafka](https://kafka.apache.org/) clusters. The provider allows you to manage Kafka topics, ACLs, quotas, and SCRAM credentials. It supports various authentication methods including TLS, SASL/PLAIN, SASL/SCRAM, AWS IAM, and OAuth.
+
+## Documentation
+
+- [Quick Start Guide](guides/quick-start) - Get started quickly with common scenarios
+- [Authentication Guide](guides/authentication) - Detailed authentication configuration  
+- [AWS MSK Integration](guides/aws-msk-integration) - Complete MSK setup guide
+- [Migration Guide](guides/migration) - Migrate between setups and versions
+- [Troubleshooting Guide](guides/troubleshooting) - Common issues and solutions
+
+## Example Usage
+
+### Basic Configuration with TLS
+
+{{tffile "examples/provider/provider-tls.tf"}}
+
+### SASL/PLAIN Authentication
+
+{{tffile "examples/provider/provider-sasl-plain.tf"}}
+
+### SASL/SCRAM Authentication
+
+{{tffile "examples/provider/provider-sasl-scram.tf"}}
+
+### AWS MSK with IAM Authentication (Using AssumeRole)
+
+{{tffile "examples/provider/provider-aws-iam-assume-role.tf"}}
+
+### AWS MSK with IAM Authentication (Using AWS Profile)
+
+{{tffile "examples/provider/provider-aws-iam-profile.tf"}}
+
+### AWS MSK with IAM Authentication (Using Static Credentials)
+
+{{tffile "examples/provider/provider-aws-iam-static.tf"}}
+
+### OAuth2 Authentication
+
+{{tffile "examples/provider/provider-oauth.tf"}}
+
+### Redpanda Compatibility
+
+When using with [Redpanda](https://redpanda.com/), you may need to force a specific Kafka protocol version:
+
+{{tffile "examples/provider/provider-redpanda.tf"}}
+
+{{ .SchemaMarkdown | trimspace }}
