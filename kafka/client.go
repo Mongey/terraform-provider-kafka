@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
-	"regexp"
-	"slices"
 	"sync"
 	"time"
 
@@ -637,13 +635,10 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 				log.Printf("[TRACE] Syonyms: %v", s)
 			}
 
-			if tConf.Name == "segment.bytes" {
-				re := regexp.MustCompile(`(?i)kafka-serverless\.(.*)\.amazonaws\.com`)
-				if slices.ContainsFunc(*(c.config.BootstrapServers), re.MatchString) {
-					// Remove segment.bytes in AWS MSK Serverless response to prevent perpetual planning
-					log.Printf("[TRACE] [%s] Using AWS MSK Serverless. Skipping segment.bytes config", topic)
-					continue
-				}
+			if tConf.Name == "segment.bytes" && c.config.isAWSMSKServerless() {
+				// Remove segment.bytes in AWS MSK Serverless response to prevent perpetual planning
+				log.Printf("[TRACE] [%s] Using AWS MSK Serverless. Skipping segment.bytes config", topic)
+				continue
 			}
 
 			if isDefault(tConf, int(cr.Version)) {
