@@ -635,6 +635,12 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 				log.Printf("[TRACE] Syonyms: %v", s)
 			}
 
+			if tConf.Name == "segment.bytes" && c.config.isAWSMSKServerless() {
+				// Remove segment.bytes in AWS MSK Serverless response to prevent perpetual planning
+				log.Printf("[TRACE] [%s] Using AWS MSK Serverless. Skipping segment.bytes config", topic)
+				continue
+			}
+
 			if isDefault(tConf, int(cr.Version)) {
 				continue
 			}
