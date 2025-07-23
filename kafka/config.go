@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -344,4 +346,9 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 		config.SASLOAuthScopes,
 	}
 	return copy
+}
+
+func (config *Config) isAWSMSKServerless() bool {
+	re := regexp.MustCompile(`(?i)kafka-serverless\.(.*)\.amazonaws\.com`)
+	return slices.ContainsFunc(*(config.BootstrapServers), re.MatchString)
 }
