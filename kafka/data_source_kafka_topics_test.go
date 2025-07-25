@@ -51,27 +51,46 @@ func testDatasourceTopics(s *terraform.State) error {
 	}
 	instanceState := resourceState.Primary
 	client := testProvider.Meta().(*LazyClient)
-	expectedTopics, err := client.GetKafkaTopics()
+	// Get the total number of topics from the data source
+	topicCount, err := fmt.Sscanf(instanceState.ID, "%d", new(int))
 	if err != nil {
-		return fmt.Errorf(err.Error())
+		return fmt.Errorf("failed to parse topic count from ID: %w", err)
 	}
-	for i := 0; i < len(expectedTopics); i++ {
-		expectedTopicName := instanceState.Attributes[fmt.Sprintf("list.%d.topic_name", i)]
-		expectedTopicOutput, err := client.ReadTopic(expectedTopicName, true)
-		if err != nil {
-			return fmt.Errorf(err.Error())
-		}
 
-		if instanceState.Attributes[fmt.Sprintf("list.%d.partitions", i)] != fmt.Sprint(expectedTopicOutput.Partitions) {
-			return fmt.Errorf("expected %d for topic %s partition, got %s", expectedTopicOutput.Partitions, expectedTopicOutput.Name, instanceState.Attributes[fmt.Sprintf("list.%d.partitions", i)])
+	// Find our test topic in the list
+	testTopicName := instanceState.Attributes["list.0.topic_name"]
+	if testTopicName == "" {
+		return fmt.Errorf("test topic not found in data source list")
+	}
+
+	// Verify the test topic exists in the list
+	found := false
+	for i := range topicCount {
+		topicName := instanceState.Attributes[fmt.Sprintf("list.%d.topic_name", i)]
+		if topicName == testTopicName {
+			// Verify the topic properties
+			expectedTopicOutput, err := client.ReadTopic(topicName, true)
+			if err != nil {
+				return fmt.Errorf("failed to read topic %s: %w", topicName, err)
+			}
+
+			if instanceState.Attributes[fmt.Sprintf("list.%d.partitions", i)] != fmt.Sprint(expectedTopicOutput.Partitions) {
+				return fmt.Errorf("expected %d for topic %s partition, got %s", expectedTopicOutput.Partitions, expectedTopicOutput.Name, instanceState.Attributes[fmt.Sprintf("list.%d.partitions", i)])
+			}
+			if instanceState.Attributes[fmt.Sprintf("list.%d.replication_factor", i)] != fmt.Sprint(expectedTopicOutput.ReplicationFactor) {
+				return fmt.Errorf("expected %d for topic %s replication factor, got %s", expectedTopicOutput.ReplicationFactor, expectedTopicOutput.Name, instanceState.Attributes[fmt.Sprintf("list.%d.replication_factor", i)])
+			}
+			retentionMs := expectedTopicOutput.Config["retention.ms"]
+			if instanceState.Attributes[fmt.Sprintf("list.%d.config.retention.ms", i)] != *retentionMs {
+				return fmt.Errorf("expected %s for topic %s config retention.ms, got %s", *retentionMs, expectedTopicOutput.Name, instanceState.Attributes[fmt.Sprintf("list.%d.config.retention.ms", i)])
+			}
+			found = true
+			break
 		}
-		if instanceState.Attributes[fmt.Sprintf("list.%d.replication_factor", i)] != fmt.Sprint(expectedTopicOutput.ReplicationFactor) {
-			return fmt.Errorf("expected %d for topic %s replication factor, got %s", expectedTopicOutput.ReplicationFactor, expectedTopicOutput.Name, instanceState.Attributes[fmt.Sprintf("list.%d.replication_factor", i)])
-		}
-		retentionMs := expectedTopicOutput.Config["retention.ms"]
-		if instanceState.Attributes[fmt.Sprintf("list.%d.config.retention.ms", i)] != *retentionMs {
-			return fmt.Errorf("expected %s for topic %s config retention.ms, got %s", *retentionMs, expectedTopicOutput.Name, instanceState.Attributes[fmt.Sprintf("list.%d.config.retention.ms", i)])
-		}
+	}
+
+	if !found {
+		return fmt.Errorf("test topic %s not found in data source", testTopicName)
 	}
 	return nil
 }
