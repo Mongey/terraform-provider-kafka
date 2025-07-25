@@ -1,6 +1,6 @@
 module github.com/Mongey/terraform-provider-kafka
 
-go 1.23.7
+go 1.24
 
 require (
 	github.com/IBM/sarama v1.45.2
