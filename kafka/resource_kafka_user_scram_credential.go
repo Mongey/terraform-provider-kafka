@@ -14,6 +14,17 @@ import (
 
 const defaultIterations int32 = 4096
 
+func validatePasswordFields(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	password := d.Get("password").(string)
+	passwordWo := d.Get("password_wo").(string)
+
+	if password == "" && passwordWo == "" {
+		return fmt.Errorf("either 'password' or 'password_wo' must be specified")
+	}
+
+	return nil
+}
+
 func kafkaUserScramCredentialResource() *schema.Resource {
 	//lintignore:R011
 	return &schema.Resource{
@@ -24,6 +35,7 @@ func kafkaUserScramCredentialResource() *schema.Resource {
 		Importer: &schema.ResourceImporter{
 			StateContext: importSCRAM,
 		},
+		CustomizeDiff: validatePasswordFields,
 		Schema: map[string]*schema.Schema{
 			"username": {
 				Type:        schema.TypeString,
@@ -47,12 +59,29 @@ func kafkaUserScramCredentialResource() *schema.Resource {
 				Description:  "The number of SCRAM iterations used when generating the credential",
 			},
 			"password": {
-				Type:         schema.TypeString,
-				Required:     true,
-				ForceNew:     false,
-				ValidateFunc: validation.StringIsNotWhiteSpace,
-				Description:  "The password of the credential",
-				Sensitive:    true,
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      false,
+				ValidateFunc:  validation.StringIsNotWhiteSpace,
+				Description:   "The password of the credential (deprecated, use password_wo instead)",
+				Sensitive:     true,
+				ConflictsWith: []string{"password_wo"},
+			},
+			"password_wo": {
+				Type:          schema.TypeString,
+				Optional:      true,
+				ForceNew:      false,
+				ValidateFunc:  validation.StringIsNotWhiteSpace,
+				Description:   "The write-only password of the credential",
+				Sensitive:     true,
+				WriteOnly:     true,
+				ConflictsWith: []string{"password"},
+			},
+			"password_wo_version": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    false,
+				Description: "Version identifier for the write-only password to track changes",
 			},
 		},
 	}
@@ -60,7 +89,17 @@ func kafkaUserScramCredentialResource() *schema.Resource {
 
 func importSCRAM(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	parts := strings.Split(d.Id(), "|")
-	if len(parts) == 3 {
+	if len(parts) == 2 {
+		// New format: username|scram_mechanism (for write-only passwords)
+		errSet := errSetter{d: d}
+		errSet.Set("username", parts[0])
+		errSet.Set("scram_mechanism", parts[1])
+		// For write-only import, password_wo and password_wo_version need to be set manually after import
+		if errSet.err != nil {
+			return nil, errSet.err
+		}
+	} else if len(parts) == 3 {
+		// Legacy format: username|scram_mechanism|password (for backward compatibility)
 		errSet := errSetter{d: d}
 		errSet.Set("username", parts[0])
 		errSet.Set("scram_mechanism", parts[1])
@@ -69,7 +108,7 @@ func importSCRAM(ctx context.Context, d *schema.ResourceData, m interface{}) ([]
 			return nil, errSet.err
 		}
 	} else {
-		return nil, fmt.Errorf("failed importing resource; expected format is username|scram_mechanism|password - got %v segments instead of 3", len(parts))
+		return nil, fmt.Errorf("failed importing resource; expected format is username|scram_mechanism (for write-only passwords) or username|scram_mechanism|password (legacy) - got %v segments instead of 2 or 3", len(parts))
 	}
 
 	return []*schema.ResourceData{d}, nil
@@ -153,11 +192,20 @@ func userScramCredentialDelete(ctx context.Context, d *schema.ResourceData, meta
 func parseUserScramCredential(d *schema.ResourceData) UserScramCredential {
 	scram_mechanism_string := d.Get("scram_mechanism").(string)
 	mechanism := convertedScramMechanism(scram_mechanism_string)
+
+	// Get password from either password or password_wo field
+	var password string
+	if pw := d.Get("password").(string); pw != "" {
+		password = pw
+	} else {
+		password = d.Get("password_wo").(string)
+	}
+
 	return UserScramCredential{
 		Name:       d.Get("username").(string),
 		Mechanism:  mechanism,
 		Iterations: int32(d.Get("scram_iterations").(int)),
-		Password:   []byte(d.Get("password").(string)),
+		Password:   []byte(password),
 	}
 }
 
