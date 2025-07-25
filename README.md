@@ -92,6 +92,18 @@ provider "kafka" {
 }
 ```
 
+Example provider with aws-iam(Aws Profile in non-default aws_shared_config_file path) client authentication.
+```hcl
+provider "kafka" {
+  bootstrap_servers             = ["localhost:9098"]
+  tls_enabled                   = true
+  sasl_mechanism                = "aws-iam"
+  sasl_aws_region               = "us-east-1"
+  sasl_aws_profile              = "dev"
+  sasl_aws_shared_config_files  = ["/path/to/custom/aws/config"]
+}
+```
+
 Example provider with aws-iam(Static Creds) client authentication using explicit credentials.
 ```hcl
 provider "vault" {
@@ -165,11 +177,13 @@ Due to Redpanda not implementing some Metadata APIs, we need to force the Kafka 
 | `sasl_aws_container_credentials_full_uri`       | URI to retrieve AWS credentials from.                                                                                    | `""`       |
 | `sasl_aws_role_arn`     | Arn of AWS IAM role to assume for IAM authentication.                                                                 | `""`       |
 | `sasl_aws_profile`      | AWS profile to use for IAM authentication.                                                                            | `""`       |
+| `sasl_aws_shared_config_files` | List of paths to AWS shared config files                                                                       | `""`       |
 | `sasl_aws_access_key`   | AWS access key.                                                                                                       | `""`       |
 | `sasl_aws_secret_key`   | AWS secret key.                                                                                                       | `""`       |
 | `sasl_aws_token`        | AWS session token.                                                                                                    | `""`       |
 | `sasl_aws_creds_debug`  | Enable debug logging for AWS authentication.                                                                          | `false`    |
 | `sasl_token_url`        | The url to retrieve oauth2 tokens from, when using sasl mechanism `oauthbearer`                                         | `""`    |
+| `sasl_oauth_scopes`     | OAuth scopes to request when using the `oauthbearer` mechanism                                                         | `[]`       |
 
 
 ## Resources
@@ -312,84 +326,79 @@ provider "kafka" {
   client_key        = file("../secrets/terraform.pem")
 }
 
+# Legacy usage with 'password' (deprecated)
 resource "kafka_user_scram_credential" "test" {
   username               = "user1"
   scram_mechanism        = "SCRAM-SHA-256"
   scram_iterations       = "8192"
   password               = "password"
 }
+
+# Recommended usage with write-only password (Terraform 1.11+). Password isn't stored in tfstate anymore
+resource "kafka_user_scram_credential" "secure" {
+  username               = "user2"
+  scram_mechanism        = "SCRAM-SHA-256"
+  scram_iterations       = "8192"
+  password_wo            = "secure-password"
+  password_wo_version    = "1"
+}
 ```
+
+You can fill `password_wo_version` with your secret engine metadata. For example, Hashicorp Vault returns it in the [data source][secret-version].
 
 #### Importing Existing SCRAM user credentials
 For import, use as a parameter the items separated by `|` character. Quote it to avoid shell expansion.
 
 ```sh
 # Fields in shell notation are
-# ${username}|${scram_mechanism}|${password}
+# ${username}|${scram_mechanism}|${password} (legacy format)
+# or
+# ${username}|${scram_mechanism} (for write-only passwords)
 terraform import kafka_user_scram_credential.test 'user1|SCRAM-SHA-256|password'
+# or for write-only passwords (password_wo and password_wo_version must be set manually after import)
+terraform import kafka_user_scram_credential.test 'user1|SCRAM-SHA-256'
 ```
 
 #### Properties
 
-| Property            | Description                                                     |
-|---------------------|-----------------------------------------------------------------|
-| `username`          | The username                                                    |
-| `scram_mechanism`   | The SCRAM mechanism (SCRAM-SHA-256 or SCRAM-SHA-512)            |
-| `scram_iterations`  | The number of SCRAM iterations (must be >= 4096). Default: 4096 |
-| `password`          | The password for the user                                       |
+| Property             | Description                                    |
+| -------------------- | ---------------------------------------------- |
+| `username`        | The username                         |
+| `scram_mechanism`        | The SCRAM mechanism (SCRAM-SHA-256 or SCRAM-SHA-512)          |
+| `scram_iterations`             | The number of SCRAM iterations (must be >= 4096). Default: 4096       |
+| `password` | The password for the user (deprecated, use `password_wo` instead) |
+| `password_wo` | The write-only password for the user (recommended, requires Terraform 1.11+) |
+| `password_wo_version` | Version identifier for the write-only password to track changes |
 
-## Data Sources
-### `kafka_topic`
+**Note**: Either `password` or `password_wo` must be specified, but not both. The `password_wo` field is recommended for better security as it's write-only and never returned by the API.
 
-A data source for getting information about a kafka topic.
+## Common Issues and Troubleshooting
 
-#### Example
+### Provider Crashes
+If you encounter "Empty Summary" errors or nil pointer dereferences, common causes include:
+- Empty `bootstrap_servers` list - ensure you always provide valid broker addresses
+- Insufficient IAM permissions when using AWS MSK - see the [AWS MSK Integration Guide](docs/guides/aws-msk-integration.md)
+- Attempting to modify immutable properties on MSK Serverless
 
-```hcl
-provider "kafka" {
-  bootstrap_servers = ["localhost:9092"]
-}
-data "kafka_topic" "test" {
-  name = "test_topic_name"
-}
-output "output_test" {
-  value = data.kafka_topic.test.partitions
-```
+### AWS MSK Authentication
+For IAM authentication issues:
+- Ensure you're using the correct port (9098 for IAM, 9096 for SASL/SCRAM)
+- For EKS/ECS, set `sasl_aws_role_arn = ""` to use pod/task credentials
+- Check your IAM policy includes necessary `kafka-cluster:*` permissions
 
-### `kafka_topics`
+### Dynamic Configuration
+The provider requires `bootstrap_servers` at initialization time. For dynamic environments:
+- Consider using separate Terraform workspaces/states
+- Use `count` or `for_each` on resources instead of conditional provider configuration
 
-A data source for getting a list of all available Kafka topics. The object topic return will have the same property of the kafka_topic data source
-#### Example
+For detailed troubleshooting, see our [Troubleshooting Guide](docs/guides/troubleshooting.md).
 
-```hcl
-provider "kafka" {
-  bootstrap_servers = ["localhost:9092"]
-}
-data "kafka_topics" "test" {
-}
-output "output_test_topic_name" {
-  value = data.kafka_topics.test[0].name
-}
-output "output_test_topic_partitions" {
-  value = data.kafka_topics.test[0].partitions
-}
-output "output_test_topic_replication_factor" {
-  value = data.kafka_topics.test[0].replication_factor
-}
-output "output_test_topic_config" {
-  value = data.kafka_topics.test[0].config["retention.ms"]
-}
-```
+## Documentation
 
-#### Properties
-
-| Property            | Description                                                     |
-|---------------------|-----------------------------------------------------------------|
-| `list`              | The list containing all kafka topics                            |
-| `username`          | The username                                                    |
-| `scram_mechanism`   | The SCRAM mechanism (SCRAM-SHA-256 or SCRAM-SHA-512)            |
-| `scram_iterations`  | The number of SCRAM iterations (must be >= 4096). Default: 4096 |
-| `password`          | The password for the user                                       |
+- [Quick Start Guide](docs/guides/quick-start.md) - Get started quickly with common scenarios
+- [Authentication Guide](docs/guides/authentication.md) - Detailed authentication configuration
+- [AWS MSK Integration](docs/guides/aws-msk-integration.md) - Complete MSK setup guide
+- [Troubleshooting Guide](docs/guides/troubleshooting.md) - Common issues and solutions
 
 ## Requirements
 * [>= Kafka 1.0.0][3]
@@ -400,3 +409,4 @@ output "output_test_topic_config" {
 [third-party-plugins]: https://www.terraform.io/docs/configuration/providers.html#third-party-plugins
 [install-go]: https://golang.org/doc/install#install
 [topic-config]: https://kafka.apache.org/documentation/#topicconfigs 
+[secret-version]: https://registry.terraform.io/providers/hashicorp/vault/latest/docs/data-sources/kv_secret_v2#version-2

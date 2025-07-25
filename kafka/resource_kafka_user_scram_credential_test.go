@@ -107,12 +107,146 @@ func TestAcc_UserScramCredentialConfigUpdate(t *testing.T) {
 	})
 }
 
+func TestAcc_UserScramCredentialWriteOnly(t *testing.T) {
+	t.Parallel()
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	username := fmt.Sprintf("test-%s", u)
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckUserScramCredentialDestroy,
+		Steps: []r.TestStep{
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceUserScramCredential_WriteOnly, username)),
+				Check:  testResourceUserScramCredentialCheck_writeOnly,
+			},
+		},
+	})
+}
+
+func TestAcc_UserScramCredentialWriteOnlyUpdate(t *testing.T) {
+	t.Parallel()
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	username := fmt.Sprintf("test-%s", u)
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckUserScramCredentialDestroy,
+		Steps: []r.TestStep{
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceUserScramCredential_WriteOnly, username)),
+				Check:  testResourceUserScramCredentialCheck_writeOnly,
+			},
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceUserScramCredential_WriteOnlyUpdate, username)),
+				Check:  testResourceUserScramCredentialCheck_writeOnlyUpdated,
+			},
+		},
+	})
+}
+
+func TestAcc_UserScramCredentialWriteOnlyWithIterations(t *testing.T) {
+	t.Parallel()
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	username := fmt.Sprintf("test-%s", u)
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckUserScramCredentialDestroy,
+		Steps: []r.TestStep{
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceUserScramCredential_WriteOnlyWithIterations, username, 8192)),
+				Check:  testResourceUserScramCredentialCheck_writeOnlyWithIterations,
+			},
+		},
+	})
+}
+
 func testResourceUserScramCredentialCheck_withoutIterations(s *terraform.State) error {
 	return testResourceUserScramCredentialCheck(s, false)
 }
 
 func testResourceUserScramCredentialCheck_withIterations(s *terraform.State) error {
 	return testResourceUserScramCredentialCheck(s, true)
+}
+
+func testResourceUserScramCredentialCheck_writeOnly(s *terraform.State) error {
+	return testResourceUserScramCredentialCheck_writeOnlyInternal(s, "v1", false)
+}
+
+func testResourceUserScramCredentialCheck_writeOnlyUpdated(s *terraform.State) error {
+	return testResourceUserScramCredentialCheck_writeOnlyInternal(s, "v2", false)
+}
+
+func testResourceUserScramCredentialCheck_writeOnlyWithIterations(s *terraform.State) error {
+	return testResourceUserScramCredentialCheck_writeOnlyInternal(s, "v1", true)
+}
+
+func testResourceUserScramCredentialCheck_writeOnlyInternal(s *terraform.State, expectedVersion string, withIterations bool) error {
+	resourceState := s.Modules[0].Resources["kafka_user_scram_credential.test"]
+	if resourceState == nil {
+		return fmt.Errorf("resource not found in state")
+	}
+
+	instanceState := resourceState.Primary
+	if instanceState == nil {
+		return fmt.Errorf("resource has no primary instance")
+	}
+
+	username := instanceState.Attributes["username"]
+	scramMechanism := instanceState.Attributes["scram_mechanism"]
+	passwordWoVersion := instanceState.Attributes["password_wo_version"]
+	expectedIterations := defaultIterations
+	if withIterations {
+		i, err := strconv.Atoi(instanceState.Attributes["scram_iterations"])
+		if err != nil {
+			return err
+		}
+		expectedIterations = int32(i)
+	}
+
+	// Check that password_wo_version is set correctly
+	if passwordWoVersion != expectedVersion {
+		return fmt.Errorf("password_wo_version should be %s but got '%s'", expectedVersion, passwordWoVersion)
+	}
+
+	// Verify the credential exists in Kafka (though we can't check the password)
+	client := testProvider.Meta().(*LazyClient)
+	userScramCredential, err := client.DescribeUserScramCredential(username, scramMechanism)
+	if err != nil {
+		return err
+	}
+
+	id := instanceState.ID
+	expectedId := strings.Join([]string{username, scramMechanism}, "|")
+
+	if id != expectedId {
+		return fmt.Errorf("id '%s' does not match expected id '%s'", id, expectedId)
+	}
+
+	if userScramCredential.Iterations != expectedIterations {
+		return fmt.Errorf("scram iterations should be %d but got '%d'", expectedIterations, userScramCredential.Iterations)
+	}
+
+	return nil
 }
 
 func testResourceUserScramCredentialCheck(s *terraform.State, withIterations bool) error {
@@ -171,7 +305,12 @@ func testAccCheckUserScramCredentialDestroy(s *terraform.State) error {
 	username := instanceState.Attributes["username"]
 	mechanism := instanceState.Attributes["scram_mechanism"]
 
-	client := testProvider.Meta().(*LazyClient)
+	meta := testProvider.Meta()
+	if meta == nil {
+		return fmt.Errorf("provider Meta() returned nil")
+	}
+
+	client := meta.(*LazyClient)
 	_, err := client.DescribeUserScramCredential(username, mechanism)
 
 	if _, ok := err.(UserScramCredentialMissingError); !ok {
@@ -206,5 +345,33 @@ resource "kafka_user_scram_credential" "test" {
   scram_mechanism        = "SCRAM-SHA-256"
   scram_iterations       = "%d"
   password               = "test"
+}
+`
+
+const testResourceUserScramCredential_WriteOnly = `
+resource "kafka_user_scram_credential" "test" {
+  username               = "%s"
+  scram_mechanism        = "SCRAM-SHA-256"
+  password_wo            = "write-only-test"
+  password_wo_version    = "v1"
+}
+`
+
+const testResourceUserScramCredential_WriteOnlyUpdate = `
+resource "kafka_user_scram_credential" "test" {
+  username               = "%s"
+  scram_mechanism        = "SCRAM-SHA-256"
+  password_wo            = "write-only-test-updated"
+  password_wo_version    = "v2"
+}
+`
+
+const testResourceUserScramCredential_WriteOnlyWithIterations = `
+resource "kafka_user_scram_credential" "test" {
+  username               = "%s"
+  scram_mechanism        = "SCRAM-SHA-256"
+  scram_iterations       = "%d"
+  password_wo            = "write-only-test"
+  password_wo_version    = "v1"
 }
 `

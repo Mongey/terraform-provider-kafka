@@ -1,7 +1,7 @@
 package kafka
 
 import (
-	"reflect"
+	"slices"
 	"testing"
 )
 
@@ -26,7 +26,7 @@ func TestNonEmptyAndTrimmed(t *testing.T) {
 	expected := []string{"Hello", "World"}
 	output := nonEmptyAndTrimmed(input)
 
-	if !reflect.DeepEqual(output, expected) {
+	if !slices.Equal(output, expected) {
 		t.Errorf("%v != %v", output, expected)
 	}
 }

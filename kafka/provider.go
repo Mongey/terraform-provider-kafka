@@ -91,6 +91,12 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("AWS_ROLE_ARN", nil),
 				Description: "Arn of an AWS IAM role to assume",
 			},
+			"sasl_aws_external_id": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "",
+				Description: "External ID of the AWS IAM role to assume",
+			},
 			"sasl_aws_profile": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -121,6 +127,13 @@ func Provider() *schema.Provider {
 				DefaultFunc: schema.EnvDefaultFunc("AWS_CREDS_DEBUG", "false"),
 				Description: "Set this to true to turn AWS credentials debug.",
 			},
+			"sasl_aws_shared_config_files": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+				DefaultFunc: schema.EnvDefaultFunc("AWS_SHARED_CONFIG_FILES", nil),
+				Description: "List of paths to AWS shared config files.",
+			},
 			"sasl_username": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -138,6 +151,13 @@ func Provider() *schema.Provider {
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_TOKEN_URL", nil),
 				Description: "The url to retrieve oauth2 tokens from, when using sasl mechanism oauthbearer",
+			},
+			"sasl_oauth_scopes": {
+				Type:        schema.TypeList,
+				Optional:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_OAUTH_SCOPES", nil),
+				Description: "OAuth scopes to request when using the oauthbearer mechanism",
 			},
 			"sasl_mechanism": {
 				Type:        schema.TypeString,
@@ -206,11 +226,14 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 		SASLPassword:                           d.Get("sasl_password").(string),
 		SASLTokenUrl:                           d.Get("sasl_token_url").(string),
 		SASLAWSRoleArn:                         d.Get("sasl_aws_role_arn").(string),
+		SASLAWSExternalId:                      d.Get("sasl_aws_external_id").(string),
 		SASLAWSProfile:                         d.Get("sasl_aws_profile").(string),
+		SASLAWSSharedConfigFiles:               dTos("sasl_aws_shared_config_files", d),
 		SASLAWSAccessKey:                       d.Get("sasl_aws_access_key").(string),
 		SASLAWSSecretKey:                       d.Get("sasl_aws_secret_key").(string),
 		SASLAWSToken:                           d.Get("sasl_aws_token").(string),
 		SASLAWSCredsDebug:                      d.Get("sasl_aws_creds_debug").(bool),
+		SASLOAuthScopes:                        stringSliceFromResourceData("sasl_oauth_scopes", d),
 		SASLMechanism:                          saslMechanism,
 		TLSEnabled:                             d.Get("tls_enabled").(bool),
 		Timeout:                                d.Get("timeout").(int),
@@ -254,4 +277,18 @@ func dTos(key string, d *schema.ResourceData) *[]string {
 	}
 
 	return r
+}
+
+func stringSliceFromResourceData(key string, d *schema.ResourceData) []string {
+	var result []string
+	if v, ok := d.GetOk(key); ok && v != nil {
+		vI := v.([]interface{})
+		result = make([]string, 0, len(vI))
+		for _, vv := range vI {
+			if vv != nil {
+				result = append(result, vv.(string))
+			}
+		}
+	}
+	return result
 }

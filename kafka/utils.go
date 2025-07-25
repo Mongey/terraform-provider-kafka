@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/hashicorp/go-cty/cty"
@@ -32,16 +33,20 @@ func MapEq(result, expected map[string]*string) error {
 }
 
 func nonEmptyAndTrimmed(bootstrapServers []string) []string {
-	wellFormed := make([]string, 0)
-
-	for _, bs := range bootstrapServers {
-		trimmed := strings.TrimSpace(bs)
-		if trimmed != "" {
-			wellFormed = append(wellFormed, trimmed)
-		}
+	// Clone to avoid modifying the original slice
+	result := slices.Clone(bootstrapServers)
+	
+	// Trim all strings in place
+	for i := range result {
+		result[i] = strings.TrimSpace(result[i])
 	}
-
-	return wellFormed
+	
+	// Remove empty strings
+	result = slices.DeleteFunc(result, func(s string) bool {
+		return s == ""
+	})
+	
+	return result
 }
 
 // TODO: can I just get rid of this?

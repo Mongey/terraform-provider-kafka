@@ -57,17 +57,17 @@ type Client struct {
 
 func NewClient(config *Config) (*Client, error) {
 	if config == nil {
-		return nil, errors.New("Cannot create client without kafka config")
+		return nil, errors.New("cannot create client without kafka config")
 	}
 
 	log.Printf("[TRACE] configuring bootstrap_servers %v", config.copyWithMaskedSensitiveValues())
 	if config.BootstrapServers == nil {
-		return nil, fmt.Errorf("No bootstrap_servers provided")
+		return nil, fmt.Errorf("no bootstrap_servers provided")
 	}
 
 	bootstrapServers := *(config.BootstrapServers)
 	if bootstrapServers == nil {
-		return nil, fmt.Errorf("No bootstrap_servers provided")
+		return nil, fmt.Errorf("no bootstrap_servers provided")
 	}
 
 	log.Printf("[INFO] configuring kafka client with %v", config.copyWithMaskedSensitiveValues())
@@ -237,6 +237,13 @@ func (c *Client) DeleteTopic(t string) error {
 		Topics:  []string{t},
 		Timeout: timeout,
 	}
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
+		req.Version = 3
+	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V0_11_0_0) {
+		req.Version = 2
+	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V0_10_2_0) {
+		req.Version = 1
+	}
 	res, err := broker.DeleteTopics(req)
 	if err == nil {
 		for k, e := range res.TopicErrorCodes {
@@ -261,8 +268,12 @@ func (c *Client) UpdateTopic(topic Topic) error {
 	}
 
 	r := &sarama.AlterConfigsRequest{
-		Resources:    configToResources(topic),
+		Resources:    configToResources(topic, c.config),
 		ValidateOnly: false,
+	}
+
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
+		r.Version = 1
 	}
 
 	res, err := broker.AlterConfigs(r)
@@ -300,6 +311,13 @@ func (c *Client) CreateTopic(t Topic) error {
 		},
 		Timeout: timeout,
 	}
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
+		req.Version = 3
+	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V0_11_0_0) {
+		req.Version = 2
+	} else if c.kafkaConfig.Version.IsAtLeast(sarama.V0_10_2_0) {
+		req.Version = 1
+	}
 	res, err := broker.CreateTopics(req)
 
 	if err == nil {
@@ -332,6 +350,11 @@ func (c *Client) AddPartitions(t Topic) error {
 		Timeout:         timeout,
 		ValidateOnly:    false,
 	}
+
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
+		req.Version = 1
+	}
+
 	log.Printf("[INFO] Adding partitions to %s in Kafka", t.Name)
 	res, err := broker.CreatePartitions(req)
 	if err == nil {
@@ -590,6 +613,14 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 		return conf, err
 	}
 
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V1_1_0_0) {
+		request.Version = 1
+	}
+
+	if c.kafkaConfig.Version.IsAtLeast(sarama.V2_0_0_0) {
+		request.Version = 2
+	}
+
 	cr, err := broker.DescribeConfigs(request)
 	if err != nil {
 		return conf, err
@@ -602,6 +633,12 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 
 			for _, s := range tConf.Synonyms {
 				log.Printf("[TRACE] Syonyms: %v", s)
+			}
+
+			if tConf.Name == "segment.bytes" && c.config.isAWSMSKServerless() {
+				// Remove segment.bytes in AWS MSK Serverless response to prevent perpetual planning
+				log.Printf("[TRACE] [%s] Using AWS MSK Serverless. Skipping segment.bytes config", topic)
+				continue
 			}
 
 			if isDefault(tConf, int(cr.Version)) {

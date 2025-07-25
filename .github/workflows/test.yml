@@ -19,14 +19,6 @@ jobs:
           go-version: 1.23.x
       - run: make test
 
-  #lint:
-  #runs-on: ubuntu-latest
-  #steps:
-  #- uses: actions/checkout@v4
-  #- uses: bflad/tfproviderlint-github-action@master
-  #with:
-  #args: ./...
-
   golangci:
     name: lint
     runs-on: ubuntu-latest
@@ -36,9 +28,7 @@ jobs:
           go-version: 1.23.x
       - uses: actions/checkout@v4
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          args: --timeout=3m
+        uses: golangci/golangci-lint-action@v6
 
   acctest:
     runs-on: ubuntu-latest
@@ -50,9 +40,11 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: 1.23.x
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
-          path: ~/go/pkg/mod
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-

@@ -163,7 +163,7 @@ func waitForRFUpdate(ctx context.Context, client *LazyClient, topic string) erro
 
 	if _, err := stateConf.WaitForStateContext(ctx); err != nil {
 		return fmt.Errorf(
-			"Error waiting for topic (%s) replication_factor to update: %s",
+			"error waiting for topic (%s) replication_factor to update: %s",
 			topic, err)
 	}
 
@@ -184,7 +184,7 @@ func waitForTopicRefresh(ctx context.Context, client *LazyClient, topic string, 
 
 	if _, err := stateConf.WaitForStateContext(ctx); err != nil {
 		return fmt.Errorf(
-			"Error waiting for topic (%s) to become ready: %s",
+			"error waiting for topic (%s) to become ready: %s",
 			topic, err)
 	}
 
@@ -229,7 +229,7 @@ func topicDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 	}
 	_, err = stateConf.WaitForStateContext(ctx)
 	if err != nil {
-		return diag.FromErr(fmt.Errorf("Error waiting for topic (%s) to delete: %s", d.Id(), err))
+		return diag.FromErr(fmt.Errorf("error waiting for topic (%s) to delete: %s", d.Id(), err))
 	}
 
 	log.Printf("[DEBUG] deletetopic done! %s", t.Name)
