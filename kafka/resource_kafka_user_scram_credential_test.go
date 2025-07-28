@@ -375,3 +375,191 @@ resource "kafka_user_scram_credential" "test" {
   password_wo_version    = "v1"
 }
 `
+
+// Unit tests for password validation
+func Test_getPasswordFromConfig(t *testing.T) {
+	tests := []struct {
+		name        string
+		password    interface{}
+		passwordWo  interface{}
+		expected    string
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "valid password field",
+			password:    "valid-password",
+			passwordWo:  "",
+			expected:    "valid-password",
+			expectError: false,
+		},
+		{
+			name:        "valid password_wo field",
+			password:    "",
+			passwordWo:  "valid-password-wo",
+			expected:    "valid-password-wo",
+			expectError: false,
+		},
+		{
+			name:        "empty password fields should error",
+			password:    "",
+			passwordWo:  "",
+			expected:    "",
+			expectError: true,
+			errorMsg:    "either 'password' or 'password_wo' must be provided with a non-empty value",
+		},
+		{
+			name:        "nil password fields should error",
+			password:    nil,
+			passwordWo:  nil,
+			expected:    "",
+			expectError: true,
+			errorMsg:    "either 'password' or 'password_wo' must be provided with a non-empty value",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a resource data instance properly
+			resourceSchema := kafkaUserScramCredentialResource()
+			d := resourceSchema.TestResourceData()
+
+			// Set the password fields based on test case
+			if tt.password != nil {
+				if err := d.Set("password", tt.password); err != nil {
+					t.Fatalf("failed to set password: %v", err)
+				}
+			}
+			if tt.passwordWo != nil {
+				if err := d.Set("password_wo", tt.passwordWo); err != nil {
+					t.Fatalf("failed to set password_wo: %v", err)
+				}
+			}
+
+			result, err := getPasswordFromConfig(d)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("expected error but got none")
+					return
+				}
+				if !strings.Contains(err.Error(), tt.errorMsg) {
+					t.Errorf("expected error message to contain '%s', got '%s'", tt.errorMsg, err.Error())
+				}
+			} else {
+				if err != nil {
+					t.Errorf("unexpected error: %v", err)
+					return
+				}
+				if result != tt.expected {
+					t.Errorf("expected '%s', got '%s'", tt.expected, result)
+				}
+			}
+		})
+	}
+}
+
+// Test that parseUserScramCredential fails with empty password
+func Test_parseUserScramCredential_EmptyPassword(t *testing.T) {
+	resourceSchema := kafkaUserScramCredentialResource()
+	d := resourceSchema.TestResourceData()
+
+	if err := d.Set("username", "testuser"); err != nil {
+		t.Fatalf("failed to set username: %v", err)
+	}
+	if err := d.Set("scram_mechanism", "SCRAM-SHA-256"); err != nil {
+		t.Fatalf("failed to set scram_mechanism: %v", err)
+	}
+	if err := d.Set("scram_iterations", 4096); err != nil {
+		t.Fatalf("failed to set scram_iterations: %v", err)
+	}
+	// Don't set password fields - they should be empty
+
+	_, err := parseUserScramCredential(d)
+
+	if err == nil {
+		t.Error("expected error for empty password, but got none")
+		return
+	}
+
+	expectedErrorMsg := "either 'password' or 'password_wo' must be provided with a non-empty value"
+	if !strings.Contains(err.Error(), expectedErrorMsg) {
+		t.Errorf("expected error message to contain '%s', got '%s'", expectedErrorMsg, err.Error())
+	}
+}
+
+// Test that parseUserScramCredential succeeds with valid password
+func Test_parseUserScramCredential_ValidPassword(t *testing.T) {
+	resourceSchema := kafkaUserScramCredentialResource()
+	d := resourceSchema.TestResourceData()
+
+	if err := d.Set("username", "testuser"); err != nil {
+		t.Fatalf("failed to set username: %v", err)
+	}
+	if err := d.Set("scram_mechanism", "SCRAM-SHA-256"); err != nil {
+		t.Fatalf("failed to set scram_mechanism: %v", err)
+	}
+	if err := d.Set("scram_iterations", 4096); err != nil {
+		t.Fatalf("failed to set scram_iterations: %v", err)
+	}
+	if err := d.Set("password", "valid-password"); err != nil {
+		t.Fatalf("failed to set password: %v", err)
+	}
+
+	credential, err := parseUserScramCredential(d)
+
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+
+	if credential.Name != "testuser" {
+		t.Errorf("expected username 'testuser', got '%s'", credential.Name)
+	}
+
+	if string(credential.Password) != "valid-password" {
+		t.Errorf("expected password 'valid-password', got '%s'", string(credential.Password))
+	}
+
+	if credential.Iterations != 4096 {
+		t.Errorf("expected iterations 4096, got %d", credential.Iterations)
+	}
+}
+
+// Test that parseUserScramCredential succeeds with valid password_wo
+func Test_parseUserScramCredential_ValidPasswordWo(t *testing.T) {
+	resourceSchema := kafkaUserScramCredentialResource()
+	d := resourceSchema.TestResourceData()
+
+	if err := d.Set("username", "testuser"); err != nil {
+		t.Fatalf("failed to set username: %v", err)
+	}
+	if err := d.Set("scram_mechanism", "SCRAM-SHA-512"); err != nil {
+		t.Fatalf("failed to set scram_mechanism: %v", err)
+	}
+	if err := d.Set("scram_iterations", 8192); err != nil {
+		t.Fatalf("failed to set scram_iterations: %v", err)
+	}
+	if err := d.Set("password_wo", "valid-password-wo"); err != nil {
+		t.Fatalf("failed to set password_wo: %v", err)
+	}
+
+	credential, err := parseUserScramCredential(d)
+
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+		return
+	}
+
+	if credential.Name != "testuser" {
+		t.Errorf("expected username 'testuser', got '%s'", credential.Name)
+	}
+
+	if string(credential.Password) != "valid-password-wo" {
+		t.Errorf("expected password 'valid-password-wo', got '%s'", string(credential.Password))
+	}
+
+	if credential.Iterations != 8192 {
+		t.Errorf("expected iterations 8192, got %d", credential.Iterations)
+	}
+}

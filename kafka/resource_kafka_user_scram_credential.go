@@ -14,14 +14,64 @@ import (
 
 const defaultIterations int32 = 4096
 
-func validatePasswordFields(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
-	password := d.Get("password").(string)
-	passwordWo := d.Get("password_wo").(string)
+// getPasswordFromConfig extracts password from either 'password' or 'password_wo' field,
+// handling write-only fields by accessing raw config when necessary
+func getPasswordFromConfig(d interface{}) (string, error) {
+	var password, passwordWo string
 
-	if password == "" && passwordWo == "" {
-		return fmt.Errorf("either 'password' or 'password_wo' must be specified")
+	// Extract standard values based on type
+	switch data := d.(type) {
+	case *schema.ResourceData:
+		password = data.Get("password").(string)
+		passwordWo = data.Get("password_wo").(string)
+
+		if password == "" && passwordWo == "" {
+			if rawConfig := data.GetRawConfig(); !rawConfig.IsNull() {
+				if passwordWoVal := rawConfig.GetAttr("password_wo"); !passwordWoVal.IsNull() {
+					passwordWo = passwordWoVal.AsString()
+				}
+				if passwordVal := rawConfig.GetAttr("password"); !passwordVal.IsNull() {
+					password = passwordVal.AsString()
+				}
+			}
+		}
+
+	case *schema.ResourceDiff:
+		password = data.Get("password").(string)
+		passwordWo = data.Get("password_wo").(string)
+
+		if password == "" && passwordWo == "" {
+			if rawConfig := data.GetRawConfig(); !rawConfig.IsNull() {
+				if passwordWoVal := rawConfig.GetAttr("password_wo"); !passwordWoVal.IsNull() {
+					passwordWo = passwordWoVal.AsString()
+				}
+				if passwordVal := rawConfig.GetAttr("password"); !passwordVal.IsNull() {
+					password = passwordVal.AsString()
+				}
+			}
+		}
+
+	default:
+		return "", fmt.Errorf("unsupported data type for password extraction")
 	}
 
+	// Since password and password_wo have ConflictsWith, only one can be set
+	// Return whichever one has a value
+	if password != "" {
+		return password, nil
+	}
+	if passwordWo != "" {
+		return passwordWo, nil
+	}
+
+	return "", fmt.Errorf("either 'password' or 'password_wo' must be provided with a non-empty value")
+}
+
+func validatePasswordFields(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	_, err := getPasswordFromConfig(d)
+	if err != nil {
+		return fmt.Errorf("password validation failed: %v", err)
+	}
 	return nil
 }
 
@@ -117,9 +167,12 @@ func importSCRAM(ctx context.Context, d *schema.ResourceData, m interface{}) ([]
 func userScramCredentialCreate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	log.Printf("[INFO] Creating user scram credential")
 	c := meta.(*LazyClient)
-	userScramCredential := parseUserScramCredential(d)
+	userScramCredential, err := parseUserScramCredential(d)
+	if err != nil {
+		return diag.FromErr(err)
+	}
 
-	err := c.UpsertUserScramCredential(userScramCredential)
+	err = c.UpsertUserScramCredential(userScramCredential)
 	if err != nil {
 		log.Println("[ERROR] Failed to create user scram credential")
 		return diag.FromErr(err)
@@ -164,12 +217,19 @@ func userScramCredentialRead(ctx context.Context, d *schema.ResourceData, meta i
 func userScramCredentialUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	log.Printf("[INFO] Updating user scram credential")
 	c := meta.(*LazyClient)
-	userScramCredential := parseUserScramCredential(d)
 
-	err := c.UpsertUserScramCredential(userScramCredential)
-	if err != nil {
-		log.Println("[ERROR] Failed to update user scram credential")
-		return diag.FromErr(err)
+	// Only update if password-related fields have changed
+	if d.HasChange("password") || d.HasChange("password_wo") || d.HasChange("password_wo_version") || d.HasChange("scram_iterations") {
+		userScramCredential, err := parseUserScramCredential(d)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		err = c.UpsertUserScramCredential(userScramCredential)
+		if err != nil {
+			log.Println("[ERROR] Failed to update user scram credential")
+			return diag.FromErr(err)
+		}
 	}
 
 	return nil
@@ -177,8 +237,15 @@ func userScramCredentialUpdate(ctx context.Context, d *schema.ResourceData, meta
 
 func userScramCredentialDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	log.Printf("[INFO] Deleting user scram credential")
+
 	c := meta.(*LazyClient)
-	userScramCredential := parseUserScramCredential(d)
+
+	scram_mechanism_string := d.Get("scram_mechanism").(string)
+	mechanism := convertedScramMechanism(scram_mechanism_string)
+	userScramCredential := UserScramCredential{
+		Name:      d.Get("username").(string),
+		Mechanism: mechanism,
+	}
 
 	err := c.DeleteUserScramCredential(userScramCredential)
 	if err != nil {
@@ -189,16 +256,13 @@ func userScramCredentialDelete(ctx context.Context, d *schema.ResourceData, meta
 	return nil
 }
 
-func parseUserScramCredential(d *schema.ResourceData) UserScramCredential {
+func parseUserScramCredential(d *schema.ResourceData) (UserScramCredential, error) {
 	scram_mechanism_string := d.Get("scram_mechanism").(string)
 	mechanism := convertedScramMechanism(scram_mechanism_string)
 
-	// Get password from either password or password_wo field
-	var password string
-	if pw := d.Get("password").(string); pw != "" {
-		password = pw
-	} else {
-		password = d.Get("password_wo").(string)
+	password, err := getPasswordFromConfig(d)
+	if err != nil {
+		return UserScramCredential{}, err
 	}
 
 	return UserScramCredential{
@@ -206,7 +270,7 @@ func parseUserScramCredential(d *schema.ResourceData) UserScramCredential {
 		Mechanism:  mechanism,
 		Iterations: int32(d.Get("scram_iterations").(int)),
 		Password:   []byte(password),
-	}
+	}, nil
 }
 
 func convertedScramMechanism(scram_mechanism_string string) sarama.ScramMechanismType {
