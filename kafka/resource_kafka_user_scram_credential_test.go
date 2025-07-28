@@ -426,10 +426,14 @@ func Test_getPasswordFromConfig(t *testing.T) {
 
 			// Set the password fields based on test case
 			if tt.password != nil {
-				d.Set("password", tt.password)
+				if err := d.Set("password", tt.password); err != nil {
+					t.Fatalf("failed to set password: %v", err)
+				}
 			}
 			if tt.passwordWo != nil {
-				d.Set("password_wo", tt.passwordWo)
+				if err := d.Set("password_wo", tt.passwordWo); err != nil {
+					t.Fatalf("failed to set password_wo: %v", err)
+				}
 			}
 
 			result, err := getPasswordFromConfig(d)
@@ -460,9 +464,15 @@ func Test_parseUserScramCredential_EmptyPassword(t *testing.T) {
 	resourceSchema := kafkaUserScramCredentialResource()
 	d := resourceSchema.TestResourceData()
 
-	d.Set("username", "testuser")
-	d.Set("scram_mechanism", "SCRAM-SHA-256")
-	d.Set("scram_iterations", 4096)
+	if err := d.Set("username", "testuser"); err != nil {
+		t.Fatalf("failed to set username: %v", err)
+	}
+	if err := d.Set("scram_mechanism", "SCRAM-SHA-256"); err != nil {
+		t.Fatalf("failed to set scram_mechanism: %v", err)
+	}
+	if err := d.Set("scram_iterations", 4096); err != nil {
+		t.Fatalf("failed to set scram_iterations: %v", err)
+	}
 	// Don't set password fields - they should be empty
 
 	_, err := parseUserScramCredential(d)
@@ -483,10 +493,18 @@ func Test_parseUserScramCredential_ValidPassword(t *testing.T) {
 	resourceSchema := kafkaUserScramCredentialResource()
 	d := resourceSchema.TestResourceData()
 
-	d.Set("username", "testuser")
-	d.Set("scram_mechanism", "SCRAM-SHA-256")
-	d.Set("scram_iterations", 4096)
-	d.Set("password", "valid-password")
+	if err := d.Set("username", "testuser"); err != nil {
+		t.Fatalf("failed to set username: %v", err)
+	}
+	if err := d.Set("scram_mechanism", "SCRAM-SHA-256"); err != nil {
+		t.Fatalf("failed to set scram_mechanism: %v", err)
+	}
+	if err := d.Set("scram_iterations", 4096); err != nil {
+		t.Fatalf("failed to set scram_iterations: %v", err)
+	}
+	if err := d.Set("password", "valid-password"); err != nil {
+		t.Fatalf("failed to set password: %v", err)
+	}
 
 	credential, err := parseUserScramCredential(d)
 
@@ -513,10 +531,18 @@ func Test_parseUserScramCredential_ValidPasswordWo(t *testing.T) {
 	resourceSchema := kafkaUserScramCredentialResource()
 	d := resourceSchema.TestResourceData()
 
-	d.Set("username", "testuser")
-	d.Set("scram_mechanism", "SCRAM-SHA-512")
-	d.Set("scram_iterations", 8192)
-	d.Set("password_wo", "valid-password-wo")
+	if err := d.Set("username", "testuser"); err != nil {
+		t.Fatalf("failed to set username: %v", err)
+	}
+	if err := d.Set("scram_mechanism", "SCRAM-SHA-512"); err != nil {
+		t.Fatalf("failed to set scram_mechanism: %v", err)
+	}
+	if err := d.Set("scram_iterations", 8192); err != nil {
+		t.Fatalf("failed to set scram_iterations: %v", err)
+	}
+	if err := d.Set("password_wo", "valid-password-wo"); err != nil {
+		t.Fatalf("failed to set password_wo: %v", err)
+	}
 
 	credential, err := parseUserScramCredential(d)
 
