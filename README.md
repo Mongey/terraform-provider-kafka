@@ -326,21 +326,37 @@ provider "kafka" {
   client_key        = file("../secrets/terraform.pem")
 }
 
+# Legacy usage with 'password' (deprecated)
 resource "kafka_user_scram_credential" "test" {
   username               = "user1"
   scram_mechanism        = "SCRAM-SHA-256"
   scram_iterations       = "8192"
   password               = "password"
 }
+
+# Recommended usage with write-only password (Terraform 1.11+). Password isn't stored in tfstate anymore
+resource "kafka_user_scram_credential" "secure" {
+  username               = "user2"
+  scram_mechanism        = "SCRAM-SHA-256"
+  scram_iterations       = "8192"
+  password_wo            = "secure-password"
+  password_wo_version    = "1"
+}
 ```
+
+You can fill `password_wo_version` with your secret engine metadata. For example, Hashicorp Vault returns it in the [data source][secret-version].
 
 #### Importing Existing SCRAM user credentials
 For import, use as a parameter the items separated by `|` character. Quote it to avoid shell expansion.
 
 ```sh
 # Fields in shell notation are
-# ${username}|${scram_mechanism}|${password}
+# ${username}|${scram_mechanism}|${password} (legacy format)
+# or
+# ${username}|${scram_mechanism} (for write-only passwords)
 terraform import kafka_user_scram_credential.test 'user1|SCRAM-SHA-256|password'
+# or for write-only passwords (password_wo and password_wo_version must be set manually after import)
+terraform import kafka_user_scram_credential.test 'user1|SCRAM-SHA-256'
 ```
 
 #### Properties
@@ -350,7 +366,39 @@ terraform import kafka_user_scram_credential.test 'user1|SCRAM-SHA-256|password'
 | `username`        | The username                         |
 | `scram_mechanism`        | The SCRAM mechanism (SCRAM-SHA-256 or SCRAM-SHA-512)          |
 | `scram_iterations`             | The number of SCRAM iterations (must be >= 4096). Default: 4096       |
-| `password` | The password for the user |
+| `password` | The password for the user (deprecated, use `password_wo` instead) |
+| `password_wo` | The write-only password for the user (recommended, requires Terraform 1.11+) |
+| `password_wo_version` | Version identifier for the write-only password to track changes |
+
+**Note**: Either `password` or `password_wo` must be specified, but not both. The `password_wo` field is recommended for better security as it's write-only and never returned by the API.
+
+## Common Issues and Troubleshooting
+
+### Provider Crashes
+If you encounter "Empty Summary" errors or nil pointer dereferences, common causes include:
+- Empty `bootstrap_servers` list - ensure you always provide valid broker addresses
+- Insufficient IAM permissions when using AWS MSK - see the [AWS MSK Integration Guide](docs/guides/aws-msk-integration.md)
+- Attempting to modify immutable properties on MSK Serverless
+
+### AWS MSK Authentication
+For IAM authentication issues:
+- Ensure you're using the correct port (9098 for IAM, 9096 for SASL/SCRAM)
+- For EKS/ECS, set `sasl_aws_role_arn = ""` to use pod/task credentials
+- Check your IAM policy includes necessary `kafka-cluster:*` permissions
+
+### Dynamic Configuration
+The provider requires `bootstrap_servers` at initialization time. For dynamic environments:
+- Consider using separate Terraform workspaces/states
+- Use `count` or `for_each` on resources instead of conditional provider configuration
+
+For detailed troubleshooting, see our [Troubleshooting Guide](docs/guides/troubleshooting.md).
+
+## Documentation
+
+- [Quick Start Guide](docs/guides/quick-start.md) - Get started quickly with common scenarios
+- [Authentication Guide](docs/guides/authentication.md) - Detailed authentication configuration
+- [AWS MSK Integration](docs/guides/aws-msk-integration.md) - Complete MSK setup guide
+- [Troubleshooting Guide](docs/guides/troubleshooting.md) - Common issues and solutions
 
 ## Requirements
 * [>= Kafka 1.0.0][3]
@@ -361,3 +409,4 @@ terraform import kafka_user_scram_credential.test 'user1|SCRAM-SHA-256|password'
 [third-party-plugins]: https://www.terraform.io/docs/configuration/providers.html#third-party-plugins
 [install-go]: https://golang.org/doc/install#install
 [topic-config]: https://kafka.apache.org/documentation/#topicconfigs 
+[secret-version]: https://registry.terraform.io/providers/hashicorp/vault/latest/docs/data-sources/kv_secret_v2#version-2

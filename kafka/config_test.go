@@ -272,3 +272,76 @@ func Test_newTLSConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestConfig_isAWSMSKServerless(t *testing.T) {
+	tests := []struct {
+		name             string
+		bootstrapServers []string
+		want             bool
+	}{
+		{
+			name:             "AWS MSK Serverless endpoint - lowercase",
+			bootstrapServers: []string{"kafka-serverless.us-east-1.amazonaws.com:9092"},
+			want:             true,
+		},
+		{
+			name:             "AWS MSK Serverless endpoint - mixed case",
+			bootstrapServers: []string{"Kafka-Serverless.eu-west-1.amazonaws.com:9092"},
+			want:             true,
+		},
+		{
+			name:             "AWS MSK Serverless endpoint - uppercase",
+			bootstrapServers: []string{"KAFKA-SERVERLESS.ap-southeast-1.AMAZONAWS.COM:9092"},
+			want:             true,
+		},
+		{
+			name:             "Multiple servers with one MSK Serverless",
+			bootstrapServers: []string{
+				"regular-kafka:9092",
+				"kafka-serverless.us-west-2.amazonaws.com:9092",
+				"another-kafka:9092",
+			},
+			want:             true,
+		},
+		{
+			name:             "Regular MSK endpoint (not serverless)",
+			bootstrapServers: []string{"b-1.mycluster.xyz123.c4.kafka.us-east-1.amazonaws.com:9092"},
+			want:             false,
+		},
+		{
+			name:             "Non-AWS endpoint",
+			bootstrapServers: []string{"localhost:9092"},
+			want:             false,
+		},
+		{
+			name:             "Multiple non-MSK-serverless servers",
+			bootstrapServers: []string{
+				"kafka1:9092",
+				"kafka2:9092",
+				"b-1.cluster.xyz.kafka.us-east-1.amazonaws.com:9092",
+			},
+			want:             false,
+		},
+		{
+			name:             "Empty bootstrap servers",
+			bootstrapServers: []string{},
+			want:             false,
+		},
+		{
+			name:             "Partial match but not valid pattern",
+			bootstrapServers: []string{"kafka-serverless-test.amazonaws.com:9092"},
+			want:             false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := &Config{
+				BootstrapServers: &tt.bootstrapServers,
+			}
+			if got := config.isAWSMSKServerless(); got != tt.want {
+				t.Errorf("Config.isAWSMSKServerless() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

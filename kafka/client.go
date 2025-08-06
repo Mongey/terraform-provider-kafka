@@ -635,6 +635,12 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 				log.Printf("[TRACE] Syonyms: %v", s)
 			}
 
+			if tConf.Name == "segment.bytes" && c.config.isAWSMSKServerless() {
+				// Remove segment.bytes in AWS MSK Serverless response to prevent perpetual planning
+				log.Printf("[TRACE] [%s] Using AWS MSK Serverless. Skipping segment.bytes config", topic)
+				continue
+			}
+
 			if isDefault(tConf, int(cr.Version)) {
 				continue
 			}
@@ -658,4 +664,19 @@ func (c *Client) getDeleteAclsRequestAPIVersion() int16 {
 
 func (c *Client) getDescribeConfigAPIVersion() int16 {
 	return int16(c.versionForKey(32, 1))
+}
+
+func (c *Client) getKafkaTopics() ([]Topic, error) {
+	topics, err := c.client.Topics()
+	if err != nil {
+		return nil, err
+	}
+	topicList := make([]Topic, len(topics))
+	for i := range topicList {
+		topicList[i], err = c.ReadTopic(topics[i], true)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return topicList, nil
 }
