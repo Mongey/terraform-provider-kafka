@@ -74,7 +74,7 @@ func (c *Client) DescribeUserScramCredential(username string, mechanism string) 
 
 	num := len(results)
 	if num != 1 {
-		return nil, fmt.Errorf("Got %d results (expected 1) when describing user scram credential %s", num, username)
+		return nil, fmt.Errorf("got %d results (expected 1) when describing user scram credential %s", num, username)
 	}
 
 	res := results[0]
@@ -83,7 +83,7 @@ func (c *Client) DescribeUserScramCredential(username string, mechanism string) 
 		return nil, UserScramCredentialMissingError{msg: msg}
 	}
 	if res.ErrorCode != sarama.ErrNoError {
-		return nil, fmt.Errorf("Error describing user scram credential %s: %s", username, res.ErrorCode)
+		return nil, fmt.Errorf("error describing user scram credential %s: %s", username, res.ErrorCode)
 	}
 	for _, info := range res.CredentialInfos {
 		if info.Mechanism.String() == mechanism {

@@ -54,7 +54,7 @@ func overrideProvider() (*schema.Provider, error) {
 	diags := provider.Configure(context.Background(), rc)
 	if diags.HasError() {
 		log.Printf("[ERROR] Could not configure provider %v", diags)
-		return nil, fmt.Errorf("Could not configure provider")
+		return nil, fmt.Errorf("could not configure provider")
 	}
 
 	return provider, nil

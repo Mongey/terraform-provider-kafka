@@ -1,0 +1,110 @@
+---
+page_title: "{{.Name}} {{.Type}} - {{.ProviderName}}"
+subcategory: ""
+description: |-
+  Retrieves information about an existing Kafka topic including its configuration, partition count, and replication factor.
+---
+
+# {{.Name}} ({{.Type}})
+
+The `kafka_topic` data source retrieves information about an existing Kafka topic, including its partition count, replication factor, and configuration parameters. This is useful for referencing existing topics or validating topic configurations.
+
+## Example Usage
+
+### Basic Usage
+
+{{tffile "examples/data-sources/kafka_topic/data-source.tf"}}
+
+### Referencing Topic Configuration
+
+{{tffile "examples/data-sources/kafka_topic/reference.tf"}}
+
+### Validation and Compliance
+
+{{tffile "examples/data-sources/kafka_topic/validation.tf"}}
+
+### Dynamic Resource Creation Based on Existing Topics
+
+{{tffile "examples/data-sources/kafka_topic/dynamic.tf"}}
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Common Use Cases
+
+### 1. Migration Planning
+
+Use the data source to capture existing topic configurations before migrations:
+
+```hcl
+data "kafka_topic" "all_topics" {
+  for_each = toset(var.topics_to_migrate)
+  name     = each.key
+}
+
+resource "local_file" "migration_plan" {
+  filename = "migration-plan.json"
+  content = jsonencode({
+    topics = {
+      for name, topic in data.kafka_topic.all_topics : name => {
+        partitions         = topic.partitions
+        replication_factor = topic.replication_factor
+        config            = topic.config
+      }
+    }
+  })
+}
+```
+
+### 2. Drift Detection
+
+Compare actual topic configuration with expected:
+
+```hcl
+data "kafka_topic" "actual" {
+  name = "important-topic"
+}
+
+locals {
+  expected_config = {
+    "retention.ms"        = "2592000000"  # 30 days
+    "compression.type"    = "lz4"
+    "min.insync.replicas" = "2"
+  }
+  
+  config_drift = {
+    for key, expected_value in local.expected_config :
+    key => {
+      expected = expected_value
+      actual   = lookup(data.kafka_topic.actual.config, key, "NOT_SET")
+      matches  = lookup(data.kafka_topic.actual.config, key, "") == expected_value
+    }
+  }
+}
+
+output "configuration_drift" {
+  value = local.config_drift
+}
+```
+
+### 3. Documentation Generation
+
+```hcl
+data "kafka_topic" "documented_topics" {
+  for_each = toset(var.production_topics)
+  name     = each.key
+}
+
+resource "local_file" "topic_documentation" {
+  filename = "topic-documentation.md"
+  content = templatefile("${path.module}/templates/topic-docs.tftpl", {
+    topics = data.kafka_topic.documented_topics
+  })
+}
+```
+
+## Notes
+
+- The data source requires read permissions on the Kafka cluster
+- Topic configuration values are returned as strings, even for numeric values
+- If a topic doesn't exist, the data source will fail
+- Some configuration parameters may not be returned if they are set to defaults
