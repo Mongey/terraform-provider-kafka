@@ -278,6 +278,8 @@ func stringToACLResource(in string) sarama.AclResourceType {
 		return sarama.AclResourceCluster
 	case "TransactionalID":
 		return sarama.AclResourceTransactionalID
+	case "DelegationToken":
+		return sarama.AclResourceDelegationToken
 	}
 	return unknownConversion
 }
@@ -484,6 +486,15 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 			Version: int(c.getDescribeAclsRequestAPIVersion()),
 			AclFilter: sarama.AclFilter{
 				ResourceType:              sarama.AclResourceTransactionalID,
+				ResourcePatternTypeFilter: sarama.AclPatternAny,
+				PermissionType:            sarama.AclPermissionAny,
+				Operation:                 sarama.AclOperationAny,
+			},
+		},
+		&sarama.DescribeAclsRequest{
+			Version: int(c.getDescribeAclsRequestAPIVersion()),
+			AclFilter: sarama.AclFilter{
+				ResourceType:              sarama.AclResourceDelegationToken,
 				ResourcePatternTypeFilter: sarama.AclPatternAny,
 				PermissionType:            sarama.AclPermissionAny,
 				Operation:                 sarama.AclOperationAny,
