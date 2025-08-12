@@ -261,7 +261,7 @@ resource "kafka_acl" "test" {
 | `acl_operation`                | Operation that is being allowed or denied                          | `Unknown`, `Any`, `All`, `Read`, `Write`, `Create`, `Delete`, `Alter`, `Describe`, `ClusterAction`, `DescribeConfigs`, `AlterConfigs`, `IdempotentWrite` |
 | `acl_permission_type`          | Type of permission                                                 | `Unknown`, `Any`, `Allow`, `Deny`                                                                                                                        |
 | `resource_name`                | The name of the resource                                           | `*`                                                                                                                                                      |
-| `resource_type`                | The type of resource                                               | `Unknown`, `Any`, `Topic`, `Group`, `Cluster`, `TransactionalID`                                                                                         |
+| `resource_type`                | The type of resource                                               | `Unknown`, `Any`, `Topic`, `Group`, `Cluster`, `TransactionalID`,`DelegationToken`                                                                                         |
 | `resource_pattern_type_filter` |                                                                    | `Prefixed`, `Any`, `Match`, `Literal`                                                                                                                    |
 
 
