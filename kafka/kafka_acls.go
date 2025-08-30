@@ -298,6 +298,8 @@ func ACLResourceToString(in sarama.AclResourceType) string {
 		return "Cluster"
 	case sarama.AclResourceTransactionalID:
 		return "TransactionalID"
+	case sarama.AclResourceDelegationToken:
+		return "DelegationToken"
 	}
 	return "unknownConversion"
 }
