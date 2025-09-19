@@ -132,7 +132,7 @@ func (c *Client) populateAPIVersions() error {
 	}
 
 	if len(errs) != 0 {
-		return errors.New(sarama.MultiErrorFormat(errs))
+		return errors.Join(errs...)
 	}
 
 	c.supportedAPIs = make(map[int]int, len(clusterApiVersions))
