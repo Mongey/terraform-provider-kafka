@@ -311,8 +311,8 @@ func testResourceTopic_updateCheck(s *terraform.State) error {
 	if v, ok := topic.Config["segment.ms"]; ok && *v != "33333" {
 		return fmt.Errorf("segment.ms did not get updated, got: %v", topic.Config)
 	}
-	if v, ok := topic.Config["segment.bytes"]; ok && *v != "44444" {
-		return fmt.Errorf("segment.bytes did not get updated, got: %s, expected 44444", *v)
+	if v, ok := topic.Config["segment.bytes"]; ok && *v != "2222222" {
+		return fmt.Errorf("segment.bytes did not get updated, got: %s, expected 2222222", *v)
 	}
 
 	if v, ok := topic.Config["retention.ms"]; ok || v != nil {
@@ -519,7 +519,7 @@ resource "kafka_topic" "test" {
 
   config = {
     "segment.ms" = "33333"
-    "segment.bytes" = "44444"
+    "segment.bytes" = "2222222"
   }
 }
 `
