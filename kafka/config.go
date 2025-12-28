@@ -168,7 +168,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 				region = os.Getenv("AWS_REGION")
 			}
 			if region == "" {
-				log.Fatalf("[ERROR] aws region must be configured or AWS_REGION environment variable must be set to use aws-iam sasl mechanism")
+				return kafkaConfig, fmt.Errorf("aws region must be configured or AWS_REGION environment variable must be set to use aws-iam sasl mechanism")
 			}
 			kafkaConfig.Net.SASL.TokenProvider = c
 		case "oauthbearer":
@@ -178,7 +178,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 				tokenUrl = os.Getenv("TOKEN_URL")
 			}
 			if tokenUrl == "" {
-				log.Fatalf("[ERROR] token url must be configured or TOKEN_URL environment variable must be set to use oauthbearer sasl mechanism")
+				return kafkaConfig, fmt.Errorf("token url must be configured or TOKEN_URL environment variable must be set to use oauthbearer sasl mechanism")
 			}
 			oauth2Config := clientcredentials.Config{
 				TokenURL:     tokenUrl,
@@ -189,7 +189,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 			kafkaConfig.Net.SASL.TokenProvider = newOauthbearerTokenProvider(&oauth2Config)
 		case "plain":
 		default:
-			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\" or \"plain\"", c.SASLMechanism)
+			return kafkaConfig, fmt.Errorf("invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\", \"oauthbearer\" or \"plain\"", c.SASLMechanism)
 		}
 
 		kafkaConfig.Net.SASL.Enable = true
@@ -269,11 +269,23 @@ func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*t
 			return &tlsConfig, err
 		}
 
-		if x509.IsEncryptedPEMBlock(keyBlock) { //nolint:staticcheck
-			log.Printf("[INFO] Using encrypted private key")
+		// DEPRECATED: x509.IsEncryptedPEMBlock and x509.DecryptPEMBlock are deprecated
+		// since Go 1.16 because legacy PEM encryption (as specified in RFC 1423) is
+		// insecure by design. However, we maintain support for backward compatibility
+		// with existing encrypted private keys that users may have generated with:
+		//   openssl genrsa -des3 -out client.key 4096
+		//
+		// For new deployments, users should use PKCS#8 encrypted keys instead.
+		// See: https://go.dev/doc/go1.16#crypto/x509
+		//nolint:staticcheck // Intentionally using deprecated functions for legacy PEM support
+		if x509.IsEncryptedPEMBlock(keyBlock) {
+			log.Printf("[WARN] Detected legacy PEM-encrypted private key (Proc-Type: 4,ENCRYPTED). " +
+				"This encryption format is deprecated and considered insecure. " +
+				"Consider migrating to PKCS#8 encrypted keys for improved security.")
 			var err error
 
-			keyBytes, err = x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase)) //nolint:staticcheck
+			//nolint:staticcheck // Intentionally using deprecated function for legacy PEM support
+			keyBytes, err = x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase))
 			if err != nil {
 				log.Printf("[ERROR] Error decrypting private key with passphrase %s", err)
 				return &tlsConfig, err
@@ -348,7 +360,10 @@ func (config *Config) copyWithMaskedSensitiveValues() Config {
 	return copy
 }
 
+// awsMSKServerlessRegex is compiled once at package level to avoid
+// expensive regex compilation on every call to isAWSMSKServerless
+var awsMSKServerlessRegex = regexp.MustCompile(`(?i)kafka-serverless\.(.*)\.amazonaws\.com`)
+
 func (config *Config) isAWSMSKServerless() bool {
-	re := regexp.MustCompile(`(?i)kafka-serverless\.(.*)\.amazonaws\.com`)
-	return slices.ContainsFunc(*(config.BootstrapServers), re.MatchString)
+	return slices.ContainsFunc(*(config.BootstrapServers), awsMSKServerlessRegex.MatchString)
 }

@@ -273,6 +273,156 @@ func Test_newTLSConfig(t *testing.T) {
 	}
 }
 
+func TestConfig_NewKafkaConfig_InvalidSASLMechanism(t *testing.T) {
+	config := Config{
+		SASLUsername:  "user",
+		SASLPassword:  "pass",
+		SASLMechanism: "invalid-mechanism",
+	}
+
+	_, err := config.newKafkaConfig()
+
+	if err == nil {
+		t.Fatal("Expected error for invalid SASL mechanism, got nil")
+	}
+
+	expectedMsg := `invalid sasl mechanism "invalid-mechanism": can only be "scram-sha256", "scram-sha512", "aws-iam", "oauthbearer" or "plain"`
+	if err.Error() != expectedMsg {
+		t.Errorf("Expected error message %q, got %q", expectedMsg, err.Error())
+	}
+}
+
+func TestConfig_NewKafkaConfig_AWSIAMMissingRegion(t *testing.T) {
+	// Clear AWS_REGION env var if set
+	originalRegion := os.Getenv("AWS_REGION")
+	os.Unsetenv("AWS_REGION")
+	defer func() {
+		if originalRegion != "" {
+			os.Setenv("AWS_REGION", originalRegion)
+		}
+	}()
+
+	config := Config{
+		SASLMechanism: "aws-iam",
+	}
+
+	_, err := config.newKafkaConfig()
+
+	if err == nil {
+		t.Fatal("Expected error for missing AWS region, got nil")
+	}
+
+	expectedMsg := "aws region must be configured or AWS_REGION environment variable must be set to use aws-iam sasl mechanism"
+	if err.Error() != expectedMsg {
+		t.Errorf("Expected error message %q, got %q", expectedMsg, err.Error())
+	}
+}
+
+func TestConfig_NewKafkaConfig_OAuthBearerMissingTokenURL(t *testing.T) {
+	// Clear TOKEN_URL env var if set
+	originalTokenURL := os.Getenv("TOKEN_URL")
+	os.Unsetenv("TOKEN_URL")
+	defer func() {
+		if originalTokenURL != "" {
+			os.Setenv("TOKEN_URL", originalTokenURL)
+		}
+	}()
+
+	config := Config{
+		SASLUsername:  "user",
+		SASLPassword:  "pass",
+		SASLMechanism: "oauthbearer",
+		SASLTokenUrl:  "", // Empty token URL
+	}
+
+	_, err := config.newKafkaConfig()
+
+	if err == nil {
+		t.Fatal("Expected error for missing token URL, got nil")
+	}
+
+	expectedMsg := "token url must be configured or TOKEN_URL environment variable must be set to use oauthbearer sasl mechanism"
+	if err.Error() != expectedMsg {
+		t.Errorf("Expected error message %q, got %q", expectedMsg, err.Error())
+	}
+}
+
+// TestNewTLSConfig_LegacyEncryptedPEM verifies that legacy PEM-encrypted private keys
+// (using the deprecated Proc-Type: 4,ENCRYPTED format) are still supported for backward
+// compatibility. This format uses x509.IsEncryptedPEMBlock and x509.DecryptPEMBlock
+// which are deprecated since Go 1.16, but we maintain support for users with existing
+// encrypted keys generated using tools like:
+//
+//	openssl genrsa -des3 -out client.key 4096
+//
+// Note: For new deployments, PKCS#8 encrypted keys are recommended.
+// See: https://go.dev/doc/go1.16#crypto/x509
+func TestNewTLSConfig_LegacyEncryptedPEM(t *testing.T) {
+	t.Run("decrypts legacy encrypted PEM key with correct passphrase", func(t *testing.T) {
+		clientCert := loadFile(t, "../secrets/client.pem")
+		clientKey := loadFile(t, "../secrets/client.key") // Legacy encrypted key
+		caCert := loadFile(t, "../secrets/ca.crt")
+		passphrase := "test-pass"
+
+		tlsConfig, err := newTLSConfig(clientCert, clientKey, caCert, passphrase)
+
+		if err != nil {
+			t.Fatalf("Expected no error decrypting legacy PEM, got: %v", err)
+		}
+		if len(tlsConfig.Certificates) == 0 {
+			t.Error("Expected at least one certificate to be loaded")
+		}
+	})
+
+	t.Run("fails with wrong passphrase for legacy encrypted PEM key", func(t *testing.T) {
+		clientCert := loadFile(t, "../secrets/client.pem")
+		clientKey := loadFile(t, "../secrets/client.key") // Legacy encrypted key
+		caCert := loadFile(t, "../secrets/ca.crt")
+		wrongPassphrase := "wrong-password"
+
+		_, err := newTLSConfig(clientCert, clientKey, caCert, wrongPassphrase)
+
+		if err == nil {
+			t.Error("Expected error when using wrong passphrase for encrypted key")
+		}
+	})
+
+	t.Run("fails when no passphrase provided for legacy encrypted PEM key", func(t *testing.T) {
+		clientCert := loadFile(t, "../secrets/client.pem")
+		clientKey := loadFile(t, "../secrets/client.key") // Legacy encrypted key
+		caCert := loadFile(t, "../secrets/ca.crt")
+
+		_, err := newTLSConfig(clientCert, clientKey, caCert, "")
+
+		if err == nil {
+			t.Error("Expected error when no passphrase provided for encrypted key")
+		}
+	})
+
+	t.Run("works with unencrypted key without passphrase", func(t *testing.T) {
+		clientCert := loadFile(t, "../secrets/client.pem")
+		clientKey := loadFile(t, "../secrets/client-no-password.key") // Unencrypted key
+		caCert := loadFile(t, "../secrets/ca.crt")
+
+		tlsConfig, err := newTLSConfig(clientCert, clientKey, caCert, "")
+
+		if err != nil {
+			t.Fatalf("Expected no error with unencrypted key, got: %v", err)
+		}
+		if len(tlsConfig.Certificates) == 0 {
+			t.Error("Expected at least one certificate to be loaded")
+		}
+	})
+}
+
+func BenchmarkIsAWSMSKServerless(b *testing.B) {
+	servers := []string{"kafka-serverless.us-east-1.amazonaws.com"}
+	config := &Config{BootstrapServers: &servers}
+	for i := 0; i < b.N; i++ {
+		config.isAWSMSKServerless()
+	}
+}
+
 func TestConfig_isAWSMSKServerless(t *testing.T) {
 	tests := []struct {
 		name             string
