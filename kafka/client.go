@@ -281,11 +281,9 @@ func (c *Client) UpdateTopic(topic Topic) error {
 		return err
 	}
 
-	if err == nil {
-		for _, e := range res.Resources {
-			if e.ErrorCode != int16(sarama.ErrNoError) {
-				return errors.New(e.ErrorMsg)
-			}
+	for _, e := range res.Resources {
+		if e.ErrorCode != int16(sarama.ErrNoError) {
+			return errors.New(e.ErrorMsg)
 		}
 	}
 
