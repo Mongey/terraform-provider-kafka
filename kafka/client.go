@@ -172,7 +172,7 @@ func rawApiVersionsRequest(broker *sarama.Broker, config *sarama.Config) (*saram
 
 	defer func() {
 		if err := broker.Close(); err != nil && err != sarama.ErrNotConnected {
-			log.Fatal(err)
+			log.Printf("[ERROR] failed to close broker: %v", err)
 		}
 	}()
 
