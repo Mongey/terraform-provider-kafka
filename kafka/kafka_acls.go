@@ -423,13 +423,11 @@ func (c *Client) DescribeACLs(s StringlyTypedACL) ([]*sarama.ResourceAcls, error
 		return nil, err
 	}
 
-	if err == nil {
-		if aclsR.Err != sarama.ErrNoError {
-			return nil, fmt.Errorf("%s", aclsR.Err)
-		}
+	if aclsR.Err != sarama.ErrNoError {
+		return nil, fmt.Errorf("%s", aclsR.Err)
 	}
 
-	return aclsR.ResourceAcls, err
+	return aclsR.ResourceAcls, nil
 }
 
 func (c *Client) InvalidateACLCache() {
@@ -450,6 +448,14 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 
 	c.aclCache.mutex.Lock()
 	defer c.aclCache.mutex.Unlock()
+
+	// Re-check cache validity after acquiring write lock (TOCTOU fix)
+	// Another goroutine may have populated the cache between RUnlock and Lock
+	if c.aclCache.valid {
+		log.Printf("[INFO] Using cached ACL list (populated by another goroutine)")
+		return c.aclCache.acls, nil
+	}
+
 	log.Printf("[INFO] Listing all ACLS")
 	broker, err := c.client.Controller()
 	if err != nil {
@@ -515,15 +521,13 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 
 		log.Printf("[TRACE] ThrottleTime: %d", aclsR.ThrottleTime)
 
-		if err == nil {
-			if aclsR.Err != sarama.ErrNoError {
-				return nil, fmt.Errorf("%s", aclsR.Err)
-			}
+		if aclsR.Err != sarama.ErrNoError {
+			return nil, fmt.Errorf("%s", aclsR.Err)
 		}
 
 		res = append(res, aclsR.ResourceAcls...)
 	}
 	c.aclCache.valid = true
 	c.aclCache.acls = res
-	return res, err
+	return res, nil
 }
