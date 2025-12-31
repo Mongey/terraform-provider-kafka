@@ -10,24 +10,6 @@ import (
 	"github.com/IBM/sarama"
 )
 
-// mockBroker is a test helper that implements the broker interface for testing
-type mockBrokerForClose struct {
-	openErr  error
-	closeErr error
-}
-
-func (m *mockBrokerForClose) Open(config *sarama.Config) error {
-	return m.openErr
-}
-
-func (m *mockBrokerForClose) Close() error {
-	return m.closeErr
-}
-
-func (m *mockBrokerForClose) ApiVersions(request *sarama.ApiVersionsRequest) (*sarama.ApiVersionsResponse, error) {
-	return &sarama.ApiVersionsResponse{}, nil
-}
-
 // Test_rawApiVersionsRequest_BrokerCloseError verifies that broker close errors
 // are logged but do not cause a fatal exit (which would bypass other deferred cleanup).
 func Test_rawApiVersionsRequest_BrokerCloseError(t *testing.T) {

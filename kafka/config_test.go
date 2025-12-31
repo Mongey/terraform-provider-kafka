@@ -293,14 +293,8 @@ func TestConfig_NewKafkaConfig_InvalidSASLMechanism(t *testing.T) {
 }
 
 func TestConfig_NewKafkaConfig_AWSIAMMissingRegion(t *testing.T) {
-	// Clear AWS_REGION env var if set
-	originalRegion := os.Getenv("AWS_REGION")
-	os.Unsetenv("AWS_REGION")
-	defer func() {
-		if originalRegion != "" {
-			os.Setenv("AWS_REGION", originalRegion)
-		}
-	}()
+	// Clear AWS_REGION env var - t.Setenv handles cleanup automatically
+	t.Setenv("AWS_REGION", "")
 
 	config := Config{
 		SASLMechanism: "aws-iam",
@@ -319,14 +313,8 @@ func TestConfig_NewKafkaConfig_AWSIAMMissingRegion(t *testing.T) {
 }
 
 func TestConfig_NewKafkaConfig_OAuthBearerMissingTokenURL(t *testing.T) {
-	// Clear TOKEN_URL env var if set
-	originalTokenURL := os.Getenv("TOKEN_URL")
-	os.Unsetenv("TOKEN_URL")
-	defer func() {
-		if originalTokenURL != "" {
-			os.Setenv("TOKEN_URL", originalTokenURL)
-		}
-	}()
+	// Clear TOKEN_URL env var - t.Setenv handles cleanup automatically
+	t.Setenv("TOKEN_URL", "")
 
 	config := Config{
 		SASLUsername:  "user",

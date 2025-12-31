@@ -125,7 +125,7 @@ func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag
 
 	for _, foundACLs := range currentACLs {
 		// find only ACLs where ResourceName matches
-		if foundACLs.ResourceName != a.Resource.Name {
+		if foundACLs.ResourceName != a.Name {
 			continue
 		}
 		if len(foundACLs.Acls) < 1 {
@@ -241,7 +241,7 @@ func waitForACLToBeVisible(ctx context.Context, c *LazyClient, expectedACL Strin
 
 		// Check if our ACL exists
 		for _, foundACLs := range acls {
-			if foundACLs.ResourceName != expectedACL.Resource.Name {
+			if foundACLs.ResourceName != expectedACL.Name {
 				continue
 			}
 
@@ -307,7 +307,7 @@ func waitForACLToBeDeleted(ctx context.Context, c *LazyClient, deletedACL String
 		// Check if our ACL still exists
 		found := false
 		for _, foundACLs := range acls {
-			if foundACLs.ResourceName != deletedACL.Resource.Name {
+			if foundACLs.ResourceName != deletedACL.Name {
 				continue
 			}
 

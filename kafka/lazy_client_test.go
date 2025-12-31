@@ -104,7 +104,7 @@ func Test_checkTLSConfigClosesConnection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create TLS listener: %v", err)
 	}
-	defer listener.Close()
+	defer func() { _ = listener.Close() }()
 
 	// Get the address the server is listening on
 	addr := listener.Addr().String()
@@ -121,7 +121,7 @@ func Test_checkTLSConfigClosesConnection(t *testing.T) {
 				// Perform TLS handshake
 				tlsConn := c.(*tls.Conn)
 				if err := tlsConn.Handshake(); err != nil {
-					c.Close()
+					_ = c.Close()
 					return
 				}
 				// Read until EOF (connection closed by client)

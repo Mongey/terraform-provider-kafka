@@ -8,15 +8,6 @@ import (
 	"github.com/IBM/sarama"
 )
 
-// mockBrokerClient is a mock implementation for testing the ACL cache behavior.
-// It tracks how many times DescribeAcls is called to verify cache effectiveness.
-type mockBrokerClient struct {
-	describeAclsCalls atomic.Int32
-	controllerErr     error
-	describeAclsErr   error
-	mockACLs          []*sarama.ResourceAcls
-}
-
 // TestListACLs_ConcurrentCacheFill tests that concurrent calls to ListACLs
 // properly handle the TOCTOU (Time-of-Check to Time-of-Use) race condition.
 // The fix ensures that after acquiring the write lock, we re-check if the cache

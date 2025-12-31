@@ -52,7 +52,7 @@ func (c *LazyClient) checkTLSConfig() error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	return conn.Handshake()
 }

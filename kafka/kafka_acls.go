@@ -28,7 +28,7 @@ type StringlyTypedACL struct {
 }
 
 func (a StringlyTypedACL) String() string {
-	return strings.Join([]string{a.ACL.Principal, a.ACL.Host, a.ACL.Operation, a.ACL.PermissionType, a.Resource.Type, a.Resource.Name, a.Resource.PatternTypeFilter}, "|")
+	return strings.Join([]string{a.ACL.Principal, a.ACL.Host, a.ACL.Operation, a.ACL.PermissionType, a.Type, a.Name, a.PatternTypeFilter}, "|")
 }
 
 func tfToAclCreation(s StringlyTypedACL) (*sarama.AclCreation, error) {
@@ -42,13 +42,13 @@ func tfToAclCreation(s StringlyTypedACL) (*sarama.AclCreation, error) {
 	if pType == unknownConversion {
 		return acl, fmt.Errorf("unknown permission type: %s", s.ACL.PermissionType)
 	}
-	rType := stringToACLResource(s.Resource.Type)
+	rType := stringToACLResource(s.Type)
 	if rType == unknownConversion {
-		return acl, fmt.Errorf("unknown resource type: %s", s.Resource.Type)
+		return acl, fmt.Errorf("unknown resource type: %s", s.Type)
 	}
-	patternType := stringToACLPrefix(s.Resource.PatternTypeFilter)
+	patternType := stringToACLPrefix(s.PatternTypeFilter)
 	if patternType == unknownConversion {
-		return acl, fmt.Errorf("unknown pattern type filter: '%s'", s.Resource.PatternTypeFilter)
+		return acl, fmt.Errorf("unknown pattern type filter: '%s'", s.PatternTypeFilter)
 	}
 
 	acl.Acl = sarama.Acl{
@@ -59,7 +59,7 @@ func tfToAclCreation(s StringlyTypedACL) (*sarama.AclCreation, error) {
 	}
 	acl.Resource = sarama.Resource{
 		ResourceType:        rType,
-		ResourceName:        s.Resource.Name,
+		ResourceName:        s.Name,
 		ResourcePatternType: patternType,
 	}
 
@@ -72,7 +72,7 @@ func tfToAclFilter(s StringlyTypedACL) (sarama.AclFilter, error) {
 	f := sarama.AclFilter{
 		Principal:    &s.ACL.Principal,
 		Host:         &s.ACL.Host,
-		ResourceName: &s.Resource.Name,
+		ResourceName: &s.Name,
 	}
 
 	op := stringToOperation(s.ACL.Operation)
@@ -87,15 +87,15 @@ func tfToAclFilter(s StringlyTypedACL) (sarama.AclFilter, error) {
 	}
 	f.PermissionType = pType
 
-	rType := stringToACLResource(s.Resource.Type)
+	rType := stringToACLResource(s.Type)
 	if rType == unknownConversion {
-		return f, fmt.Errorf("unknown resource type: %s", s.Resource.Type)
+		return f, fmt.Errorf("unknown resource type: %s", s.Type)
 	}
 	f.ResourceType = rType
 
-	patternType := stringToACLPrefix(s.Resource.PatternTypeFilter)
+	patternType := stringToACLPrefix(s.PatternTypeFilter)
 	if patternType == unknownConversion {
-		return f, fmt.Errorf("unknown pattern type filter: '%s'", s.Resource.PatternTypeFilter)
+		return f, fmt.Errorf("unknown pattern type filter: '%s'", s.PatternTypeFilter)
 	}
 	f.ResourcePatternTypeFilter = patternType
 
@@ -116,6 +116,7 @@ func stringToACLPrefix(s string) sarama.AclResourcePatternType {
 	return unknownConversion
 }
 
+//nolint:staticcheck // QF1008: keeping explicit embedded field names for code clarity
 func (c *Client) enqueueDeleteACL(broker *sarama.Broker, filter *sarama.AclFilter) error {
 	c.aclDeletionQueue.mutex.Lock()
 	log.Printf("[DEBUG] Enqueueing ACL Deletion %v", *filter)
@@ -189,6 +190,7 @@ func (c *Client) DeleteACL(s StringlyTypedACL) error {
 	return nil
 }
 
+//nolint:staticcheck // QF1008: keeping explicit embedded field names for code clarity
 func (c *Client) enqueueCreateACL(broker *sarama.Broker, create *sarama.AclCreation) error {
 	c.aclCreationQueue.mutex.Lock()
 	if c.aclCreationQueue.timer != nil {
@@ -430,6 +432,7 @@ func (c *Client) DescribeACLs(s StringlyTypedACL) ([]*sarama.ResourceAcls, error
 	return aclsR.ResourceAcls, nil
 }
 
+//nolint:staticcheck // QF1008: keeping explicit embedded field names for code clarity
 func (c *Client) InvalidateACLCache() {
 	c.aclCache.mutex.Lock()
 	c.aclCache.valid = false
@@ -437,6 +440,7 @@ func (c *Client) InvalidateACLCache() {
 	c.aclCache.mutex.Unlock()
 }
 
+//nolint:staticcheck // QF1008: keeping explicit embedded field names for code clarity
 func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	c.aclCache.mutex.RLock()
 	if c.aclCache.valid {
