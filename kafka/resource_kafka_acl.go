@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func kafkaACLResource() *schema.Resource {
@@ -35,10 +36,12 @@ func kafkaACLResource() *schema.Resource {
 				ForceNew: true,
 			},
 			"resource_pattern_type_filter": {
-				Type:     schema.TypeString,
-				Default:  "Literal",
-				Optional: true,
-				ForceNew: true,
+				Type:             schema.TypeString,
+				Default:          "Literal",
+				Optional:         true,
+				ForceNew:         true,
+				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice([]string{"Literal", "Prefixed"}, false)),
+				Description:      "How to match the resource name. Valid values: Literal (exact match) or Prefixed (match resources with the given prefix).",
 			},
 			"acl_principal": {
 				Type:     schema.TypeString,
