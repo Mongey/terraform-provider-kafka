@@ -27,10 +27,10 @@ func getPasswordFromConfig(d interface{}) (string, error) {
 
 		if password == "" && passwordWo == "" {
 			if rawConfig := data.GetRawConfig(); !rawConfig.IsNull() {
-				if passwordWoVal := rawConfig.GetAttr("password_wo"); !passwordWoVal.IsNull() {
+				if passwordWoVal := rawConfig.GetAttr("password_wo"); !passwordWoVal.IsNull() && passwordWoVal.IsKnown() {
 					passwordWo = passwordWoVal.AsString()
 				}
-				if passwordVal := rawConfig.GetAttr("password"); !passwordVal.IsNull() {
+				if passwordVal := rawConfig.GetAttr("password"); !passwordVal.IsNull() && passwordVal.IsKnown() {
 					password = passwordVal.AsString()
 				}
 			}
@@ -42,10 +42,10 @@ func getPasswordFromConfig(d interface{}) (string, error) {
 
 		if password == "" && passwordWo == "" {
 			if rawConfig := data.GetRawConfig(); !rawConfig.IsNull() {
-				if passwordWoVal := rawConfig.GetAttr("password_wo"); !passwordWoVal.IsNull() {
+				if passwordWoVal := rawConfig.GetAttr("password_wo"); !passwordWoVal.IsNull() && passwordWoVal.IsKnown() {
 					passwordWo = passwordWoVal.AsString()
 				}
-				if passwordVal := rawConfig.GetAttr("password"); !passwordVal.IsNull() {
+				if passwordVal := rawConfig.GetAttr("password"); !passwordVal.IsNull() && passwordVal.IsKnown() {
 					password = passwordVal.AsString()
 				}
 			}
@@ -68,6 +68,22 @@ func getPasswordFromConfig(d interface{}) (string, error) {
 }
 
 func validatePasswordFields(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	// Check if password values are known (they might be unknown during plan when using computed values)
+	rawConfig := d.GetRawConfig()
+	if !rawConfig.IsNull() {
+		passwordVal := rawConfig.GetAttr("password")
+		passwordWoVal := rawConfig.GetAttr("password_wo")
+
+		// If both values are unknown (e.g., from random_password), skip validation during plan
+		passwordUnknown := !passwordVal.IsNull() && !passwordVal.IsKnown()
+		passwordWoUnknown := !passwordWoVal.IsNull() && !passwordWoVal.IsKnown()
+
+		if passwordUnknown || passwordWoUnknown {
+			// Values are unknown, will be validated during apply
+			return nil
+		}
+	}
+
 	_, err := getPasswordFromConfig(d)
 	if err != nil {
 		return fmt.Errorf("password validation failed: %v", err)
