@@ -85,6 +85,11 @@ func metaToTopic(d *schema.ResourceData, meta interface{}) Topic {
 	convertedPartitions := int32(partitions)
 	convertedRF := int16(replicationFactor)
 	config := d.Get("config").(map[string]interface{})
+	managedReplicationFactor := d.Get("managed_replication_factor").(bool)
+
+	if managedReplicationFactor {
+		convertedRF = -1
+	}
 
 	m2 := make(map[string]*string)
 	for key, value := range config {
