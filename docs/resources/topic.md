@@ -76,6 +76,20 @@ resource "kafka_topic" "metrics" {
 }
 ```
 
+### Topic with Confluent placement constraints
+
+```terraform
+resource "kafka_topic" "confluent" {
+  name               = "confluent"
+  replication_factor = -1
+  partitions         = 10
+
+  config = {
+    "confluent.placement.constraints" = "{\"version\": 1, \"replicas\":[{\"count\": 1, \"constraints\": {\"rack\": \"rack-1\"}}], \"observers\":[{\"count\": 1, \"constraints\": {\"rack\": \"rack-2\"}}]}"
+  }
+}
+```
+
 ## Import
 
 Existing Kafka topics can be imported using the topic name:
@@ -91,7 +105,7 @@ terraform import kafka_topic.example example-topic
 
 - `name` (String) The name of the topic.
 - `partitions` (Number) Number of partitions.
-- `replication_factor` (Number) Number of replicas.
+- `replication_factor` (Number) Number of replicas. If using Confluent Kafka and setting placement constraints, set this to `-1`.
 
 ### Optional
 

@@ -114,6 +114,32 @@ func TestAcc_TopicUpdatePartitions(t *testing.T) {
 	})
 }
 
+func TestAcc_TopicNegRepFactor(t *testing.T) {
+	t.Parallel()
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	topicName := fmt.Sprintf("syslog-%s", u)
+	bs := testBootstrapServers[0]
+
+	r.Test(t, r.TestCase{
+		ProviderFactories: overrideProviderFactory(),
+		PreCheck:          func() { testAccPreCheck(t) },
+		CheckDestroy:      testAccCheckTopicDestroy,
+		Steps: []r.TestStep{
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_initialConfig, topicName)),
+				Check:  testResourceTopic_initialCheck,
+			},
+			{
+				Config: cfg(t, bs, fmt.Sprintf(testResourceTopic_updateNegRepFactor, topicName)),
+				Check:  testResourceTopic_updateNegRepFactorCheck,
+			},
+		},
+	})
+}
+
 func TestAcc_TopicAlterReplicationFactor(t *testing.T) {
 	t.Parallel()
 	u, err := uuid.GenerateUUID()
@@ -348,6 +374,39 @@ func testResourceTopic_updatePartitionsCheck(s *terraform.State) error {
 	return nil
 }
 
+func testResourceTopic_updateNegRepFactorCheck(s *terraform.State) error {
+	resourceState := s.Modules[0].Resources["kafka_topic.test"]
+	instanceState := resourceState.Primary
+
+	meta := testProvider.Meta()
+	if meta == nil {
+		return fmt.Errorf("provider Meta() returned nil")
+	}
+
+	client := meta.(*LazyClient)
+
+	name := instanceState.ID
+	topic, err := client.ReadTopic(name, true)
+	if err != nil {
+		return err
+	}
+	if topic.ReplicationFactor != -1 {
+		return fmt.Errorf("expected replication factor to be -1")
+	}
+	if topic.Partitions != 2 {
+		return fmt.Errorf("partitions did not get increated got: %d", topic.Partitions)
+	}
+
+	if v, ok := topic.Config["segment.ms"]; ok && *v != "33333" {
+		return fmt.Errorf("segment.ms !=  %v", topic)
+	}
+	if v, ok := topic.Config["confluent.placement.constraints"]; ok && *v != "{\"version\": 1, \"replicas\":[{\"count\": 1, \"constraints\": {\"rack\": \"rack-1\"}}], \"observers\":[{\"count\": 1, \"constraints\": {\"rack\": \"rack-2\"}}]}" {
+		return fmt.Errorf("confluent.placement.constraints !=  %v", topic)
+	}
+
+	return nil
+}
+
 func testResourceTopic_updateRFCheck(s *terraform.State) error {
 	resourceState := s.Modules[0].Resources["kafka_topic.test"]
 	instanceState := resourceState.Primary
@@ -546,6 +605,20 @@ resource "kafka_topic" "test" {
   config = {
     "retention.ms" = "11111"
     "segment.ms" = "22222"
+  }
+}
+`
+
+const testResourceTopic_updateNegRepFactor = `
+resource "kafka_topic" "test" {
+  name               = "%s"
+  replication_factor = -1
+  partitions         = 2
+
+  config = {
+	"confluent.placement.constraints" = '{"version": 1, "replicas":[{"count": 1, "constraints": {"rack": "rack-1"}}], "observers":[{"count": 1, "constraints": {"rack": "rack-2"}}]}'
+    "retention.ms" = "11111"
+    "segment.ms" = "33333"
   }
 }
 `
