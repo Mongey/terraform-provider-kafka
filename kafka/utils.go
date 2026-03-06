@@ -35,17 +35,17 @@ func MapEq(result, expected map[string]*string) error {
 func nonEmptyAndTrimmed(bootstrapServers []string) []string {
 	// Clone to avoid modifying the original slice
 	result := slices.Clone(bootstrapServers)
-	
+
 	// Trim all strings in place
 	for i := range result {
 		result[i] = strings.TrimSpace(result[i])
 	}
-	
+
 	// Remove empty strings
 	result = slices.DeleteFunc(result, func(s string) bool {
 		return s == ""
 	})
-	
+
 	return result
 }
 
@@ -75,5 +75,23 @@ func validateDiagFunc(validateFunc func(interface{}, string) ([]string, []error)
 			})
 		}
 		return diags
+	}
+}
+
+func intEitherNegativeOneOrAtLeastOne() schema.SchemaValidateFunc {
+	minVal := 1
+	return func(i interface{}, k string) (warnings []string, errors []error) {
+		v, ok := i.(int)
+		if !ok {
+			errors = append(errors, fmt.Errorf("expected type of %s to be integer", k))
+			return warnings, errors
+		}
+
+		if v != 1 || v < minVal {
+			errors = append(errors, fmt.Errorf("expected %s to be either -1 or at least (%d), got %d", k, minVal, v))
+			return warnings, errors
+		}
+
+		return warnings, errors
 	}
 }

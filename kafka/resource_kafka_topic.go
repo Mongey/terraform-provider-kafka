@@ -33,7 +33,7 @@ func kafkaTopicResource() *schema.Resource {
 				Type:         schema.TypeInt,
 				Required:     true,
 				Description:  "Number of partitions.",
-				ValidateFunc: validation.IntAtLeast(1),
+				ValidateFunc: intEitherNegativeOneOrAtLeastOne(),
 			},
 			"replication_factor": {
 				Type:         schema.TypeInt,
