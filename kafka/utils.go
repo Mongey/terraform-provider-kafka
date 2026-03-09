@@ -87,8 +87,8 @@ func intEitherNegativeOneOrAtLeastOne() schema.SchemaValidateFunc {
 			return warnings, errors
 		}
 
-		if v != 1 || v < minVal {
-			errors = append(errors, fmt.Errorf("expected %s to be either -1 or at least (%d), got %d", k, minVal, v))
+		if v < minVal && v != -1 {
+			errors = append(errors, fmt.Errorf("expected %s to be either -1 or at least %d, got %d", k, minVal, v))
 			return warnings, errors
 		}
 

@@ -9,6 +9,7 @@ import (
 
 	uuid "github.com/hashicorp/go-uuid"
 	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
 	"github.com/IBM/sarama"
@@ -199,6 +200,44 @@ func TestAcc_TopicAlterReplicationFactor(t *testing.T) {
 			},
 		},
 	})
+}
+
+func Test_ReplicationFactorDiffSuppressFunc(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		oldValue string
+		newValue string
+		expected bool
+	}{
+		{
+			oldValue: "3",
+			newValue: "-1",
+			expected: true,
+		},
+		{
+			oldValue: "3",
+			newValue: "6",
+			expected: false,
+		},
+		{
+			oldValue: "3",
+			newValue: "3",
+			expected: false,
+		},
+		{
+			oldValue: "3",
+			newValue: "impossible",
+			expected: false,
+		},
+	}
+
+	for i, tt := range cases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			if tt.expected != replicationFactorDiffSuppressFunc("xxx", tt.oldValue, tt.newValue, &schema.ResourceData{}) {
+				t.FailNow()
+			}
+		})
+	}
 }
 
 func testResourceTopic_noConfigCheck(s *terraform.State) error {

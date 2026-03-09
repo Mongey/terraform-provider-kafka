@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -33,14 +34,15 @@ func kafkaTopicResource() *schema.Resource {
 				Type:         schema.TypeInt,
 				Required:     true,
 				Description:  "Number of partitions.",
-				ValidateFunc: intEitherNegativeOneOrAtLeastOne(),
+				ValidateFunc: validation.IntAtLeast(1),
 			},
 			"replication_factor": {
-				Type:         schema.TypeInt,
-				Required:     true,
-				ForceNew:     false,
-				Description:  "Number of replicas.",
-				ValidateFunc: validation.IntAtLeast(1),
+				Type:             schema.TypeInt,
+				Required:         true,
+				ForceNew:         false,
+				Description:      "Number of replicas.",
+				DiffSuppressFunc: replicationFactorDiffSuppressFunc,
+				ValidateFunc:     intEitherNegativeOneOrAtLeastOne(),
 			},
 			"config": {
 				Type:        schema.TypeMap,
@@ -106,6 +108,7 @@ func topicUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 		oi, ni := d.GetChange("replication_factor")
 		oldRF := oi.(int)
 		newRF := ni.(int)
+
 		log.Printf("[INFO] Updating replication_factor from %d to %d", oldRF, newRF)
 		t.ReplicationFactor = int16(newRF)
 
@@ -320,4 +323,23 @@ func customDiff(ctx context.Context, diff *schema.ResourceDiff, v interface{}) e
 	}
 
 	return nil
+}
+
+// This function exists to ignore the diff on replication_factor when
+// using Confluent's custom placement constraints, otherwise it will
+// be reported as perpetual drift and Terraform will try to fix it and blow up
+func replicationFactorDiffSuppressFunc(k, oldValue, newValue string, d *schema.ResourceData) bool {
+	log.Printf("[INFO] Comparing oldValue '%s' and newValue '%s' for replication_factor", oldValue, newValue)
+	oldInt, err := strconv.Atoi(oldValue)
+	if err != nil {
+		log.Printf("[ERROR] Error converting oldValue '%s' to int", oldValue)
+		return false
+	}
+	newInt, err := strconv.Atoi(newValue)
+	if err != nil {
+		log.Printf("[ERROR] Error converting newValue '%s' to int", newValue)
+		return false
+	}
+
+	return oldInt > 1 && newInt == -1
 }
