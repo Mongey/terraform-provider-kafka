@@ -3,6 +3,7 @@ package kafka
 import (
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -116,6 +117,9 @@ func TestAcc_TopicUpdatePartitions(t *testing.T) {
 }
 
 func TestAcc_TopicNegRepFactor(t *testing.T) {
+	if os.Getenv("KAFKA_CONFLUENT_ENTERPRISE") == "" {
+		t.Skip("set KAFKA_CONFLUENT_ENTERPRISE to run this test")
+	}
 	t.Parallel()
 	u, err := uuid.GenerateUUID()
 	if err != nil {
