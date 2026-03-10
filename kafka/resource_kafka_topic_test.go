@@ -655,7 +655,7 @@ resource "kafka_topic" "test" {
   partitions         = 2
 
   config = {
-	"confluent.placement.constraints" = '{"version": 1, "replicas":[{"count": 1, "constraints": {"rack": "rack-1"}}], "observers":[{"count": 1, "constraints": {"rack": "rack-2"}}]}'
+	"confluent.placement.constraints" = "{\"version\": 1, \"replicas\":[{\"count\": 1, \"constraints\": {\"rack\": \"rack-1\"}}], \"observers\":[{\"count\": 1, \"constraints\": {\"rack\": \"rack-2\"}}]}"
     "retention.ms" = "11111"
     "segment.ms" = "33333"
   }
