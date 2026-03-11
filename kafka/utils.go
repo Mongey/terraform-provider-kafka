@@ -78,20 +78,27 @@ func validateDiagFunc(validateFunc func(interface{}, string) ([]string, []error)
 	}
 }
 
-func intEitherNegativeOneOrAtLeastOne() schema.SchemaValidateFunc {
+func intEitherNegativeOneOrAtLeastOne() schema.SchemaValidateDiagFunc {
 	minVal := 1
-	return func(i interface{}, k string) (warnings []string, errors []error) {
+	return func(i interface{}, p cty.Path) diag.Diagnostics {
+		var diags diag.Diagnostics
 		v, ok := i.(int)
 		if !ok {
-			errors = append(errors, fmt.Errorf("expected type of %s to be integer", k))
-			return warnings, errors
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  "expected type to be integer",
+			})
+			return diags
 		}
 
 		if v < minVal && v != -1 {
-			errors = append(errors, fmt.Errorf("expected %s to be either -1 or at least %d, got %d", k, minVal, v))
-			return warnings, errors
+			diags = append(diags, diag.Diagnostic{
+				Severity: diag.Error,
+				Summary:  fmt.Sprintf("expected to be either -1 or at least %d, got %d", minVal, v),
+			})
+			return diags
 		}
 
-		return warnings, errors
+		return diags
 	}
 }

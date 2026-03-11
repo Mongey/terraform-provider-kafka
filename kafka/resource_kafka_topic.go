@@ -42,7 +42,7 @@ func kafkaTopicResource() *schema.Resource {
 				ForceNew:         false,
 				Description:      "Number of replicas.",
 				DiffSuppressFunc: replicationFactorDiffSuppressFunc,
-				ValidateFunc:     intEitherNegativeOneOrAtLeastOne(),
+				ValidateDiagFunc: intEitherNegativeOneOrAtLeastOne(),
 			},
 			"config": {
 				Type:        schema.TypeMap,
