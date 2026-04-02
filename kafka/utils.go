@@ -10,12 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-// MapEq compares two maps, and checks that the keys and values are the same
+// MapEq checks that every key in expected exists in result with the same value.
+// Extra keys in result are ignored (Kafka may report broker- or platform-derived
+// config entries that Terraform does not manage).
 func MapEq(result, expected map[string]*string) error {
-	if len(result) != len(expected) {
-		return fmt.Errorf("%v != %v", result, expected)
-	}
-
 	for expectedK, expectedV := range expected {
 		if resultV, ok := result[expectedK]; ok {
 			if resultV == nil && expectedV == nil {
