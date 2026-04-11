@@ -121,7 +121,7 @@ func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag
 	a := aclInfo(d)
 	log.Printf("[INFO] Reading ACL %s", a)
 
-	currentACLs, err := c.ListACLs()
+	currentACLs, err := c.DescribeACLs(a)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -236,10 +236,11 @@ func waitForACLToBeVisible(ctx context.Context, c *LazyClient, expectedACL Strin
 			return fmt.Errorf("failed to invalidate ACL cache: %w", err)
 		}
 
-		// List all ACLs
-		acls, err := c.ListACLs()
+		// Describe only the ACL we just created instead of issuing a broad
+		// "list everything" DescribeAcls probe.
+		acls, err := c.DescribeACLs(expectedACL)
 		if err != nil {
-			return fmt.Errorf("failed to list ACLs: %w", err)
+			return fmt.Errorf("failed to describe ACLs: %w", err)
 		}
 
 		// Check if our ACL exists
@@ -301,10 +302,11 @@ func waitForACLToBeDeleted(ctx context.Context, c *LazyClient, deletedACL String
 			return fmt.Errorf("failed to invalidate ACL cache: %w", err)
 		}
 
-		// List all ACLs
-		acls, err := c.ListACLs()
+		// Describe only the ACL we just deleted instead of issuing a broad
+		// "list everything" DescribeAcls probe.
+		acls, err := c.DescribeACLs(deletedACL)
 		if err != nil {
-			return fmt.Errorf("failed to list ACLs: %w", err)
+			return fmt.Errorf("failed to describe ACLs: %w", err)
 		}
 
 		// Check if our ACL still exists
