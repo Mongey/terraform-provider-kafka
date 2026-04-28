@@ -143,3 +143,55 @@ func TestConfigToResources_DoesNotMutateCallerMap(t *testing.T) {
 func stringPtr(s string) *string {
 	return &s
 }
+
+func TestTopicEqual_extraConfigKeysFromKafka(t *testing.T) {
+	del, ret, extra := "delete", "604800000", "2097152"
+	tf := Topic{
+		Name:              "t",
+		Partitions:        3,
+		ReplicationFactor: 2,
+		Config: map[string]*string{
+			"cleanup.policy": &del,
+			"retention.ms":   &ret,
+		},
+	}
+	kafkaTopic := Topic{
+		Name:              "t",
+		Partitions:        3,
+		ReplicationFactor: 2,
+		Config: map[string]*string{
+			"cleanup.policy":    &del,
+			"retention.ms":      &ret,
+			"max.message.bytes": &extra,
+		},
+	}
+	// topicRefreshFunc calls expected.Equal(actual): MapEq(actual.Config, expected.Config).
+	if !tf.Equal(kafkaTopic) {
+		t.Fatal("expected Equal true when Kafka has extra config keys")
+	}
+}
+
+func TestTopicEqual_rejectsMismatchedOverlap(t *testing.T) {
+	del, ret, wrong := "delete", "604800000", "999"
+	tf := Topic{
+		Name:              "t",
+		Partitions:        3,
+		ReplicationFactor: 2,
+		Config: map[string]*string{
+			"cleanup.policy": &del,
+			"retention.ms":   &ret,
+		},
+	}
+	kafkaTopic := Topic{
+		Name:              "t",
+		Partitions:        3,
+		ReplicationFactor: 2,
+		Config: map[string]*string{
+			"cleanup.policy": &del,
+			"retention.ms":   &wrong,
+		},
+	}
+	if tf.Equal(kafkaTopic) {
+		t.Fatal("expected Equal false when overlapping key differs")
+	}
+}

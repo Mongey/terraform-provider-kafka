@@ -11,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
+// Write-only SCRAM tests (password_wo) require Terraform CLI 1.11+ (see README Developing).
+
 func TestAcc_UserScramCredentialBasic(t *testing.T) {
 	t.Parallel()
 	u, err := uuid.GenerateUUID()

@@ -55,6 +55,8 @@ your [terraform plugin directory][third-party-plugins] (typically `~/.terraform.
 0. Start a TLS enabled kafka-cluster `docker-compose up`
 0. Run the acceptance tests `make testacc`
 
+Acceptance tests need a **Terraform CLI 1.11 or newer** on your `PATH` (some cases, e.g. `kafka_user_scram_credential` write-only fields). If you use **asdf**, the test harness runs Terraform from a **temporary working directory**, so the version may come from your **default** install (usually whatever `asdf global terraform …` wrote to `~/.tool-versions`), not only a per-repo `.tool-versions`. Set that default to **1.11.0 or later**, or put a compatible `terraform` earlier on `PATH` (e.g. Homebrew). Optional: `TF_ACC_TERRAFORM_PATH` / `TF_ACC_TERRAFORM_VERSION` are interpreted by [terraform-plugin-sdk plugintest](https://github.com/hashicorp/terraform-plugin-sdk) if you need to override the binary.
+
 ## Provider Configuration
 
 ### Example
