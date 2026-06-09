@@ -170,6 +170,22 @@ func (c *LazyClient) DescribeQuota(entityType string, entityName string) (*Quota
 	return c.inner.DescribeQuota(entityType, entityName)
 }
 
+func (c *LazyClient) AlterCompositeQuota(q CompositeQuota) error {
+	err := c.init()
+	if err != nil {
+		return err
+	}
+	return c.inner.AlterCompositeQuota(q, false)
+}
+
+func (c *LazyClient) DescribeCompositeQuota(entities []CompositeQuotaEntity) (*CompositeQuota, error) {
+	err := c.init()
+	if err != nil {
+		return nil, err
+	}
+	return c.inner.DescribeCompositeQuota(entities)
+}
+
 func (c *LazyClient) UpsertUserScramCredential(userScramCredential UserScramCredential) error {
 	err := c.init()
 	if err != nil {
