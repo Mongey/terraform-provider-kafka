@@ -28,7 +28,10 @@ jobs:
           go-version: 1.25.x
       - uses: actions/checkout@v6
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v8
+        with:
+          # v1.x binaries are built with go1.24 and cannot lint go 1.25.x modules
+          version: v2.12
 
   acctest:
     runs-on: ubuntu-latest
