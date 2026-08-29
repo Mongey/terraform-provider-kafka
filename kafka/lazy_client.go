@@ -146,6 +146,14 @@ func (c *LazyClient) ListACLs() ([]*sarama.ResourceAcls, error) {
 	return c.inner.ListACLs()
 }
 
+func (c *LazyClient) DescribeACLs(s StringlyTypedACL) ([]*sarama.ResourceAcls, error) {
+	err := c.init()
+	if err != nil {
+		return nil, err
+	}
+	return c.inner.DescribeACLs(s)
+}
+
 func (c *LazyClient) DeleteACL(s StringlyTypedACL) error {
 	err := c.init()
 	if err != nil {

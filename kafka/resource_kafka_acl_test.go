@@ -111,7 +111,22 @@ func testAccCheckAclDestroy(name string) error {
 	if err != nil {
 		return err
 	}
-	acls, err := client.ListACLs()
+
+	acl := StringlyTypedACL{
+		ACL: ACL{
+			Principal:      "User:Alice",
+			Host:           "*",
+			Operation:      "Write",
+			PermissionType: "Allow",
+		},
+		Resource: Resource{
+			Type:              "Topic",
+			Name:              name,
+			PatternTypeFilter: "Literal",
+		},
+	}
+
+	acls, err := client.DescribeACLs(acl)
 	if err != nil {
 		return err
 	}
@@ -149,7 +164,8 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 		return err
 	}
 
-	acls, err := client.ListACLs()
+	expectedACL := testACLFromState(instanceState)
+	acls, err := client.DescribeACLs(expectedACL)
 	if err != nil {
 		return err
 	}
@@ -189,20 +205,6 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 }
 
 func testResourceACL_updateCheck(s *terraform.State) error {
-	client := testProvider.Meta().(*LazyClient)
-	err := client.InvalidateACLCache()
-	if err != nil {
-		return err
-	}
-	acls, err := client.ListACLs()
-	if err != nil {
-		return err
-	}
-
-	if len(acls) < 1 {
-		return fmt.Errorf("there should be some acls %v %s", acls, err)
-	}
-
 	resourceState := s.Modules[0].Resources["kafka_acl.test"]
 	if resourceState == nil {
 		return fmt.Errorf("resource not found in state")
@@ -210,6 +212,22 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 	instanceState := resourceState.Primary
 	if instanceState == nil {
 		return fmt.Errorf("resource has no primary instance")
+	}
+
+	client := testProvider.Meta().(*LazyClient)
+	err := client.InvalidateACLCache()
+	if err != nil {
+		return err
+	}
+
+	expectedACL := testACLFromState(instanceState)
+	acls, err := client.DescribeACLs(expectedACL)
+	if err != nil {
+		return err
+	}
+
+	if len(acls) < 1 {
+		return fmt.Errorf("there should be some acls %v %s", acls, err)
 	}
 
 	name := instanceState.Attributes["resource_name"]
@@ -250,6 +268,22 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 		return fmt.Errorf("should be Prefixed, not %v", acl.ResourcePatternType)
 	}
 	return nil
+}
+
+func testACLFromState(instanceState *terraform.InstanceState) StringlyTypedACL {
+	return StringlyTypedACL{
+		ACL: ACL{
+			Principal:      instanceState.Attributes["acl_principal"],
+			Host:           instanceState.Attributes["acl_host"],
+			Operation:      instanceState.Attributes["acl_operation"],
+			PermissionType: instanceState.Attributes["acl_permission_type"],
+		},
+		Resource: Resource{
+			Type:              instanceState.Attributes["resource_type"],
+			Name:              instanceState.Attributes["resource_name"],
+			PatternTypeFilter: instanceState.Attributes["resource_pattern_type_filter"],
+		},
+	}
 }
 
 const testResourceACL_initialConfig = `
