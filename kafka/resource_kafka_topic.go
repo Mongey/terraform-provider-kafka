@@ -142,22 +142,13 @@ func topicUpdate(ctx context.Context, d *schema.ResourceData, meta interface{}) 
 }
 
 func waitForRFUpdate(ctx context.Context, client *LazyClient, topic string) error {
-	refresh := func() (interface{}, string, error) {
-		isRFUpdating, err := client.IsReplicationFactorUpdating(topic)
-		if err != nil {
-			return nil, "Error", err
-		} else if isRFUpdating {
-			return nil, "Updating", nil
-		} else {
-			return "not-nil", "Ready", nil
-		}
-	}
-
 	timeout := time.Duration(client.Config.Timeout) * time.Second
 	stateConf := &retry.StateChangeConf{
-		Pending:      []string{"Updating"},
-		Target:       []string{"Ready"},
-		Refresh:      refresh,
+		Pending: []string{"Updating"},
+		Target:  []string{"Ready"},
+		Refresh: rfUpdateRefreshFunc(topic, func() (bool, error) {
+			return client.IsReplicationFactorUpdating(topic)
+		}),
 		Timeout:      timeout,
 		Delay:        1 * time.Second,
 		PollInterval: 1 * time.Second,
@@ -171,6 +162,22 @@ func waitForRFUpdate(ctx context.Context, client *LazyClient, topic string) erro
 	}
 
 	return nil
+}
+
+// rfUpdateRefreshFunc reports whether a replication factor change is still in progress.
+// The result must be non-nil while updating: StateChangeConf counts nil results as
+// "not found" and gives up after NotFoundChecks (20) polls, ignoring Timeout.
+func rfUpdateRefreshFunc(topic string, isUpdating func() (bool, error)) retry.StateRefreshFunc {
+	return func() (interface{}, string, error) {
+		updating, err := isUpdating()
+		if err != nil {
+			return nil, "Error", err
+		}
+		if updating {
+			return topic, "Updating", nil
+		}
+		return topic, "Ready", nil
+	}
 }
 
 func waitForTopicRefresh(ctx context.Context, client *LazyClient, topic string, expected Topic) error {
