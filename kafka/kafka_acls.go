@@ -417,6 +417,7 @@ func (c *Client) DescribeACLs(s StringlyTypedACL) ([]*sarama.ResourceAcls, error
 	}
 
 	r := &sarama.DescribeAclsRequest{
+		Version:   int(c.getDescribeAclsRequestAPIVersion()),
 		AclFilter: aclFilter,
 	}
 
