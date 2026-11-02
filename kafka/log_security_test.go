@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
@@ -71,6 +73,10 @@ func TestMalformedPEMDoesNotLeak(t *testing.T) {
 	if err == nil || !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected file-not-found cause, got %v", err)
 	}
+	var pathErr *os.PathError
+	if !errors.As(err, &pathErr) || pathErr.Path != secret {
+		t.Fatal("PEM error must preserve the original PathError")
+	}
 	if strings.Contains(fmt.Sprint(err)+buf.String(), "private-key-sentinel") {
 		t.Fatal("malformed PEM leaked through logs or error")
 	}
@@ -88,8 +94,13 @@ func TestOAuthErrorsDoNotLeak(t *testing.T) {
 			TokenURL: endpoint, ClientID: "client", ClientSecret: secret,
 		})
 		token, err := provider.Token()
-		if err == nil || strings.Contains(err.Error(), secret) || token.Token != "" {
+		if err == nil || strings.Contains(fmt.Errorf("request failed: %w", err).Error(), secret) || token.Token != "" {
 			t.Fatal("OAuth failure must return an empty token and a sanitized error")
+		}
+		var retrieveErr *oauth2.RetrieveError
+		var urlErr *url.Error
+		if !errors.As(err, &retrieveErr) && !errors.As(err, &urlErr) {
+			t.Fatal("OAuth error must preserve its typed cause")
 		}
 	}
 }
@@ -103,6 +114,10 @@ func TestAWSTokenFileErrorDoesNotLeak(t *testing.T) {
 	_, err := config.Token()
 	if err == nil || strings.Contains(err.Error(), secret) {
 		t.Fatal("AWS token file failure must return a sanitized error")
+	}
+	var pathErr *os.PathError
+	if !errors.Is(err, os.ErrNotExist) || !errors.As(err, &pathErr) {
+		t.Fatal("AWS token file error must preserve its cause")
 	}
 }
 
