@@ -553,6 +553,9 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 	if topicExists {
 		log.Printf("[DEBUG] Found %s from Kafka", name)
 		p, err := c.Partitions(name)
+		if err != nil && err != sarama.ErrUnknownTopicOrPartition {
+			return topic, err
+		}
 		if err == nil {
 			partitionCount := int32(len(p))
 			log.Printf("[DEBUG] [%s] %d Partitions Found: %v from Kafka", name, partitionCount, p)
