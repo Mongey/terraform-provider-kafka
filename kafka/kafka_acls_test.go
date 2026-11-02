@@ -1,12 +1,45 @@
 package kafka
 
 import (
+	"log"
 	"sync"
 	"sync/atomic"
 	"testing"
 
 	"github.com/IBM/sarama"
 )
+
+type blockingACLLog struct {
+	started chan struct{}
+	resume  chan struct{}
+}
+
+func (w blockingACLLog) Write(p []byte) (int, error) {
+	close(w.started)
+	<-w.resume
+	return len(p), nil
+}
+
+func TestListACLs_ConcurrentInvalidation(t *testing.T) {
+	cached := []*sarama.ResourceAcls{{Resource: sarama.Resource{ResourceName: "cached-topic"}}}
+	c := &Client{aclCache: aclCache{valid: true, acls: cached}}
+	w := blockingACLLog{started: make(chan struct{}), resume: make(chan struct{})}
+	previous := log.Writer()
+	log.SetOutput(w)
+	defer log.SetOutput(previous)
+
+	result := make(chan []*sarama.ResourceAcls, 1)
+	go func() {
+		acls, _ := c.ListACLs()
+		result <- acls
+	}()
+	<-w.started
+	c.InvalidateACLCache()
+	close(w.resume)
+	if acls := <-result; len(acls) != 1 || acls[0] != cached[0] {
+		t.Fatalf("ListACLs returned %v; want the cache entry observed before invalidation", acls)
+	}
+}
 
 // TestListACLs_ConcurrentCacheFill tests that concurrent calls to ListACLs
 // properly handle the TOCTOU (Time-of-Check to Time-of-Use) race condition.
