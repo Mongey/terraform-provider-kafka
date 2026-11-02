@@ -31,6 +31,7 @@ func Provider() *schema.Provider {
 				Deprecated:  "This parameter is now deprecated and will be removed in a later release, please use `client_cert` instead.",
 			},
 			"client_key_file": {
+				Sensitive:   true,
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY", nil),
@@ -50,12 +51,14 @@ func Provider() *schema.Provider {
 				Description: "The client certificate.",
 			},
 			"client_key": {
+				Sensitive:   true,
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY", nil),
 				Description: "The private key that the certificate was issued for.",
 			},
 			"client_key_passphrase": {
+				Sensitive:   true,
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_CLIENT_KEY_PASSPHRASE", nil),
@@ -80,6 +83,7 @@ func Provider() *schema.Provider {
 				Description: "Path to a file containing the AWS pod identity authorization token",
 			},
 			"sasl_aws_container_credentials_full_uri": {
+				Sensitive:   true,
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("AWS_CONTAINER_CREDENTIALS_FULL_URI", nil),
@@ -92,6 +96,7 @@ func Provider() *schema.Provider {
 				Description: "Arn of an AWS IAM role to assume",
 			},
 			"sasl_aws_external_id": {
+				Sensitive:   true,
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "",
@@ -104,18 +109,21 @@ func Provider() *schema.Provider {
 				Description: "AWS profile name to use",
 			},
 			"sasl_aws_access_key": {
+				Sensitive:   true,
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("AWS_ACCESS_KEY_ID", nil),
 				Description: "The AWS access key.",
 			},
 			"sasl_aws_secret_key": {
+				Sensitive:   true,
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("AWS_SECRET_ACCESS_KEY", nil),
 				Description: "The AWS secret key.",
 			},
 			"sasl_aws_token": {
+				Sensitive:   true,
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("AWS_SESSION_TOKEN", nil),
@@ -141,12 +149,14 @@ func Provider() *schema.Provider {
 				Description: "Username for SASL authentication.",
 			},
 			"sasl_password": {
+				Sensitive:   true,
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_PASSWORD", nil),
 				Description: "Password for SASL authentication.",
 			},
 			"sasl_token_url": {
+				Sensitive:   true,
 				Type:        schema.TypeString,
 				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("KAFKA_SASL_TOKEN_URL", nil),

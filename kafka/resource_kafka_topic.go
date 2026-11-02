@@ -207,7 +207,7 @@ func topicRefreshFunc(client *LazyClient, topic string, expected Topic) retry.St
 			return actual, "Ready", nil
 		}
 
-		log.Printf("[DEBUG] topic %s has not reached expected state: actual %+v, expected %+v", topic, actual, expected)
+		log.Printf("[DEBUG] topic %s has not reached expected state", topic)
 		return actual, "Updating", nil
 	}
 }

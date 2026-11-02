@@ -575,7 +575,7 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 				return topic, err
 			}
 
-			log.Printf("[TRACE] [%s] Config %v from Kafka", name, strPtrMapToStrMap(configToSave))
+			log.Printf("[TRACE] [%s] Read %d config entries from Kafka", name, len(configToSave))
 			topic.Config = configToSave
 			return topic, nil
 		}
@@ -630,11 +630,7 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 	if len(cr.Resources) > 0 && len(cr.Resources[0].Configs) > 0 {
 		for _, tConf := range cr.Resources[0].Configs {
 			v := tConf.Value
-			log.Printf("[TRACE] [%s] %s: %v. Default %v, Source %v, Version %d", topic, tConf.Name, v, tConf.Default, tConf.Source, cr.Version)
-
-			for _, s := range tConf.Synonyms {
-				log.Printf("[TRACE] Syonyms: %v", s)
-			}
+			log.Printf("[TRACE] [%s] %s: Default %v, Source %v, Version %d", topic, tConf.Name, tConf.Default, tConf.Source, cr.Version)
 
 			if tConf.Name == "segment.bytes" && c.config.isAWSMSKServerless() {
 				// Remove segment.bytes in AWS MSK Serverless response to prevent perpetual planning
