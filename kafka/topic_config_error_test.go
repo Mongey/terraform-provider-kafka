@@ -35,7 +35,7 @@ func TestTopicConfigResponse(t *testing.T) {
 			if err := broker.Open(cfg); err != nil {
 				t.Fatal(err)
 			}
-			defer broker.Close()
+			defer func() { _ = broker.Close() }()
 			client := &Client{client: configControllerClient{broker: broker}, kafkaConfig: cfg, config: &Config{}}
 			got, err := client.topicConfig("example")
 			if tc.wantErr != nil {
