@@ -185,7 +185,7 @@ func Provider() *schema.Provider {
 			},
 		},
 
-		ConfigureFunc: providerConfigure,
+		ConfigureFunc: providerConfigure, //nolint:staticcheck // Retain the legacy SDK v2 callback until a separate context migration.
 		ResourcesMap: map[string]*schema.Resource{
 			"kafka_topic":                 kafkaTopicResource(),
 			"kafka_acl":                   kafkaACLResource(),

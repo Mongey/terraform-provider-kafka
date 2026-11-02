@@ -9,7 +9,7 @@ import (
 
 func kafkaTopicDataSource() *schema.Resource {
 	return &schema.Resource{
-		Read: dataSourceTopicRead,
+		Read: dataSourceTopicRead, //nolint:staticcheck // Retain the legacy SDK v2 callback until a separate context migration.
 		Schema: map[string]*schema.Schema{
 			"name": {
 				Type:        schema.TypeString,
