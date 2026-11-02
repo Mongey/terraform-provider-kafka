@@ -335,33 +335,13 @@ func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*t
 }
 
 func (config *Config) copyWithMaskedSensitiveValues() Config {
-	copy := Config{
-		config.BootstrapServers,
-		config.Timeout,
-		config.CACert,
-		config.ClientCert,
-		"*****",
-		"*****",
-		config.KafkaVersion,
-		config.TLSEnabled,
-		config.SkipTLSVerify,
-		config.SASLUsername,
-		"*****",
-		config.SASLMechanism,
-		config.SASLAWSContainerAuthorizationTokenFile,
-		config.SASLAWSContainerCredentialsFullUri,
-		config.SASLAWSRegion,
-		config.SASLAWSRoleArn,
-		"*****",
-		config.SASLAWSProfile,
-		config.SASLAWSAccessKey,
-		"*****",
-		config.SASLAWSToken,
-		config.SASLAWSCredsDebug,
-		config.SASLTokenUrl,
-		config.SASLAWSSharedConfigFiles,
-		config.SASLOAuthScopes,
-	}
+	copy := *config
+	copy.ClientCertKey = "*****"
+	copy.ClientCertKeyPassphrase = "*****"
+	copy.SASLPassword = "*****"
+	copy.SASLAWSExternalId = "*****"
+	copy.SASLAWSSecretKey = "*****"
+	copy.SASLAWSToken = "*****"
 	return copy
 }
 
