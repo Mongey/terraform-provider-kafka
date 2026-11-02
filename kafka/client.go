@@ -627,6 +627,10 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 		return conf, err
 	}
 
+	if len(cr.Resources) > 0 && cr.Resources[0].ErrorCode != 0 {
+		return conf, fmt.Errorf("describe config for topic %q: %s: %w", topic, cr.Resources[0].ErrorMsg, sarama.KError(cr.Resources[0].ErrorCode))
+	}
+
 	if len(cr.Resources) > 0 && len(cr.Resources[0].Configs) > 0 {
 		for _, tConf := range cr.Resources[0].Configs {
 			v := tConf.Value
