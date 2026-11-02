@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -55,6 +56,7 @@ type OAuth2Config interface {
 }
 
 type oauthbearerTokenProvider struct {
+	mu              sync.Mutex
 	tokenExpiration time.Time
 	token           string
 	oauth2Config    OAuth2Config
@@ -69,6 +71,9 @@ func newOauthbearerTokenProvider(oauth2Config OAuth2Config) *oauthbearerTokenPro
 }
 
 func (o *oauthbearerTokenProvider) Token() (*sarama.AccessToken, error) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	var accessToken string
 	var err error
 	currentTime := time.Now()
