@@ -30,7 +30,7 @@ func TestTopicRefreshWaitsForExpectedTopic(t *testing.T) {
 	if err := broker.Open(cfg); err != nil {
 		t.Fatal(err)
 	}
-	defer broker.Close()
+	defer func() { _ = broker.Close() }()
 	client := &LazyClient{inner: &Client{client: topicRefreshClient{broker: broker}, kafkaConfig: cfg, config: &Config{}}}
 	client.once.Do(func() {})
 
