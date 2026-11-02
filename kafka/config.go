@@ -52,6 +52,15 @@ type Config struct {
 	SASLOAuthScopes                        []string
 }
 
+// redactedError preserves the cause without including its potentially sensitive text.
+type redactedError struct {
+	message string
+	cause   error
+}
+
+func (e redactedError) Error() string { return e.message }
+func (e redactedError) Unwrap() error { return e.cause }
+
 type OAuth2Config interface {
 	Token(ctx context.Context) (*oauth2.Token, error)
 }
@@ -88,7 +97,7 @@ func (o *oauthbearerTokenProvider) Token() (*sarama.AccessToken, error) {
 		err = _err
 		if err != nil {
 			// OAuth errors can contain endpoint credentials and response bodies.
-			err = fmt.Errorf("oauth token retrieval failed (%T)", err)
+			err = redactedError{message: fmt.Sprintf("oauth token retrieval failed (%T)", err), cause: err}
 		}
 		if err == nil {
 			accessToken = token.AccessToken
@@ -110,7 +119,7 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 		var containerAuthorizationToken []byte
 		containerAuthorizationToken, err = os.ReadFile(c.SASLAWSContainerAuthorizationTokenFile)
 		if err != nil {
-			return nil, errors.New("failed to read authorization token file")
+			return nil, redactedError{message: "failed to read authorization token file", cause: err}
 		}
 		tokenOpt := func(o *endpointcreds.Options) {
 			o.AuthorizationToken = string(containerAuthorizationToken)
@@ -136,7 +145,7 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 		token, _, err = signer.GenerateAuthToken(context.TODO(), c.SASLAWSRegion)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("AWS IAM token generation failed (%T)", err)
+		return nil, redactedError{message: fmt.Sprintf("AWS IAM token generation failed (%T)", err), cause: err}
 	}
 	return &sarama.AccessToken{Token: token}, nil
 }
@@ -258,10 +267,11 @@ func parsePemOrLoadFromFile(input string) (*pem.Block, []byte, error) {
 		if err != nil {
 			// PathError includes the input, which may be a malformed private key.
 			var pathErr *os.PathError
+			safeErr := err
 			if errors.As(err, &pathErr) {
-				err = pathErr.Err
+				safeErr = pathErr.Err
 			}
-			return nil, nil, fmt.Errorf("unable to read PEM file: %w", err)
+			return nil, nil, redactedError{message: fmt.Sprintf("unable to read PEM file: %v", safeErr), cause: err}
 		}
 		inputBlock, _ = pem.Decode(inputBytes)
 		if inputBlock == nil {

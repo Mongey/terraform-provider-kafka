@@ -136,6 +136,9 @@ func TestOauthbearerTokenProvider_Token_WhenError(t *testing.T) {
 	assertEquals(t, "", token.Token)
 
 	assertEquals(t, "oauth token retrieval failed (*errors.errorString)", err.Error())
+	if !errors.Is(err, mockConfig.err) {
+		t.Fatal("token error must preserve the original cause")
+	}
 }
 
 func TestConfig_NewKafkaConfig_WithOauthBearerMechanism(t *testing.T) {
