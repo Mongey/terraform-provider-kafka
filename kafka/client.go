@@ -531,7 +531,7 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 		log.Printf("[DEBUG] Refreshing metadata for topic '%s'", name)
 		err := c.RefreshMetadata(name)
 
-		if err == sarama.ErrUnknownTopicOrPartition {
+		if errors.Is(err, sarama.ErrUnknownTopicOrPartition) {
 			err := TopicMissingError{msg: fmt.Sprintf("%s could not be found", name)}
 			return topic, err
 		}
@@ -553,7 +553,7 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 	if topicExists {
 		log.Printf("[DEBUG] Found %s from Kafka", name)
 		p, err := c.Partitions(name)
-		if err != nil && err != sarama.ErrUnknownTopicOrPartition {
+		if err != nil && !errors.Is(err, sarama.ErrUnknownTopicOrPartition) {
 			return topic, err
 		}
 		if err == nil {
