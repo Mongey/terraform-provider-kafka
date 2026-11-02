@@ -3,13 +3,14 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 
-	"github.com/Mongey/terraform-provider-kafka/kafka"
 	"github.com/IBM/sarama"
+	"github.com/Mongey/terraform-provider-kafka/kafka"
 )
 
 func main() {
@@ -102,7 +103,8 @@ func fauxMain() error {
 		}
 		c, err := tls.Dial("tcp", *broker, tlsConf)
 
-		if serr, ok := err.(x509.CertificateInvalidError); ok {
+		var serr x509.CertificateInvalidError
+		if errors.As(err, &serr) {
 			fmt.Printf("2rrrroorr %v, %d\n", serr.Cert.PermittedDNSDomains, serr.Reason)
 		}
 		if err != nil {
