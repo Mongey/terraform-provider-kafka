@@ -444,9 +444,10 @@ func (c *Client) InvalidateACLCache() {
 func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	c.aclCache.mutex.RLock()
 	if c.aclCache.valid {
+		acls := c.aclCache.acls
 		c.aclCache.mutex.RUnlock()
 		log.Printf("[INFO] Using cached ACL list")
-		return c.aclCache.acls, nil
+		return acls, nil
 	}
 	c.aclCache.mutex.RUnlock()
 
