@@ -86,7 +86,9 @@ func TestOAuthErrorsDoNotLeak(t *testing.T) {
 	secret := "oauth-secret-sentinel"
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, secret)
+		if _, err := fmt.Fprint(w, secret); err != nil {
+			t.Errorf("write OAuth test response: %v", err)
+		}
 	}))
 	defer server.Close()
 	for _, endpoint := range []string{server.URL + "?secret=" + secret, "://" + secret} {
@@ -152,7 +154,11 @@ func TestTopicConfigLogsOmitValues(t *testing.T) {
 	if err := broker.Open(cfg); err != nil {
 		t.Fatal(err)
 	}
-	defer broker.Close()
+	defer func() {
+		if err := broker.Close(); err != nil {
+			t.Errorf("close test broker: %v", err)
+		}
+	}()
 	client := &Client{client: securityConfigClient{broker: broker}, kafkaConfig: cfg, config: &Config{}}
 	got, err := client.topicConfig("example")
 	if err != nil || got["custom.config"] == nil || *got["custom.config"] != secret {

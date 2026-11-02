@@ -49,15 +49,6 @@ func nonEmptyAndTrimmed(bootstrapServers []string) []string {
 	return result
 }
 
-// TODO: can I just get rid of this?
-func strPtrMapToStrMap(c map[string]*string) map[string]string {
-	foo := map[string]string{}
-	for k, v := range c {
-		foo[k] = *v
-	}
-	return foo
-}
-
 func validateDiagFunc(validateFunc func(interface{}, string) ([]string, []error)) schema.SchemaValidateDiagFunc {
 	return func(i interface{}, path cty.Path) diag.Diagnostics {
 		warnings, errs := validateFunc(i, fmt.Sprintf("%+v", path))
