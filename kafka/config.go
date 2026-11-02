@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -85,6 +86,10 @@ func (o *oauthbearerTokenProvider) Token() (*sarama.AccessToken, error) {
 	} else {
 		token, _err := o.oauth2Config.Token(ctx)
 		err = _err
+		if err != nil {
+			// OAuth errors can contain endpoint credentials and response bodies.
+			err = fmt.Errorf("oauth token retrieval failed (%T)", err)
+		}
 		if err == nil {
 			accessToken = token.AccessToken
 			o.token = token.AccessToken
@@ -105,7 +110,7 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 		var containerAuthorizationToken []byte
 		containerAuthorizationToken, err = os.ReadFile(c.SASLAWSContainerAuthorizationTokenFile)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read authorization token file: %w", err)
+			return nil, errors.New("failed to read authorization token file")
 		}
 		tokenOpt := func(o *endpointcreds.Options) {
 			o.AuthorizationToken = string(containerAuthorizationToken)
@@ -130,7 +135,10 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 		log.Printf("[INFO] Generating auth token in '%s'", c.SASLAWSRegion)
 		token, _, err = signer.GenerateAuthToken(context.TODO(), c.SASLAWSRegion)
 	}
-	return &sarama.AccessToken{Token: token}, err
+	if err != nil {
+		return nil, fmt.Errorf("AWS IAM token generation failed (%T)", err)
+	}
+	return &sarama.AccessToken{Token: token}, nil
 }
 
 func (c *Config) newKafkaConfig() (*sarama.Config, error) {
@@ -207,7 +215,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 			kafkaConfig.Net.SASL.Password = c.SASLPassword
 		}
 	} else {
-		log.Printf("[WARN] SASL disabled username: '%s', password '%s'", c.SASLUsername, "****")
+		log.Print("[WARN] SASL disabled")
 	}
 
 	if c.TLSEnabled {
@@ -244,11 +252,16 @@ func parsePemOrLoadFromFile(input string) (*pem.Block, []byte, error) {
 
 	if inputBlock == nil {
 		// attempt to load from file
-		log.Printf("[INFO] Attempting to load from file '%s'", input)
+		log.Print("[INFO] Attempting to load PEM from file")
 		var err error
 		inputBytes, err = os.ReadFile(input)
 		if err != nil {
-			return nil, nil, err
+			// PathError includes the input, which may be a malformed private key.
+			var pathErr *os.PathError
+			if errors.As(err, &pathErr) {
+				err = pathErr.Err
+			}
+			return nil, nil, fmt.Errorf("unable to read PEM file: %w", err)
 		}
 		inputBlock, _ = pem.Decode(inputBytes)
 		if inputBlock == nil {
@@ -335,33 +348,20 @@ func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*t
 }
 
 func (config *Config) copyWithMaskedSensitiveValues() Config {
-	copy := Config{
-		config.BootstrapServers,
-		config.Timeout,
-		config.CACert,
-		config.ClientCert,
-		"*****",
-		"*****",
-		config.KafkaVersion,
-		config.TLSEnabled,
-		config.SkipTLSVerify,
-		config.SASLUsername,
-		"*****",
-		config.SASLMechanism,
-		config.SASLAWSContainerAuthorizationTokenFile,
-		config.SASLAWSContainerCredentialsFullUri,
-		config.SASLAWSRegion,
-		config.SASLAWSRoleArn,
-		"*****",
-		config.SASLAWSProfile,
-		config.SASLAWSAccessKey,
-		"*****",
-		config.SASLAWSToken,
-		config.SASLAWSCredsDebug,
-		config.SASLTokenUrl,
-		config.SASLAWSSharedConfigFiles,
-		config.SASLOAuthScopes,
-	}
+	copy := *config
+	copy.CACert = "*****"
+	copy.ClientCert = "*****"
+	copy.SASLUsername = "*****"
+	copy.SASLAWSAccessKey = "*****"
+	copy.SASLTokenUrl = "*****"
+	copy.SASLAWSContainerCredentialsFullUri = "*****"
+	copy.SASLAWSContainerAuthorizationTokenFile = "*****"
+	copy.ClientCertKey = "*****"
+	copy.ClientCertKeyPassphrase = "*****"
+	copy.SASLPassword = "*****"
+	copy.SASLAWSExternalId = "*****"
+	copy.SASLAWSSecretKey = "*****"
+	copy.SASLAWSToken = "*****"
 	return copy
 }
 
