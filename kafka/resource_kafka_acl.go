@@ -22,7 +22,7 @@ func kafkaACLResource() *schema.Resource {
 			StateContext: importACL,
 		},
 		SchemaVersion: 1,
-		MigrateState:  migrateKafkaAclState,
+		MigrateState:  migrateKafkaAclState, //nolint:staticcheck // Preserve migration support for existing ACL state.
 		Schema: map[string]*schema.Schema{
 			"resource_name": {
 				Type:        schema.TypeString,
