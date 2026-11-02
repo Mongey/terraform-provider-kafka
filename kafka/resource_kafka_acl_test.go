@@ -181,8 +181,8 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 		return fmt.Errorf("should be Allow, not %v", foundACL.Acls[0].PermissionType)
 	}
 
-	if foundACL.Resource.ResourcePatternType != sarama.AclPatternLiteral {
-		return fmt.Errorf("should be Literal, not %v", foundACL.Resource.ResourcePatternType)
+	if foundACL.ResourcePatternType != sarama.AclPatternLiteral {
+		return fmt.Errorf("should be Literal, not %v", foundACL.ResourcePatternType)
 	}
 	log.Printf("[INFO] success")
 	return nil
@@ -246,8 +246,8 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 		return fmt.Errorf("should be Deny, not %v", acl.Acls[0].PermissionType.String())
 	}
 
-	if acl.Resource.ResourcePatternType != sarama.AclPatternPrefixed {
-		return fmt.Errorf("should be Prefixed, not %v", acl.Resource.ResourcePatternType)
+	if acl.ResourcePatternType != sarama.AclPatternPrefixed {
+		return fmt.Errorf("should be Prefixed, not %v", acl.ResourcePatternType)
 	}
 	return nil
 }

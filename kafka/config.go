@@ -5,12 +5,14 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"regexp"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -50,11 +52,21 @@ type Config struct {
 	SASLOAuthScopes                        []string
 }
 
+// redactedError preserves the cause without including its potentially sensitive text.
+type redactedError struct {
+	message string
+	cause   error
+}
+
+func (e redactedError) Error() string { return e.message }
+func (e redactedError) Unwrap() error { return e.cause }
+
 type OAuth2Config interface {
 	Token(ctx context.Context) (*oauth2.Token, error)
 }
 
 type oauthbearerTokenProvider struct {
+	mu              sync.Mutex
 	tokenExpiration time.Time
 	token           string
 	oauth2Config    OAuth2Config
@@ -69,6 +81,9 @@ func newOauthbearerTokenProvider(oauth2Config OAuth2Config) *oauthbearerTokenPro
 }
 
 func (o *oauthbearerTokenProvider) Token() (*sarama.AccessToken, error) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
 	var accessToken string
 	var err error
 	currentTime := time.Now()
@@ -80,6 +95,10 @@ func (o *oauthbearerTokenProvider) Token() (*sarama.AccessToken, error) {
 	} else {
 		token, _err := o.oauth2Config.Token(ctx)
 		err = _err
+		if err != nil {
+			// OAuth errors can contain endpoint credentials and response bodies.
+			err = redactedError{message: fmt.Sprintf("oauth token retrieval failed (%T)", err), cause: err}
+		}
 		if err == nil {
 			accessToken = token.AccessToken
 			o.token = token.AccessToken
@@ -100,7 +119,7 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 		var containerAuthorizationToken []byte
 		containerAuthorizationToken, err = os.ReadFile(c.SASLAWSContainerAuthorizationTokenFile)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read authorization token file: %w", err)
+			return nil, redactedError{message: "failed to read authorization token file", cause: err}
 		}
 		tokenOpt := func(o *endpointcreds.Options) {
 			o.AuthorizationToken = string(containerAuthorizationToken)
@@ -125,7 +144,10 @@ func (c *Config) Token() (*sarama.AccessToken, error) {
 		log.Printf("[INFO] Generating auth token in '%s'", c.SASLAWSRegion)
 		token, _, err = signer.GenerateAuthToken(context.TODO(), c.SASLAWSRegion)
 	}
-	return &sarama.AccessToken{Token: token}, err
+	if err != nil {
+		return nil, redactedError{message: fmt.Sprintf("AWS IAM token generation failed (%T)", err), cause: err}
+	}
+	return &sarama.AccessToken{Token: token}, nil
 }
 
 func (c *Config) newKafkaConfig() (*sarama.Config, error) {
@@ -168,7 +190,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 				region = os.Getenv("AWS_REGION")
 			}
 			if region == "" {
-				log.Fatalf("[ERROR] aws region must be configured or AWS_REGION environment variable must be set to use aws-iam sasl mechanism")
+				return kafkaConfig, fmt.Errorf("aws region must be configured or AWS_REGION environment variable must be set to use aws-iam sasl mechanism")
 			}
 			kafkaConfig.Net.SASL.TokenProvider = c
 		case "oauthbearer":
@@ -178,7 +200,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 				tokenUrl = os.Getenv("TOKEN_URL")
 			}
 			if tokenUrl == "" {
-				log.Fatalf("[ERROR] token url must be configured or TOKEN_URL environment variable must be set to use oauthbearer sasl mechanism")
+				return kafkaConfig, fmt.Errorf("token url must be configured or TOKEN_URL environment variable must be set to use oauthbearer sasl mechanism")
 			}
 			oauth2Config := clientcredentials.Config{
 				TokenURL:     tokenUrl,
@@ -189,7 +211,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 			kafkaConfig.Net.SASL.TokenProvider = newOauthbearerTokenProvider(&oauth2Config)
 		case "plain":
 		default:
-			log.Fatalf("[ERROR] Invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\" or \"plain\"", c.SASLMechanism)
+			return kafkaConfig, fmt.Errorf("invalid sasl mechanism \"%s\": can only be \"scram-sha256\", \"scram-sha512\", \"aws-iam\", \"oauthbearer\" or \"plain\"", c.SASLMechanism)
 		}
 
 		kafkaConfig.Net.SASL.Enable = true
@@ -202,7 +224,7 @@ func (c *Config) newKafkaConfig() (*sarama.Config, error) {
 			kafkaConfig.Net.SASL.Password = c.SASLPassword
 		}
 	} else {
-		log.Printf("[WARN] SASL disabled username: '%s', password '%s'", c.SASLUsername, "****")
+		log.Print("[WARN] SASL disabled")
 	}
 
 	if c.TLSEnabled {
@@ -239,11 +261,17 @@ func parsePemOrLoadFromFile(input string) (*pem.Block, []byte, error) {
 
 	if inputBlock == nil {
 		// attempt to load from file
-		log.Printf("[INFO] Attempting to load from file '%s'", input)
+		log.Print("[INFO] Attempting to load PEM from file")
 		var err error
 		inputBytes, err = os.ReadFile(input)
 		if err != nil {
-			return nil, nil, err
+			// PathError includes the input, which may be a malformed private key.
+			var pathErr *os.PathError
+			safeErr := err
+			if errors.As(err, &pathErr) {
+				safeErr = pathErr.Err
+			}
+			return nil, nil, redactedError{message: fmt.Sprintf("unable to read PEM file: %v", safeErr), cause: err}
 		}
 		inputBlock, _ = pem.Decode(inputBytes)
 		if inputBlock == nil {
@@ -269,11 +297,23 @@ func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*t
 			return &tlsConfig, err
 		}
 
-		if x509.IsEncryptedPEMBlock(keyBlock) { //nolint:staticcheck
-			log.Printf("[INFO] Using encrypted private key")
+		// DEPRECATED: x509.IsEncryptedPEMBlock and x509.DecryptPEMBlock are deprecated
+		// since Go 1.16 because legacy PEM encryption (as specified in RFC 1423) is
+		// insecure by design. However, we maintain support for backward compatibility
+		// with existing encrypted private keys that users may have generated with:
+		//   openssl genrsa -des3 -out client.key 4096
+		//
+		// For new deployments, users should use PKCS#8 encrypted keys instead.
+		// See: https://go.dev/doc/go1.16#crypto/x509
+		//nolint:staticcheck // Intentionally using deprecated functions for legacy PEM support
+		if x509.IsEncryptedPEMBlock(keyBlock) {
+			log.Printf("[WARN] Detected legacy PEM-encrypted private key (Proc-Type: 4,ENCRYPTED). " +
+				"This encryption format is deprecated and considered insecure. " +
+				"Consider migrating to PKCS#8 encrypted keys for improved security.")
 			var err error
 
-			keyBytes, err = x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase)) //nolint:staticcheck
+			//nolint:staticcheck // Intentionally using deprecated function for legacy PEM support
+			keyBytes, err = x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase))
 			if err != nil {
 				log.Printf("[ERROR] Error decrypting private key with passphrase %s", err)
 				return &tlsConfig, err
@@ -318,37 +358,27 @@ func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*t
 }
 
 func (config *Config) copyWithMaskedSensitiveValues() Config {
-	copy := Config{
-		config.BootstrapServers,
-		config.Timeout,
-		config.CACert,
-		config.ClientCert,
-		"*****",
-		"*****",
-		config.KafkaVersion,
-		config.TLSEnabled,
-		config.SkipTLSVerify,
-		config.SASLUsername,
-		"*****",
-		config.SASLMechanism,
-		config.SASLAWSContainerAuthorizationTokenFile,
-		config.SASLAWSContainerCredentialsFullUri,
-		config.SASLAWSRegion,
-		config.SASLAWSRoleArn,
-		"*****",
-		config.SASLAWSProfile,
-		config.SASLAWSAccessKey,
-		"*****",
-		config.SASLAWSToken,
-		config.SASLAWSCredsDebug,
-		config.SASLTokenUrl,
-		config.SASLAWSSharedConfigFiles,
-		config.SASLOAuthScopes,
-	}
+	copy := *config
+	copy.CACert = "*****"
+	copy.ClientCert = "*****"
+	copy.SASLUsername = "*****"
+	copy.SASLAWSAccessKey = "*****"
+	copy.SASLTokenUrl = "*****"
+	copy.SASLAWSContainerCredentialsFullUri = "*****"
+	copy.SASLAWSContainerAuthorizationTokenFile = "*****"
+	copy.ClientCertKey = "*****"
+	copy.ClientCertKeyPassphrase = "*****"
+	copy.SASLPassword = "*****"
+	copy.SASLAWSExternalId = "*****"
+	copy.SASLAWSSecretKey = "*****"
+	copy.SASLAWSToken = "*****"
 	return copy
 }
 
+// awsMSKServerlessRegex is compiled once at package level to avoid
+// expensive regex compilation on every call to isAWSMSKServerless
+var awsMSKServerlessRegex = regexp.MustCompile(`(?i)kafka-serverless\.(.*)\.amazonaws\.com`)
+
 func (config *Config) isAWSMSKServerless() bool {
-	re := regexp.MustCompile(`(?i)kafka-serverless\.(.*)\.amazonaws\.com`)
-	return slices.ContainsFunc(*(config.BootstrapServers), re.MatchString)
+	return slices.ContainsFunc(*(config.BootstrapServers), awsMSKServerlessRegex.MatchString)
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func kafkaACLResource() *schema.Resource {
@@ -21,7 +22,7 @@ func kafkaACLResource() *schema.Resource {
 			StateContext: importACL,
 		},
 		SchemaVersion: 1,
-		MigrateState:  migrateKafkaAclState,
+		MigrateState:  migrateKafkaAclState, //nolint:staticcheck // Preserve migration support for existing ACL state.
 		Schema: map[string]*schema.Schema{
 			"resource_name": {
 				Type:        schema.TypeString,
@@ -35,10 +36,12 @@ func kafkaACLResource() *schema.Resource {
 				ForceNew: true,
 			},
 			"resource_pattern_type_filter": {
-				Type:     schema.TypeString,
-				Default:  "Literal",
-				Optional: true,
-				ForceNew: true,
+				Type:             schema.TypeString,
+				Default:          "Literal",
+				Optional:         true,
+				ForceNew:         true,
+				ValidateDiagFunc: validateDiagFunc(validation.StringInSlice([]string{"Literal", "Prefixed"}, false)),
+				Description:      "How to match the resource name. Valid values: Literal (exact match) or Prefixed (match resources with the given prefix).",
 			},
 			"acl_principal": {
 				Type:     schema.TypeString,
@@ -125,7 +128,7 @@ func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag
 
 	for _, foundACLs := range currentACLs {
 		// find only ACLs where ResourceName matches
-		if foundACLs.ResourceName != a.Resource.Name {
+		if foundACLs.ResourceName != a.Name {
 			continue
 		}
 		if len(foundACLs.Acls) < 1 {
@@ -241,7 +244,7 @@ func waitForACLToBeVisible(ctx context.Context, c *LazyClient, expectedACL Strin
 
 		// Check if our ACL exists
 		for _, foundACLs := range acls {
-			if foundACLs.ResourceName != expectedACL.Resource.Name {
+			if foundACLs.ResourceName != expectedACL.Name {
 				continue
 			}
 
@@ -307,7 +310,7 @@ func waitForACLToBeDeleted(ctx context.Context, c *LazyClient, deletedACL String
 		// Check if our ACL still exists
 		found := false
 		for _, foundACLs := range acls {
-			if foundACLs.ResourceName != deletedACL.Resource.Name {
+			if foundACLs.ResourceName != deletedACL.Name {
 				continue
 			}
 

@@ -17,11 +17,9 @@ type LazyClient struct {
 }
 
 func (c *LazyClient) init() error {
-	var err error
-
 	c.once.Do(func() {
-		c.inner, err = NewClient(c.Config)
-		c.initErr = err
+		// Assign directly to c.initErr to avoid data race with outer err variable
+		c.inner, c.initErr = NewClient(c.Config)
 	})
 
 	if c.Config != nil {
@@ -54,6 +52,7 @@ func (c *LazyClient) checkTLSConfig() error {
 	if err != nil {
 		return err
 	}
+	defer func() { _ = conn.Close() }()
 
 	return conn.Handshake()
 }

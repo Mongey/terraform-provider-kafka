@@ -85,13 +85,57 @@ func TestConfigToResources_RemovesCleanupPolicyForAWSMSKServerless(t *testing.T)
 				t.Errorf("Expected cleanup.policy presence to be %v, but was %v", tt.expectCleanupPolicy, hasCleanupPolicy)
 			}
 
-			// Verify the original topic config was modified (removed cleanup.policy for MSK serverless)
-			if tt.config.isAWSMSKServerless() && originalConfigLen > len(tt.topic.Config) {
-				if _, stillHasCleanupPolicy := tt.topic.Config["cleanup.policy"]; stillHasCleanupPolicy {
-					t.Error("Expected cleanup.policy to be removed from original topic config for AWS MSK Serverless")
-				}
+			// Verify the original topic config is NOT modified (we should not mutate the caller's map)
+			if len(tt.topic.Config) != originalConfigLen {
+				t.Error("Original topic config should not be mutated by configToResources")
 			}
 		})
+	}
+}
+
+// TestConfigToResources_DoesNotMutateCallerMap verifies that configToResources
+// does not mutate the caller's topic.Config map. This is a regression test for
+// a bug where the function would delete entries from the original map.
+func TestConfigToResources_DoesNotMutateCallerMap(t *testing.T) {
+	// Create a topic with cleanup.policy
+	originalConfig := map[string]*string{
+		"cleanup.policy": stringPtr("delete"),
+		"retention.ms":   stringPtr("604800000"),
+	}
+
+	topic := Topic{
+		Name:   "test-topic",
+		Config: originalConfig,
+	}
+
+	// Use AWS MSK Serverless config which triggers the cleanup.policy removal
+	config := &Config{
+		BootstrapServers: &[]string{"kafka-serverless.us-east-1.amazonaws.com:9092"},
+	}
+
+	// Verify config has cleanup.policy before the call
+	if _, exists := topic.Config["cleanup.policy"]; !exists {
+		t.Fatal("Test setup error: cleanup.policy should exist before configToResources call")
+	}
+
+	originalLen := len(topic.Config)
+
+	// Call configToResources
+	resources := configToResources(topic, config)
+
+	// The returned resources should NOT have cleanup.policy (correct behavior for MSK Serverless)
+	if _, exists := resources[0].ConfigEntries["cleanup.policy"]; exists {
+		t.Error("Expected cleanup.policy to be removed from returned resources for MSK Serverless")
+	}
+
+	// BUG CHECK: The original topic.Config should NOT be modified
+	// This test will FAIL before the fix is applied
+	if len(topic.Config) != originalLen {
+		t.Errorf("Bug: original topic.Config was mutated! Expected %d entries, got %d", originalLen, len(topic.Config))
+	}
+
+	if _, exists := topic.Config["cleanup.policy"]; !exists {
+		t.Error("Bug: cleanup.policy was deleted from the caller's original map")
 	}
 }
 

@@ -47,16 +47,24 @@ func ReplicaCount(c sarama.Client, topic string, partitions []int32) (int, error
 }
 
 func configToResources(topic Topic, c *Config) []*sarama.AlterConfigsResource {
+	configEntries := topic.Config
+
 	// AWS MSK Serverless does not support updating cleanup.policy
+	// Create a copy of the config map to avoid mutating the caller's map
 	if topic.Config["cleanup.policy"] != nil && c.isAWSMSKServerless() {
-		delete(topic.Config, "cleanup.policy")
+		configEntries = make(map[string]*string, len(topic.Config))
+		for k, v := range topic.Config {
+			if k != "cleanup.policy" {
+				configEntries[k] = v
+			}
+		}
 	}
 
 	return []*sarama.AlterConfigsResource{
 		{
 			Type:          sarama.TopicResource,
 			Name:          topic.Name,
-			ConfigEntries: topic.Config,
+			ConfigEntries: configEntries,
 		},
 	}
 }
