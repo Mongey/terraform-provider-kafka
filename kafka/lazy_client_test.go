@@ -2,7 +2,10 @@ package kafka
 
 import (
 	"crypto/tls"
+	"errors"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -11,6 +14,42 @@ import (
 
 	"github.com/IBM/sarama"
 )
+
+func Test_LazyClientWrappedBrokerErrorsIncludeTLSFailure(t *testing.T) {
+	for _, brokerErr := range []error{sarama.ErrOutOfBrokers, sarama.ErrBrokerNotAvailable} {
+		t.Run(brokerErr.Error(), func(t *testing.T) {
+			c := &LazyClient{
+				Config:  &Config{TLSEnabled: true, CACert: filepath.Join(t.TempDir(), "missing-ca")},
+				initErr: sarama.Wrap(brokerErr, errors.New("connection failed")),
+			}
+			c.once.Do(func() {})
+			err := c.init()
+			if !errors.Is(err, os.ErrNotExist) || !errors.Is(err, brokerErr) {
+				t.Fatalf("expected TLS and broker causes, got %v", err)
+			}
+		})
+	}
+}
+
+func Test_LazyClientSkipsTLSCheckForOtherErrors(t *testing.T) {
+	otherErr := errors.New("other initialization failure")
+	for _, tc := range []struct {
+		name    string
+		enabled bool
+		initErr error
+	}{
+		{"other error", true, otherErr},
+		{"TLS disabled", false, sarama.Wrap(sarama.ErrOutOfBrokers, otherErr)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := &LazyClient{Config: &Config{TLSEnabled: tc.enabled}, initErr: tc.initErr}
+			c.once.Do(func() {})
+			if err := c.init(); err != tc.initErr {
+				t.Fatalf("expected original error %v, got %v", tc.initErr, err)
+			}
+		})
+	}
+}
 
 func Test_LazyClientWithNoConfig(t *testing.T) {
 	c := &LazyClient{}
