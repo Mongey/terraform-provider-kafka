@@ -445,9 +445,10 @@ func (c *Client) InvalidateACLCache() {
 func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	c.aclCache.mutex.RLock()
 	if c.aclCache.valid {
+		acls := c.aclCache.acls
 		c.aclCache.mutex.RUnlock()
 		log.Printf("[INFO] Using cached ACL list")
-		return c.aclCache.acls, nil
+		return acls, nil
 	}
 	c.aclCache.mutex.RUnlock()
 
@@ -527,6 +528,16 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 		log.Printf("[TRACE] ThrottleTime: %d", aclsR.ThrottleTime)
 
 		if aclsR.Err != sarama.ErrNoError {
+			// Some Kafka-API-compatible brokers (notably Redpanda) do not implement
+			// every ACL resource type. Redpanda rejects DescribeAcls for the
+			// DelegationToken resource type with INVALID_REQUEST, which would otherwise
+			// abort listing all ACLs and break refresh/plan/import against such brokers.
+			// Treat an unsupported resource type as "no ACLs of this type" and skip it
+			// instead of failing the whole listing. Real Kafka returns NoError here.
+			if aclsR.Err == sarama.ErrInvalidRequest || aclsR.Err == sarama.ErrUnsupportedVersion {
+				log.Printf("[WARN] Broker does not support DescribeAcls for resource type %v (%s); skipping this resource type", r.AclFilter.ResourceType, aclsR.Err)
+				continue
+			}
 			return nil, fmt.Errorf("%s", aclsR.Err)
 		}
 

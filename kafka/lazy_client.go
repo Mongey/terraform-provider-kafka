@@ -2,6 +2,7 @@ package kafka
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -27,11 +28,11 @@ func (c *LazyClient) init() error {
 	} else {
 		log.Printf("[TRACE] lazy client init %s", c.initErr)
 	}
-	if c.initErr == sarama.ErrBrokerNotAvailable || c.initErr == sarama.ErrOutOfBrokers {
+	if errors.Is(c.initErr, sarama.ErrBrokerNotAvailable) || errors.Is(c.initErr, sarama.ErrOutOfBrokers) {
 		if c.Config.TLSEnabled {
 			tlsError := c.checkTLSConfig()
 			if tlsError != nil {
-				return fmt.Errorf("%w\n%s", tlsError, c.initErr)
+				return fmt.Errorf("%w\n%w", tlsError, c.initErr)
 			}
 		}
 	}

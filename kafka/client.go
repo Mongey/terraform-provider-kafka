@@ -531,7 +531,7 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 		log.Printf("[DEBUG] Refreshing metadata for topic '%s'", name)
 		err := c.RefreshMetadata(name)
 
-		if err == sarama.ErrUnknownTopicOrPartition {
+		if errors.Is(err, sarama.ErrUnknownTopicOrPartition) {
 			err := TopicMissingError{msg: fmt.Sprintf("%s could not be found", name)}
 			return topic, err
 		}
@@ -553,6 +553,9 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 	if topicExists {
 		log.Printf("[DEBUG] Found %s from Kafka", name)
 		p, err := c.Partitions(name)
+		if err != nil && !errors.Is(err, sarama.ErrUnknownTopicOrPartition) {
+			return topic, err
+		}
 		if err == nil {
 			partitionCount := int32(len(p))
 			log.Printf("[DEBUG] [%s] %d Partitions Found: %v from Kafka", name, partitionCount, p)
@@ -572,7 +575,7 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 				return topic, err
 			}
 
-			log.Printf("[TRACE] [%s] Config %v from Kafka", name, strPtrMapToStrMap(configToSave))
+			log.Printf("[TRACE] [%s] Read %d config entries from Kafka", name, len(configToSave))
 			topic.Config = configToSave
 			return topic, nil
 		}
@@ -624,14 +627,14 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 		return conf, err
 	}
 
+	if len(cr.Resources) > 0 && cr.Resources[0].ErrorCode != 0 {
+		return conf, fmt.Errorf("describe config for topic %q: %s: %w", topic, cr.Resources[0].ErrorMsg, sarama.KError(cr.Resources[0].ErrorCode))
+	}
+
 	if len(cr.Resources) > 0 && len(cr.Resources[0].Configs) > 0 {
 		for _, tConf := range cr.Resources[0].Configs {
 			v := tConf.Value
-			log.Printf("[TRACE] [%s] %s: %v. Default %v, Source %v, Version %d", topic, tConf.Name, v, tConf.Default, tConf.Source, cr.Version)
-
-			for _, s := range tConf.Synonyms {
-				log.Printf("[TRACE] Syonyms: %v", s)
-			}
+			log.Printf("[TRACE] [%s] %s: Default %v, Source %v, Version %d", topic, tConf.Name, tConf.Default, tConf.Source, cr.Version)
 
 			if tConf.Name == "segment.bytes" && c.config.isAWSMSKServerless() {
 				// Remove segment.bytes in AWS MSK Serverless response to prevent perpetual planning
