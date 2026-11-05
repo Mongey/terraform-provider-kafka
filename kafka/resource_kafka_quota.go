@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -18,6 +19,9 @@ func kafkaQuotaResource() *schema.Resource {
 		CreateContext: quotaCreate,
 		ReadContext:   quotaRead,
 		DeleteContext: quotaDelete,
+		Importer: &schema.ResourceImporter{
+			StateContext: importQuota,
+		},
 		Schema: map[string]*schema.Schema{
 			"entity_name": {
 				Type:        schema.TypeString,
@@ -136,6 +140,32 @@ func quotaRead(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 
 	log.Printf("[INFO] Found Quota %s %+v.", foundQuota.ID(), foundQuota.Ops)
 	return nil
+}
+
+// importQuota accepts the documented "entity_type:entity_name" format. An empty
+// entity name ("user:") imports the default quota of that entity type.
+func importQuota(ctx context.Context, d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
+	entityType, entityName, ok := strings.Cut(d.Id(), ":")
+	if !ok || entityType == "" {
+		return nil, fmt.Errorf("unexpected format of ID (%q), expected entity_type:entity_name (entity_type:, for a default quota)", d.Id())
+	}
+
+	switch entityType {
+	case "client-id", "user", "ip":
+	default:
+		return nil, fmt.Errorf("unsupported entity type %q, expected one of client-id, user, ip", entityType)
+	}
+
+	errSet := errSetter{d: d}
+	errSet.Set("entity_type", entityType)
+	errSet.Set("entity_name", entityName)
+	if errSet.err != nil {
+		return nil, errSet.err
+	}
+
+	d.SetId(Quota{EntityType: entityType, EntityName: entityName}.ID())
+
+	return []*schema.ResourceData{d}, nil
 }
 
 func newQuota(d *schema.ResourceData, removeAll bool) Quota {
