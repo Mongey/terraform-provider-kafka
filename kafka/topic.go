@@ -69,13 +69,19 @@ func configToResources(topic Topic, c *Config) []*sarama.AlterConfigsResource {
 	}
 }
 
+// isDefault reports whether a topic config entry is inherited rather than set on
+// the topic itself. Only entries with source TOPIC_CONFIG are topic overrides; all
+// broker-level sources (built-in default, static broker config, cluster-wide
+// dynamic default and per-broker dynamic config) are inherited values and must not
+// be stored in the Terraform state.
 func isDefault(tc *sarama.ConfigEntry, version int) bool {
 	if version == 0 {
 		return tc.Default
 	}
 	return tc.Source == sarama.SourceDefault ||
 		tc.Source == sarama.SourceStaticBroker ||
-		tc.Source == sarama.SourceDynamicDefaultBroker
+		tc.Source == sarama.SourceDynamicDefaultBroker ||
+		tc.Source == sarama.SourceDynamicBroker
 }
 
 func metaToTopic(d *schema.ResourceData, meta interface{}) Topic {

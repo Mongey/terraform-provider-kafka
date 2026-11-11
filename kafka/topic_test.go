@@ -143,3 +143,29 @@ func TestConfigToResources_DoesNotMutateCallerMap(t *testing.T) {
 func stringPtr(s string) *string {
 	return &s
 }
+
+func TestIsDefault(t *testing.T) {
+	tests := []struct {
+		name    string
+		entry   sarama.ConfigEntry
+		version int
+		want    bool
+	}{
+		{"topic override", sarama.ConfigEntry{Source: sarama.SourceTopic}, 1, false},
+		{"per-broker dynamic config", sarama.ConfigEntry{Source: sarama.SourceDynamicBroker}, 1, true},
+		{"cluster-wide dynamic default", sarama.ConfigEntry{Source: sarama.SourceDynamicDefaultBroker}, 1, true},
+		{"static broker config", sarama.ConfigEntry{Source: sarama.SourceStaticBroker}, 1, true},
+		{"built-in default", sarama.ConfigEntry{Source: sarama.SourceDefault}, 1, true},
+		{"unknown source", sarama.ConfigEntry{Source: sarama.SourceUnknown}, 1, false},
+		{"v0 default", sarama.ConfigEntry{Default: true}, 0, true},
+		{"v0 non-default", sarama.ConfigEntry{Default: false}, 0, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isDefault(&tt.entry, tt.version); got != tt.want {
+				t.Errorf("isDefault(source=%v, version=%d) = %v, want %v", tt.entry.Source, tt.version, got, tt.want)
+			}
+		})
+	}
+}
