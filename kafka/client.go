@@ -44,15 +44,15 @@ type aclCreationQueue struct {
 }
 
 type Client struct {
-	client        sarama.Client
-	kafkaConfig   *sarama.Config
-	config        *Config
-	supportedAPIs map[int]int
-	topics        map[string]void
-	topicsMutex   sync.RWMutex
-	aclCache
-	aclDeletionQueue
-	aclCreationQueue
+	client           sarama.Client
+	kafkaConfig      *sarama.Config
+	config           *Config
+	supportedAPIs    map[int]int
+	topics           map[string]void
+	topicsMutex      sync.RWMutex
+	aclCache         aclCache
+	aclDeletionQueue aclDeletionQueue
+	aclCreationQueue aclCreationQueue
 }
 
 func NewClient(config *Config) (*Client, error) {
