@@ -116,7 +116,6 @@ func stringToACLPrefix(s string) sarama.AclResourcePatternType {
 	return unknownConversion
 }
 
-//nolint:staticcheck // QF1008: keeping explicit embedded field names for code clarity
 func (c *Client) enqueueDeleteACL(broker *sarama.Broker, filter *sarama.AclFilter) error {
 	c.aclDeletionQueue.mutex.Lock()
 	log.Printf("[DEBUG] Enqueueing ACL Deletion %v", *filter)
@@ -190,7 +189,6 @@ func (c *Client) DeleteACL(s StringlyTypedACL) error {
 	return nil
 }
 
-//nolint:staticcheck // QF1008: keeping explicit embedded field names for code clarity
 func (c *Client) enqueueCreateACL(broker *sarama.Broker, create *sarama.AclCreation) error {
 	c.aclCreationQueue.mutex.Lock()
 	if c.aclCreationQueue.timer != nil {
@@ -432,7 +430,6 @@ func (c *Client) DescribeACLs(s StringlyTypedACL) ([]*sarama.ResourceAcls, error
 	return aclsR.ResourceAcls, nil
 }
 
-//nolint:staticcheck // QF1008: keeping explicit embedded field names for code clarity
 func (c *Client) InvalidateACLCache() {
 	c.aclCache.mutex.Lock()
 	c.aclCache.valid = false
@@ -440,7 +437,6 @@ func (c *Client) InvalidateACLCache() {
 	c.aclCache.mutex.Unlock()
 }
 
-//nolint:staticcheck // QF1008: keeping explicit embedded field names for code clarity
 func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	c.aclCache.mutex.RLock()
 	if c.aclCache.valid {
@@ -534,7 +530,7 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 			// Treat an unsupported resource type as "no ACLs of this type" and skip it
 			// instead of failing the whole listing. Real Kafka returns NoError here.
 			if aclsR.Err == sarama.ErrInvalidRequest || aclsR.Err == sarama.ErrUnsupportedVersion {
-				log.Printf("[WARN] Broker does not support DescribeAcls for resource type %v (%s); skipping this resource type", r.AclFilter.ResourceType, aclsR.Err)
+				log.Printf("[WARN] Broker does not support DescribeAcls for resource type %v (%s); skipping this resource type", r.ResourceType, aclsR.Err)
 				continue
 			}
 			return nil, fmt.Errorf("%s", aclsR.Err)
