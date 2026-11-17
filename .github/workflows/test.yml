@@ -50,7 +50,14 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
       - name: Bring up kafka + zk
         run: docker compose up -d --wait
       - name: "Run tests"
-        run: sleep 10 && make testacc
+        run: |
+          terraform_path="$(command -v terraform)"
+          sleep 10
+          TF_ACC_TERRAFORM_PATH="$terraform_path" make testacc

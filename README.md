@@ -52,8 +52,10 @@ your [terraform plugin directory][third-party-plugins] (typically `~/.terraform.
     ```
 0. Build the provider `make build`
 0. Run the tests `make test`
+0. Install [Terraform CLI](https://developer.hashicorp.com/terraform/install) and add it to `PATH`.
 0. Start a TLS enabled kafka-cluster `docker-compose up`
-0. Run the acceptance tests `make testacc`
+0. Run the acceptance tests `TF_ACC_TERRAFORM_PATH="$(command -v terraform)" make testacc`.
+   This reuses the installed CLI instead of downloading Terraform during parallel tests.
 
 ## Provider Configuration
 
