@@ -1,10 +1,13 @@
 package kafka
 
 import (
+	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/IBM/sarama"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -29,6 +32,16 @@ func TestUserScramCredentialAcceptanceChecks(t *testing.T) {
 		{name: "create authorization", check: testResourceUserScramCredentialCheck_withoutIterations, responses: []any{unauthorized, present}, wantErr: sarama.ErrClusterAuthorizationFailed.Error()},
 		{name: "create write-only authorization", check: testResourceUserScramCredentialCheck_writeOnly, responses: []any{unauthorized, present}, wantErr: sarama.ErrClusterAuthorizationFailed.Error()},
 		{name: "delete authorization", check: testAccCheckUserScramCredentialDestroy, responses: []any{unauthorized, missing}, wantErr: sarama.ErrClusterAuthorizationFailed.Error()},
+		{name: "malformed response", check: testResourceUserScramCredentialCheck_withoutIterations, responses: []any{&sarama.DescribeUserScramCredentialsResponse{}, present}, wantErr: "got 0 results (expected 1)"},
+		{
+			name: "timeout",
+			check: func(*terraform.State) error {
+				iterations := int32(4096)
+				return retry.RetryContext(context.Background(), 100*time.Millisecond,
+					testUserScramCredentialRetry(testProvider.Meta().(*LazyClient), "example", "SCRAM-SHA-256", &iterations))
+			},
+			responses: []any{missing}, wantErr: "could not be found",
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			mock := sarama.NewMockBroker(t, 0)
