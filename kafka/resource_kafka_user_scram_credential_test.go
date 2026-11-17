@@ -1,13 +1,17 @@
 package kafka
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	uuid "github.com/hashicorp/go-uuid"
 	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -228,13 +232,6 @@ func testResourceUserScramCredentialCheck_writeOnlyInternal(s *terraform.State, 
 		return fmt.Errorf("password_wo_version should be %s but got '%s'", expectedVersion, passwordWoVersion)
 	}
 
-	// Verify the credential exists in Kafka (though we can't check the password)
-	client := testProvider.Meta().(*LazyClient)
-	userScramCredential, err := client.DescribeUserScramCredential(username, scramMechanism)
-	if err != nil {
-		return err
-	}
-
 	id := instanceState.ID
 	expectedId := strings.Join([]string{username, scramMechanism}, "|")
 
@@ -242,11 +239,8 @@ func testResourceUserScramCredentialCheck_writeOnlyInternal(s *terraform.State, 
 		return fmt.Errorf("id '%s' does not match expected id '%s'", id, expectedId)
 	}
 
-	if userScramCredential.Iterations != expectedIterations {
-		return fmt.Errorf("scram iterations should be %d but got '%d'", expectedIterations, userScramCredential.Iterations)
-	}
-
-	return nil
+	client := testProvider.Meta().(*LazyClient)
+	return retry.RetryContext(context.Background(), 30*time.Second, testUserScramCredentialRetry(client, username, scramMechanism, &expectedIterations))
 }
 
 func testResourceUserScramCredentialCheck(s *terraform.State, withIterations bool) error {
@@ -271,12 +265,6 @@ func testResourceUserScramCredentialCheck(s *terraform.State, withIterations boo
 		expectedIterations = int32(i)
 	}
 
-	client := testProvider.Meta().(*LazyClient)
-	userScramCredential, err := client.DescribeUserScramCredential(username, scramMechanism)
-	if err != nil {
-		return err
-	}
-
 	id := instanceState.ID
 	expectedId := strings.Join([]string{username, scramMechanism}, "|")
 
@@ -284,11 +272,8 @@ func testResourceUserScramCredentialCheck(s *terraform.State, withIterations boo
 		return fmt.Errorf("id '%s' does not match expected id '%s'", id, expectedId)
 	}
 
-	if userScramCredential.Iterations != expectedIterations {
-		return fmt.Errorf("scram iterations should be %d but got '%d'", expectedIterations, userScramCredential.Iterations)
-	}
-
-	return nil
+	client := testProvider.Meta().(*LazyClient)
+	return retry.RetryContext(context.Background(), 30*time.Second, testUserScramCredentialRetry(client, username, scramMechanism, &expectedIterations))
 }
 
 func testAccCheckUserScramCredentialDestroy(s *terraform.State) error {
@@ -311,17 +296,31 @@ func testAccCheckUserScramCredentialDestroy(s *terraform.State) error {
 	}
 
 	client := meta.(*LazyClient)
-	_, err := client.DescribeUserScramCredential(username, mechanism)
+	return retry.RetryContext(context.Background(), 30*time.Second, testUserScramCredentialRetry(client, username, mechanism, nil))
+}
 
-	if _, ok := err.(UserScramCredentialMissingError); !ok {
-		if err == nil {
-			return fmt.Errorf("user scram credential was not destroyed")
-		} else {
-			return fmt.Errorf("user scram credential was not destroyed %v", err.Error())
+// SCRAM writes can commit before the broker's metadata cache reflects them.
+func testUserScramCredentialRetry(client *LazyClient, username, mechanism string, iterations *int32) retry.RetryFunc {
+	return func() *retry.RetryError {
+		credential, err := client.DescribeUserScramCredential(username, mechanism)
+		var missing UserScramCredentialMissingError
+		if errors.As(err, &missing) {
+			if iterations == nil {
+				return nil
+			}
+			return retry.RetryableError(err)
 		}
+		if err != nil {
+			return retry.NonRetryableError(err)
+		}
+		if iterations == nil {
+			return retry.RetryableError(fmt.Errorf("user scram credential was not destroyed"))
+		}
+		if credential.Iterations != *iterations {
+			return retry.RetryableError(fmt.Errorf("scram iterations should be %d but got '%d'", *iterations, credential.Iterations))
+		}
+		return nil
 	}
-
-	return nil
 }
 
 const testResourceUserScramCredential_SHA256 = `
