@@ -305,14 +305,14 @@ func newTLSConfig(clientCert, clientKey, caCert, clientKeyPassphrase string) (*t
 		//
 		// For new deployments, users should use PKCS#8 encrypted keys instead.
 		// See: https://go.dev/doc/go1.16#crypto/x509
-		//nolint:staticcheck // Intentionally using deprecated functions for legacy PEM support
+		//nolint:staticcheck // SA1019: preserve compatibility with legacy encrypted PEM keys.
 		if x509.IsEncryptedPEMBlock(keyBlock) {
 			log.Printf("[WARN] Detected legacy PEM-encrypted private key (Proc-Type: 4,ENCRYPTED). " +
 				"This encryption format is deprecated and considered insecure. " +
 				"Consider migrating to PKCS#8 encrypted keys for improved security.")
 			var err error
 
-			//nolint:staticcheck // Intentionally using deprecated function for legacy PEM support
+			//nolint:staticcheck // SA1019: preserve compatibility with legacy encrypted PEM keys.
 			keyBytes, err = x509.DecryptPEMBlock(keyBlock, []byte(clientKeyPassphrase))
 			if err != nil {
 				log.Printf("[ERROR] Error decrypting private key with passphrase %s", err)

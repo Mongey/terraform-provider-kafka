@@ -12,9 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version: 1.27.3
       - run: make test TESTARGS=-race
@@ -23,10 +23,10 @@ jobs:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: 1.27.3
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
@@ -37,12 +37,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version: 1.27.3
-      - uses: actions/cache@v5
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cache/go-build
@@ -50,7 +50,14 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
       - name: Bring up kafka + zk
         run: docker compose up -d --wait
       - name: "Run tests"
-        run: sleep 10 && make testacc
+        run: |
+          terraform_path="$(command -v terraform)"
+          sleep 10
+          TF_ACC_TERRAFORM_PATH="$terraform_path" make testacc
