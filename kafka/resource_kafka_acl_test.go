@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"github.com/IBM/sarama"
 	uuid "github.com/hashicorp/go-uuid"
 	r "github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 )
 
@@ -107,28 +109,21 @@ func testAccCheckAclDestroy(name string) error {
 	}
 
 	client := meta.(*LazyClient)
-	err := client.InvalidateACLCache()
-	if err != nil {
-		return err
-	}
-	acls, err := client.ListACLs()
-	if err != nil {
-		return err
-	}
+	return retry.RetryContext(context.Background(), 30*time.Second, testACLRetry(client, func(acls []*sarama.ResourceAcls) error {
+		log.Printf("[INFO] Searching for the ACL with resource_name %s", name)
 
-	log.Printf("[INFO] Searching for the ACL with resource_name %s", name)
-
-	aclCount := 0
-	for _, searchACL := range acls {
-		if searchACL.ResourceName == name {
-			log.Printf("[INFO] Found acl with resource_name %s : %v", name, searchACL)
-			aclCount++
+		aclCount := 0
+		for _, searchACL := range acls {
+			if searchACL.ResourceName == name {
+				log.Printf("[INFO] Found acl with resource_name %s : %v", name, searchACL)
+				aclCount++
+			}
 		}
-	}
-	if aclCount != 0 {
-		return fmt.Errorf("expected 0 acls for ACL %s, got %d", name, aclCount)
-	}
-	return nil
+		if aclCount != 0 {
+			return fmt.Errorf("expected 0 acls for ACL %s, got %d", name, aclCount)
+		}
+		return nil
+	}))
 }
 
 func testResourceACL_initialCheck(s *terraform.State) error {
@@ -143,66 +138,44 @@ func testResourceACL_initialCheck(s *terraform.State) error {
 	}
 
 	client := testProvider.Meta().(*LazyClient)
-	// Invalidate cache to ensure we get fresh ACL data
-	err := client.InvalidateACLCache()
-	if err != nil {
-		return err
-	}
-
-	acls, err := client.ListACLs()
-	if err != nil {
-		return err
-	}
-
 	name := instanceState.Attributes["resource_name"]
-	log.Printf("[INFO] Searching for the ACL with resource_name %s", name)
+	return retry.RetryContext(context.Background(), 30*time.Second, testACLRetry(client, func(acls []*sarama.ResourceAcls) error {
+		log.Printf("[INFO] Searching for the ACL with resource_name %s", name)
 
-	var foundACL *sarama.ResourceAcls
-	aclCount := 0
-	for _, searchACL := range acls {
-		if searchACL.ResourceName == name {
-			log.Printf("[INFO] Found acl with resource_name %s : %v", name, searchACL)
-			foundACL = searchACL
-			aclCount++
+		var foundACL *sarama.ResourceAcls
+		aclCount := 0
+		for _, searchACL := range acls {
+			if searchACL.ResourceName == name {
+				log.Printf("[INFO] Found acl with resource_name %s : %v", name, searchACL)
+				foundACL = searchACL
+				aclCount++
+			}
 		}
-	}
 
-	if aclCount == 0 {
-		return fmt.Errorf("No ACL found for resource %s, total ACLs returned: %d", name, len(acls))
-	}
-	if aclCount > 1 {
-		return fmt.Errorf("Found %d ACLs for resource %s, expected 1", aclCount, name)
-	}
-	if len(foundACL.Acls) != 1 {
-		return fmt.Errorf("Expected 1 ACL rule for resource %s, got %d", name, len(foundACL.Acls))
-	}
+		if aclCount == 0 {
+			return fmt.Errorf("No ACL found for resource %s, total ACLs returned: %d", name, len(acls))
+		}
+		if aclCount > 1 {
+			return fmt.Errorf("Found %d ACLs for resource %s, expected 1", aclCount, name)
+		}
+		if len(foundACL.Acls) != 1 {
+			return fmt.Errorf("Expected 1 ACL rule for resource %s, got %d", name, len(foundACL.Acls))
+		}
 
-	if foundACL.Acls[0].PermissionType != sarama.AclPermissionAllow {
-		return fmt.Errorf("should be Allow, not %v", foundACL.Acls[0].PermissionType)
-	}
+		if foundACL.Acls[0].PermissionType != sarama.AclPermissionAllow {
+			return fmt.Errorf("should be Allow, not %v", foundACL.Acls[0].PermissionType)
+		}
 
-	if foundACL.ResourcePatternType != sarama.AclPatternLiteral {
-		return fmt.Errorf("should be Literal, not %v", foundACL.ResourcePatternType)
-	}
-	log.Printf("[INFO] success")
-	return nil
+		if foundACL.ResourcePatternType != sarama.AclPatternLiteral {
+			return fmt.Errorf("should be Literal, not %v", foundACL.ResourcePatternType)
+		}
+		log.Printf("[INFO] success")
+		return nil
+	}))
 }
 
 func testResourceACL_updateCheck(s *terraform.State) error {
 	client := testProvider.Meta().(*LazyClient)
-	err := client.InvalidateACLCache()
-	if err != nil {
-		return err
-	}
-	acls, err := client.ListACLs()
-	if err != nil {
-		return err
-	}
-
-	if len(acls) < 1 {
-		return fmt.Errorf("there should be some acls %v %s", acls, err)
-	}
-
 	resourceState := s.Modules[0].Resources["kafka_acl.test"]
 	if resourceState == nil {
 		return fmt.Errorf("resource not found in state")
@@ -213,43 +186,64 @@ func testResourceACL_updateCheck(s *terraform.State) error {
 	}
 
 	name := instanceState.Attributes["resource_name"]
-	log.Printf("[INFO] Searching for the ACL with resource_name %s", name)
-
-	aclCount := 0
-	acl := acls[0]
-	for _, searchACL := range acls {
-		if searchACL.ResourceName == name {
-			log.Printf("[INFO] Found acl with resource_name %s : %v", name, searchACL)
-			acl = searchACL
-			aclCount++
+	return retry.RetryContext(context.Background(), 30*time.Second, testACLRetry(client, func(acls []*sarama.ResourceAcls) error {
+		if len(acls) < 1 {
+			return fmt.Errorf("there should be some acls %v", acls)
 		}
-	}
+		log.Printf("[INFO] Searching for the ACL with resource_name %s", name)
 
-	if len(acl.Acls) != 1 {
-		return fmt.Errorf("there are %d ACLs when there should be 1: %v", len(acl.Acls), acl.Acls)
-	}
-	if aclCount != 1 {
-		return fmt.Errorf("there should only be one acl with this resource, but there are %d", aclCount)
-	}
-	if acl.ResourceType != sarama.AclResourceTopic {
-		return fmt.Errorf("should be for a topic")
-	}
+		aclCount := 0
+		var acl *sarama.ResourceAcls
+		for _, searchACL := range acls {
+			if searchACL.ResourceName == name {
+				log.Printf("[INFO] Found acl with resource_name %s : %v", name, searchACL)
+				acl = searchACL
+				aclCount++
+			}
+		}
 
-	if acl.Acls[0].Principal != "User:Alice" {
-		return fmt.Errorf("should be for Alice")
-	}
+		if aclCount != 1 {
+			return fmt.Errorf("there should only be one acl with this resource, but there are %d", aclCount)
+		}
+		if len(acl.Acls) != 1 {
+			return fmt.Errorf("there are %d ACLs when there should be 1: %v", len(acl.Acls), acl.Acls)
+		}
+		if acl.ResourceType != sarama.AclResourceTopic {
+			return fmt.Errorf("should be for a topic")
+		}
 
-	if acl.Acls[0].Host != "*" {
-		return fmt.Errorf("should be for *")
-	}
-	if acl.Acls[0].PermissionType != sarama.AclPermissionDeny {
-		return fmt.Errorf("should be Deny, not %v", acl.Acls[0].PermissionType.String())
-	}
+		if acl.Acls[0].Principal != "User:Alice" {
+			return fmt.Errorf("should be for Alice")
+		}
 
-	if acl.ResourcePatternType != sarama.AclPatternPrefixed {
-		return fmt.Errorf("should be Prefixed, not %v", acl.ResourcePatternType)
+		if acl.Acls[0].Host != "*" {
+			return fmt.Errorf("should be for *")
+		}
+		if acl.Acls[0].PermissionType != sarama.AclPermissionDeny {
+			return fmt.Errorf("should be Deny, not %v", acl.Acls[0].PermissionType.String())
+		}
+
+		if acl.ResourcePatternType != sarama.AclPatternPrefixed {
+			return fmt.Errorf("should be Prefixed, not %v", acl.ResourcePatternType)
+		}
+		return nil
+	}))
+}
+
+func testACLRetry(client *LazyClient, check func([]*sarama.ResourceAcls) error) retry.RetryFunc {
+	return func() *retry.RetryError {
+		if err := client.InvalidateACLCache(); err != nil {
+			return retry.NonRetryableError(err)
+		}
+		acls, err := client.ListACLs()
+		if err != nil {
+			return retry.NonRetryableError(err)
+		}
+		if err := check(acls); err != nil {
+			return retry.RetryableError(err)
+		}
+		return nil
 	}
-	return nil
 }
 
 const testResourceACL_initialConfig = `
