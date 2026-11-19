@@ -27,6 +27,12 @@ func TestAcc_BasicQuota(t *testing.T) {
 				Config: cfgs(t, bs, fmt.Sprintf(testResourceQuota1, quotaEntityName, "4000000")),
 				Check:  testResourceQuota_initialCheck,
 			},
+			{
+				ResourceName:      "kafka_quota.test1",
+				ImportState:       true,
+				ImportStateId:     "client-id:" + quotaEntityName,
+				ImportStateVerify: true,
+			},
 		},
 	})
 }
