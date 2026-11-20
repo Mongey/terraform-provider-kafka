@@ -116,10 +116,9 @@ func aclDelete(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 }
 
 func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
-	log.Println("[INFO] Reading ACL")
 	c := meta.(*LazyClient)
 	a := aclInfo(d)
-	log.Printf("[INFO] Reading ACL %s", a)
+	log.Printf("[DEBUG] Reading ACL %s", a)
 
 	currentACLs, err := c.ListACLs()
 	if err != nil {
@@ -134,7 +133,6 @@ func aclRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag
 		if len(foundACLs.Acls) < 1 {
 			continue
 		}
-		log.Printf("[INFO] Found (%d) ACL(s) for Resource %s: %+v.", len(foundACLs.Acls), foundACLs.ResourceName, foundACLs)
 
 		for _, acl := range foundACLs.Acls {
 			aclID := StringlyTypedACL{

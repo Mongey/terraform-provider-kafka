@@ -442,7 +442,6 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	if c.aclCache.valid {
 		acls := c.aclCache.acls
 		c.aclCache.mutex.RUnlock()
-		log.Printf("[INFO] Using cached ACL list")
 		return acls, nil
 	}
 	c.aclCache.mutex.RUnlock()
@@ -453,11 +452,10 @@ func (c *Client) ListACLs() ([]*sarama.ResourceAcls, error) {
 	// Re-check cache validity after acquiring write lock (TOCTOU fix)
 	// Another goroutine may have populated the cache between RUnlock and Lock
 	if c.aclCache.valid {
-		log.Printf("[INFO] Using cached ACL list (populated by another goroutine)")
 		return c.aclCache.acls, nil
 	}
 
-	log.Printf("[INFO] Listing all ACLS")
+	log.Printf("[DEBUG] Listing all ACLs")
 	broker, err := c.client.Controller()
 	if err != nil {
 		return nil, err

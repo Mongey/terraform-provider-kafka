@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 
 	"github.com/IBM/sarama"
@@ -23,11 +22,6 @@ func (c *LazyClient) init() error {
 		c.inner, c.initErr = NewClient(c.Config)
 	})
 
-	if c.Config != nil {
-		log.Printf("[TRACE] lazy client init %s; config, %v", c.initErr, c.Config.copyWithMaskedSensitiveValues())
-	} else {
-		log.Printf("[TRACE] lazy client init %s", c.initErr)
-	}
 	if errors.Is(c.initErr, sarama.ErrBrokerNotAvailable) || errors.Is(c.initErr, sarama.ErrOutOfBrokers) {
 		if c.Config.TLSEnabled {
 			tlsError := c.checkTLSConfig()

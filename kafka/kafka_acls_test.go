@@ -1,7 +1,7 @@
 package kafka
 
 import (
-	"log"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -9,36 +9,60 @@ import (
 	"github.com/IBM/sarama"
 )
 
-type blockingACLLog struct {
-	started chan struct{}
-	resume  chan struct{}
-}
-
-func (w blockingACLLog) Write(p []byte) (int, error) {
-	close(w.started)
-	<-w.resume
-	return len(p), nil
-}
-
 func TestListACLs_ConcurrentInvalidation(t *testing.T) {
 	cached := []*sarama.ResourceAcls{{Resource: sarama.Resource{ResourceName: "cached-topic"}}}
-	c := &Client{aclCache: aclCache{valid: true, acls: cached}}
-	w := blockingACLLog{started: make(chan struct{}), resume: make(chan struct{})}
-	previous := log.Writer()
-	log.SetOutput(w)
-	defer log.SetOutput(previous)
-
-	result := make(chan []*sarama.ResourceAcls, 1)
-	go func() {
-		acls, _ := c.ListACLs()
-		result <- acls
-	}()
-	<-w.started
-	c.InvalidateACLCache()
-	close(w.resume)
-	if acls := <-result; len(acls) != 1 || acls[0] != cached[0] {
-		t.Fatalf("ListACLs returned %v; want the cache entry observed before invalidation", acls)
+	mock := sarama.NewMockBroker(t, 0)
+	defer mock.Close()
+	mock.SetHandlerByMap(map[string]sarama.MockResponse{
+		"DescribeAclsRequest": sarama.NewMockWrapper(&sarama.DescribeAclsResponse{Version: 1, ResourceAcls: cached}),
+	})
+	cfg := sarama.NewConfig()
+	cfg.ApiVersionsRequest = false
+	broker := sarama.NewBroker(mock.Addr())
+	if err := broker.Open(cfg); err != nil {
+		t.Fatal(err)
 	}
+	defer func() {
+		if err := broker.Close(); err != nil {
+			t.Error(err)
+		}
+	}()
+	c := &Client{client: configControllerClient{broker: broker}, supportedAPIs: map[int]int{29: 1},
+		aclCache: aclCache{valid: true, acls: cached}}
+	stop := make(chan struct{})
+	var invalidator sync.WaitGroup
+	invalidator.Go(func() {
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+				c.InvalidateACLCache()
+				runtime.Gosched()
+			}
+		}
+	})
+	var readers sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		readers.Go(func() {
+			for j := 0; j < 50; j++ {
+				acls, err := c.ListACLs()
+				if err != nil || len(acls) == 0 {
+					t.Errorf("cache snapshot lost during invalidation: %v, %v", acls, err)
+					return
+				}
+				for _, acl := range acls {
+					if acl.ResourceName != "cached-topic" {
+						t.Errorf("unexpected cache snapshot: %v", acls)
+						return
+					}
+				}
+			}
+		})
+	}
+	readers.Wait()
+	close(stop)
+	invalidator.Wait()
 }
 
 // TestListACLs_ConcurrentCacheFill tests that concurrent calls to ListACLs

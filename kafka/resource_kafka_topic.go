@@ -280,7 +280,6 @@ func topicRead(ctx context.Context, d *schema.ResourceData, meta interface{}) di
 		return diag.FromErr(err)
 	}
 
-	log.Printf("[DEBUG] Setting the state from Kafka %v", topic)
 	errSet := errSetter{d: d}
 	errSet.Set("name", topic.Name)
 	errSet.Set("partitions", topic.Partitions)

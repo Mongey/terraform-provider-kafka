@@ -60,7 +60,6 @@ func NewClient(config *Config) (*Client, error) {
 		return nil, errors.New("cannot create client without kafka config")
 	}
 
-	log.Printf("[TRACE] configuring bootstrap_servers %v", config.copyWithMaskedSensitiveValues())
 	if config.BootstrapServers == nil {
 		return nil, fmt.Errorf("no bootstrap_servers provided")
 	}
@@ -70,7 +69,7 @@ func NewClient(config *Config) (*Client, error) {
 		return nil, fmt.Errorf("no bootstrap_servers provided")
 	}
 
-	log.Printf("[INFO] configuring kafka client with %v", config.copyWithMaskedSensitiveValues())
+	log.Printf("[DEBUG] configuring kafka client with %v", config.copyWithMaskedSensitiveValues())
 
 	kc, err := config.newKafkaConfig()
 	if err != nil {
@@ -521,14 +520,13 @@ func isPartitionRFChanging(status *sarama.PartitionReplicaReassignmentsStatus) b
 
 func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error) {
 	c := client.client
-	log.Printf("[INFO] 👋 reading topic '%s' from Kafka: %v", name, refreshMetadata)
+	log.Printf("[DEBUG] reading topic '%s' from Kafka: %v", name, refreshMetadata)
 
 	topic := Topic{
 		Name: name,
 	}
 
 	if refreshMetadata {
-		log.Printf("[DEBUG] Refreshing metadata for topic '%s'", name)
 		err := c.RefreshMetadata(name)
 
 		if errors.Is(err, sarama.ErrUnknownTopicOrPartition) {
@@ -543,22 +541,18 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 		if err != nil {
 			return topic, err
 		}
-	} else {
-		log.Printf("[DEBUG] skipping metadata refresh for topic '%s'", name)
 	}
 
 	client.topicsMutex.RLock()
 	_, topicExists := client.topics[name]
 	client.topicsMutex.RUnlock()
 	if topicExists {
-		log.Printf("[DEBUG] Found %s from Kafka", name)
 		p, err := c.Partitions(name)
 		if err != nil && !errors.Is(err, sarama.ErrUnknownTopicOrPartition) {
 			return topic, err
 		}
 		if err == nil {
 			partitionCount := int32(len(p))
-			log.Printf("[DEBUG] [%s] %d Partitions Found: %v from Kafka", name, partitionCount, p)
 			topic.Partitions = partitionCount
 
 			r, err := ReplicaCount(c, name, p)
@@ -566,7 +560,6 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 				return topic, err
 			}
 
-			log.Printf("[DEBUG] [%s] ReplicationFactor %d from Kafka", name, r)
 			topic.ReplicationFactor = int16(r)
 
 			configToSave, err := client.topicConfig(name, refreshMetadata)
@@ -575,7 +568,7 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 				return topic, err
 			}
 
-			log.Printf("[TRACE] [%s] Read %d config entries from Kafka", name, len(configToSave))
+			log.Printf("[TRACE] [%s] Read %d config entries from Kafka; partitions=%d replication_factor=%d", name, len(configToSave), partitionCount, r)
 			topic.Config = configToSave
 			return topic, nil
 		}
@@ -647,11 +640,9 @@ func (c *Client) topicConfig(topic string, refreshMetadata bool) (map[string]*st
 	if len(cr.Resources) > 0 && len(cr.Resources[0].Configs) > 0 {
 		for _, tConf := range cr.Resources[0].Configs {
 			v := tConf.Value
-			log.Printf("[TRACE] [%s] %s: Default %v, Source %v, Version %d", topic, tConf.Name, tConf.Default, tConf.Source, cr.Version)
 
 			if tConf.Name == "segment.bytes" && c.config.isAWSMSKServerless() {
 				// Remove segment.bytes in AWS MSK Serverless response to prevent perpetual planning
-				log.Printf("[TRACE] [%s] Using AWS MSK Serverless. Skipping segment.bytes config", topic)
 				continue
 			}
 
