@@ -11,3 +11,12 @@ PASS git diff --check and local documentation links
 No full MSK/IAM acceptance run; no performance claim from the smoke test.
 Historical performance and CPU measurements: 2026-11-18; see FINDINGS.md.
 Original checkout's pre-existing client.go/config.go/kafka_acls.go edits preserved.
+
+Logging rollback: 2026-11-20
+- Reverted the provider log-removal commit in full, including associated tests.
+- Kafka source exactly matches routing-only commit cd159ac.
+- Historical post-trim/SDK WARN measurements retained as experiments, not current-branch CPU claims.
+PASS rollback: env -u TF_ACC go test -race ./...
+PASS rollback: golangci-lint run (0 issues)
+PASS rollback: Python harness unit tests (6 tests)
+PASS rollback: git diff cd159ac --exit-code -- kafka; staged and unstaged whitespace checks

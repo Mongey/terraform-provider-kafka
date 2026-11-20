@@ -2,8 +2,8 @@
 
 Ordinary topic config reads now spread across existing broker connections instead
 of sending every DescribeConfigs request to the controller. This removes a
-single-connection bottleneck when responses have appreciable latency. Refresh
-logging is also bounded per resource instead of per returned config entry.
+single-connection bottleneck when responses have appreciable latency. Existing
+refresh logging is unchanged.
 
 ## What the issue reports
 
@@ -21,11 +21,9 @@ Our measurements below use real Terraform and real local Kafka, not MSK/IAM.
 - Post-write and legacy config reads retain controller routing. Broker
   connection/request failures fall back to the controller. Kafka authorization
   response errors remain errors.
-- Topic reads log a start and compact completion; per-config-entry traces,
-  repeated masked client initialization messages, cache-hit messages, and full
-  topic/ACL dumps are removed. Missing resources, errors and mutation logs remain.
-- No provider configuration, Terraform state schema, dependency, or SDK logging
-  default changes.
+- No provider configuration, Terraform state schema, dependency, or logging
+  behavior changes. The provider log cleanup was reverted because it did not
+  establish a plan-time improvement.
 
 ## Whole Terraform measurements
 
@@ -55,21 +53,24 @@ exactly once per cluster, no config response errors, and zero config requests
 with refresh disabled. Delay filters reported zero drops; task clusters were
 cleaned up.
 
-## Logging cleanup
+## Logging cleanup (not retained)
 
 Ten alternating local trials on 2,498 resources measured ordinary-plan medians
 of 4.343s before and 4.216s after. This did not establish an elapsed-time gain.
 Provider-owned diagnostic records fell 101,324 to 4,932, a 95.1% reduction.
 SDK records stayed at 64,847. See [summary](issue-696-trimmed-logs-summary.json)
 and [full results](issue-696-trimmed-logs.json). This is a diagnostic-volume
-improvement, not a claimed additional plan speedup.
+improvement, not a plan speedup. These log removals and their associated test
+changes were reverted; the measurements remain as historical experiment results.
 
 ## SDK WARN experiment and CPU attribution
 
 Setting `TF_LOG_SDK=WARN` in the candidate environment removed all 64,847 SDK
 records while preserving the provider's 4,932 records and all 2,400 config reads.
-No production default was changed. The same production binary and official
-Terraform binary were used for both sides of the elapsed-time experiment.
+No SDK default was changed. These measurements used the experimental provider
+with trimmed logs, before that cleanup was reverted. They describe that
+experiment, not a fresh CPU profile of the final routing-only implementation.
+The same provider binary and official Terraform binary were used on both sides.
 
 Ten unprofiled ordinary-plan pairs gave medians of 6.638s default versus 6.871s
 WARN, ranges 3.299–14.800s versus 3.599–21.796s, and five wins each. The paired
@@ -138,3 +139,11 @@ claim or full acceptance-suite result is implied by these local measurements.
   successful cleanup. One trial is not a speedup measurement.
 - All task Kafka containers were removed. Full acceptance tests against MSK/IAM
   were not run. The original checkout's three pre-existing edits were untouched.
+
+
+## Logging rollback, 2026-11-20
+
+The bounded-logging commit was reverted in full, including its logging-specific
+test and ACL concurrency-test rewrite. Production Kafka source matches the
+routing-only commit (`cd159ac`) exactly. The routing speedup measurements above
+were collected before logging was trimmed and still apply to the retained change.
