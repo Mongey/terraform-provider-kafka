@@ -1,0 +1,476 @@
+{
+  "completed": true,
+  "terraform": {
+    "format_version": "1.0",
+    "terraform_version": "1.17.1-dev",
+    "platform": "darwin_arm64",
+    "provider_selections": {},
+    "terraform_outdated": true
+  },
+  "provider_sha256": "438ff4e2c0f4db01a82246bb8fcad7ab1ac82f84839451ee8000672e40b9d4c0",
+  "harness_revision": "5a155a82317476d12cb97469100fb66d2f2c00d1",
+  "harness_sha256": "8ad1d2fafaa65a286f199f304f3dae661ccf1063018705b18b7916d8a61aeda7",
+  "provider_build_info": "/private/tmp/kafka-696-sdk-warn-profile/mirror/registry.terraform.io/mongey/kafka/0.0.1/darwin_arm64/terraform-provider-kafka_v0.0.1: go1.27.4\n\tpath\tgithub.com/Mongey/terraform-provider-kafka/tools/benchmarks/profile-provider\n\tmod\tgithub.com/Mongey/terraform-provider-kafka\tv0.13.3-0.20261118114503-5a155a823174+dirty\t\n\tdep\tgithub.com/IBM/sarama\tv1.61.1\th1:I59MWPHQUWqJNdRpsDUcbeCriog8SxjQaPfHNWxidEg=\n\tdep\tgithub.com/agext/levenshtein\tv1.2.2\th1:0S/Yg6LYmFJ5stwQeRp6EeOcCbj7xiqQSdNelsXvaqE=\n\tdep\tgithub.com/apparentlymart/go-textseg/v15\tv15.0.0\th1:uYvfpb3DyLSCGWnctWKGj857c6ew1u1fNQOlOtuGxQY=\n\tdep\tgithub.com/aws/aws-msk-iam-sasl-signer-go\tv1.0.4\th1:2jAwFwA0Xgcx94dUId+K24yFabsKYDtAhCgyMit6OqE=\n\tdep\tgithub.com/aws/aws-sdk-go-v2\tv1.48.0\th1:tFU7EJVm7MfyaXLsXdYTZ0Vd6vwt9OljCyqq0gqk0Mc=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/config\tv1.29.14\th1:f+eEi/2cKCg9pqKBoAIwRGzVb70MRKqWX4dg1BDcSJM=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/credentials\tv1.21.0\th1:OViwhqeipkQzSHuO2eQDUCdLrI6r3nzGxFUyM8GqnCs=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/feature/ec2/imds\tv1.20.9\th1:oH1E0tjN0g+ZRusbX1dsuat4FJ0z05l8hWaycSbDuNc=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/internal/configsources\tv1.5.12\th1:W0yUUzKBA8SofGQ0yZafEUuZq9UxfvijRgdc6vcRQPA=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/internal/endpoints/v2\tv2.8.12\th1:lqSi8qvAnKC1vfosImdmOsuiJLr/jdybZX5299beB6Q=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/internal/ini\tv1.8.3\th1:bIqFDwgGXXN1Kpp99pDOdKMTTb5d2KyU5X/BZxjOkRo=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/internal/v4a\tv1.5.12\th1:uvX2yaL+aMjkmnrLPPlR/zwjoKFRMoNhhJfeGjfk6qc=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/service/internal/accept-encoding\tv1.13.25\th1:rKwkY3Z+fvt2W0msjdNs6uNewPmXzPayQ961oyuWhes=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/service/internal/presigned-url\tv1.14.12\th1:wzAqMZ2O4+ij9HQqIrk+P9PBGacE0wOTuWB7Mo97//I=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/service/sso\tv1.39.5\th1:ANAoa+qt3/9kXnvQVgUyxcTzhzZf4DqaBS+M2DQrELU=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/service/ssooidc\tv1.44.5\th1:uIOBLMhef4N16WguadoHKuBy9etdz+RKTeqzchXErAI=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/service/sts\tv1.52.0\th1:IaBLmJWiIEtKkjXMgMbYGZk7WKXbYA8148wCMCXq9hU=\n\tdep\tgithub.com/aws/smithy-go\tv1.28.9\th1:zkZ058OpNX0iGTK24b+ZUEQSMc11CBA6oO7xtKZfzkY=\n\tdep\tgithub.com/davecgh/go-spew\tv1.1.2-0.20180830191138-d8f796af33cc\th1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=\n\tdep\tgithub.com/eapache/go-resiliency\tv1.7.0\th1:n3NRTnBn5N0Cbi/IeOHuQn9s2UwVUH7Ga0ZWcP+9JTA=\n\tdep\tgithub.com/fatih/color\tv1.16.0\th1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=\n\tdep\tgithub.com/golang/protobuf\tv1.5.4\th1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=\n\tdep\tgithub.com/google/go-cmp\tv0.7.0\th1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=\n\tdep\tgithub.com/hashicorp/go-cty\tv1.5.0\th1:EkQ/v+dDNUqnuVpmS5fPqyY71NXVgT5gf32+57xY8g0=\n\tdep\tgithub.com/hashicorp/go-hclog\tv1.6.3\th1:Qr2kF+eVWjTiYmU7Y31tYlP1h0q/X3Nl3tPGdaB11/k=\n\tdep\tgithub.com/hashicorp/go-plugin\tv1.7.0\th1:YghfQH/0QmPNc/AZMTFE3ac8fipZyZECHdDPshfk+mA=\n\tdep\tgithub.com/hashicorp/go-uuid\tv1.0.4\th1:ZrN80XjMzpRYk+2FxMDy2A2zz0d5QjJ7GMFSkZLj12A=\n\tdep\tgithub.com/hashicorp/go-version\tv1.9.0\th1:CeOIz6k+LoN3qX9Z0tyQrPtiB1DFYRPfCIBtaXPSCnA=\n\tdep\tgithub.com/hashicorp/hcl/v2\tv2.24.0\th1:2QJdZ454DSsYGoaE6QheQZjtKZSUs9Nh2izTWiwQxvE=\n\tdep\tgithub.com/hashicorp/logutils\tv1.0.0\th1:dLEQVugN8vlakKOUE3ihGLTZJRB4j+M2cdTm/ORI65Y=\n\tdep\tgithub.com/hashicorp/terraform-plugin-go\tv0.31.0\th1:0Fz2r9DQ+kNNl6bx8HRxFd1TfMKUvnrOtvJPmp3Z0q8=\n\tdep\tgithub.com/hashicorp/terraform-plugin-log\tv0.10.0\th1:eu2kW6/QBVdN4P3Ju2WiB2W3ObjkAsyfBsL3Wh1fj3g=\n\tdep\tgithub.com/hashicorp/terraform-plugin-sdk/v2\tv2.40.1\th1:2yPUd7esMOpuTaG3y1iEla1iw+tla+3ZEkkBnmOAre4=\n\tdep\tgithub.com/hashicorp/terraform-registry-address\tv0.4.0\th1:S1yCGomj30Sao4l5BMPjTGZmCNzuv7/GDTDX99E9gTk=\n\tdep\tgithub.com/hashicorp/terraform-svchost\tv0.1.1\th1:EZZimZ1GxdqFRinZ1tpJwVxxt49xc/S52uzrw4x0jKQ=\n\tdep\tgithub.com/hashicorp/yamux\tv0.1.2\th1:XtB8kyFOyHXYVFnwT5C3+Bdo8gArse7j2AQ0DA0Uey8=\n\tdep\tgithub.com/jcmturner/aescts/v2\tv2.0.0\th1:9YKLH6ey7H4eDBXW8khjYslgyqG2xZikXP0EQFKrle8=\n\tdep\tgithub.com/jcmturner/dnsutils/v2\tv2.0.0\th1:lltnkeZGL0wILNvrNiVCR6Ro5PGU/SeBvVO/8c/iPbo=\n\tdep\tgithub.com/jcmturner/gofork\tv1.7.6\th1:QH0l3hzAU1tfT3rZCnW5zXl+orbkNMMRGJfdJjHVETg=\n\tdep\tgithub.com/jcmturner/gokrb5/v8\tv8.4.4\th1:x1Sv4HaTpepFkXbt2IkL29DXRf8sOfZXo8eRKh687T8=\n\tdep\tgithub.com/jcmturner/rpc/v2\tv2.0.3\th1:7FXXj8Ti1IaVFpSAziCZWNzbNuZmnvw/i6CqLNdWfZY=\n\tdep\tgithub.com/klauspost/compress\tv1.20.1\th1:T7kKElXUMXrUJ2E9QhQhxFtcK5rPyLdsGZvdbLMPdiQ=\n\tdep\tgithub.com/mattn/go-colorable\tv0.1.14\th1:9A9LHSqF/7dyVVX6g0U9cwm9pG3kP9gSzcuIPHPsaIE=\n\tdep\tgithub.com/mattn/go-isatty\tv0.0.20\th1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=\n\tdep\tgithub.com/mitchellh/copystructure\tv1.2.0\th1:vpKXTN4ewci03Vljg/q9QvCGUDttBOGBIa15WveJJGw=\n\tdep\tgithub.com/mitchellh/go-testing-interface\tv1.14.1\th1:jrgshOhYAUVNMAJiKbEu7EqAwgJJ2JqpQmpLJOu07cU=\n\tdep\tgithub.com/mitchellh/go-wordwrap\tv1.0.1\th1:TLuKupo69TCn6TQSyGxwI1EblZZEsQ0vMlAFQflz0v0=\n\tdep\tgithub.com/mitchellh/mapstructure\tv1.5.0\th1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=\n\tdep\tgithub.com/mitchellh/reflectwalk\tv1.0.2\th1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=\n\tdep\tgithub.com/oklog/run\tv1.1.0\th1:GEenZ1cK0+q0+wsJew9qUg/DyD8k3JzYsZAi5gYi2mA=\n\tdep\tgithub.com/pierrec/lz4/v4\tv4.1.31\th1:TI8ck6XSudzSzotzAmy0+kh/KpRHaVsKLPzS97gRyNg=\n\tdep\tgithub.com/rcrowley/go-metrics\tv0.0.0-20250401214520-65e299d6c5c9\th1:bsUq1dX0N8AOIL7EB/X911+m4EHsnWEHeJ0c+3TTBrg=\n\tdep\tgithub.com/vmihailenco/msgpack\tv4.0.4+incompatible\th1:dSLoQfGFAo3F6OoNhwUmLwVgaUXK79GlxNBwueZn0xI=\n\tdep\tgithub.com/vmihailenco/msgpack/v5\tv5.4.1\th1:cQriyiUvjTwOHg8QZaPihLWeRAAVoCpE00IUPn0Bjt8=\n\tdep\tgithub.com/vmihailenco/tagparser/v2\tv2.0.0\th1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAhO7/IwNM9g=\n\tdep\tgithub.com/xdg/scram\tv1.0.5\th1:TuS0RFmt5Is5qm9Tm2SoD89OPqe4IRiFtyFY4iwWXsw=\n\tdep\tgithub.com/xdg/stringprep\tv1.0.3\th1:cmL5Enob4W83ti/ZHuZLuKD/xqJfus4fVPwE+/BDm+4=\n\tdep\tgithub.com/zclconf/go-cty\tv1.18.1\th1:yEGE8M4iIZlyKQURZNb2SnEyZlZHUcBCnx6KF81KuwM=\n\tdep\tgolang.org/x/crypto\tv0.58.0\th1:COkYLr4k7nDI4r6QtMML2AfzeIswWHAJthLS6K/M/54=\n\tdep\tgolang.org/x/net\tv0.62.0\th1:18ELalfM5+XNRwzM2nYqXsZQ9ByS1uhj2O/U7+5jqRY=\n\tdep\tgolang.org/x/oauth2\tv0.38.0\th1:uW7XQbcu1eoiQS7uMJvLOjPMl04bTbmY1VeRPxvbspI=\n\tdep\tgolang.org/x/sys\tv0.49.0\th1:XbzkgYJHdqh/8m2Uu0W/dQv8nktxx4BFHp1M0gROTXA=\n\tdep\tgolang.org/x/text\tv0.43.0\th1:1QivrlhwAsnMOcqgOdl9my7s9OyZl8O5/UGUTJVXoWc=\n\tdep\tgoogle.golang.org/genproto/googleapis/rpc\tv0.0.0-20260526163538-3dc84a4a5aaa\th1:mZHHdPZl0dbGHCflZgAq/Q468DWVFcU2whhB2KAo8fk=\n\tdep\tgoogle.golang.org/grpc\tv1.83.2\th1:EManeRomTObA0BU7I8vXgg/78uE5MJ9M8B39EX2WscU=\n\tdep\tgoogle.golang.org/protobuf\tv1.36.11\th1:fV6ZwhNocDyBLK0dj+fg8ektcVegBBuEolpbTQyBNVE=\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\tCGO_ENABLED=1\n\tbuild\tCGO_CFLAGS=\n\tbuild\tCGO_CPPFLAGS=\n\tbuild\tCGO_CXXFLAGS=\n\tbuild\tCGO_LDFLAGS=\n\tbuild\tGOARCH=arm64\n\tbuild\tGOOS=darwin\n\tbuild\tGOARM64=v8.0\n\tbuild\tvcs=git\n\tbuild\tvcs.revision=5a155a82317476d12cb97469100fb66d2f2c00d1\n\tbuild\tvcs.time=2026-11-18T11:45:03Z\n\tbuild\tvcs.modified=true\n",
+  "timings": [
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": true,
+      "wall_s": 6.514738291036338,
+      "sdk_log_level": null,
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "baseline-n1200-p10-r0-refresh",
+      "variant": "baseline"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": true,
+      "wall_s": 4.323165459092706,
+      "sdk_log_level": "WARN",
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "candidate-n1200-p10-r0-refresh",
+      "variant": "candidate"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": false,
+      "wall_s": 3.158660416956991,
+      "sdk_log_level": null,
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "baseline-n1200-p10-r0-no-refresh",
+      "variant": "baseline"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": false,
+      "wall_s": 3.6743019591085613,
+      "sdk_log_level": "WARN",
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "candidate-n1200-p10-r0-no-refresh",
+      "variant": "candidate"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": false,
+      "wall_s": 2.9613334578461945,
+      "sdk_log_level": "WARN",
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "candidate-n1200-p10-r1-no-refresh",
+      "variant": "candidate"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": false,
+      "wall_s": 6.12926891609095,
+      "sdk_log_level": null,
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "baseline-n1200-p10-r1-no-refresh",
+      "variant": "baseline"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": true,
+      "wall_s": 3.962417999980971,
+      "sdk_log_level": "WARN",
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "candidate-n1200-p10-r1-refresh",
+      "variant": "candidate"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": true,
+      "wall_s": 4.394306832924485,
+      "sdk_log_level": null,
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "baseline-n1200-p10-r1-refresh",
+      "variant": "baseline"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": true,
+      "wall_s": 4.888576874975115,
+      "sdk_log_level": null,
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "baseline-n1200-p10-r2-refresh",
+      "variant": "baseline"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": true,
+      "wall_s": 8.350134124979377,
+      "sdk_log_level": "WARN",
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "candidate-n1200-p10-r2-refresh",
+      "variant": "candidate"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": false,
+      "wall_s": 5.521936832927167,
+      "sdk_log_level": null,
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "baseline-n1200-p10-r2-no-refresh",
+      "variant": "baseline"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": false,
+      "wall_s": 3.4072791249491274,
+      "sdk_log_level": "WARN",
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "candidate-n1200-p10-r2-no-refresh",
+      "variant": "candidate"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": false,
+      "wall_s": 2.9582932500634342,
+      "sdk_log_level": "WARN",
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "candidate-n1200-p10-r3-no-refresh",
+      "variant": "candidate"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": false,
+      "wall_s": 3.263434333028272,
+      "sdk_log_level": null,
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "baseline-n1200-p10-r3-no-refresh",
+      "variant": "baseline"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": true,
+      "wall_s": 3.663251625141129,
+      "sdk_log_level": "WARN",
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "candidate-n1200-p10-r3-refresh",
+      "variant": "candidate"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": true,
+      "wall_s": 4.0751236660871655,
+      "sdk_log_level": null,
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "baseline-n1200-p10-r3-refresh",
+      "variant": "baseline"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": true,
+      "wall_s": 6.497216457966715,
+      "sdk_log_level": null,
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "baseline-n1200-p10-r4-refresh",
+      "variant": "baseline"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": true,
+      "wall_s": 6.588652500184253,
+      "sdk_log_level": "WARN",
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "candidate-n1200-p10-r4-refresh",
+      "variant": "candidate"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": false,
+      "wall_s": 6.908014332875609,
+      "sdk_log_level": null,
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "baseline-n1200-p10-r4-no-refresh",
+      "variant": "baseline"
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": false,
+      "wall_s": 5.88276774995029,
+      "sdk_log_level": "WARN",
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "candidate-n1200-p10-r4-no-refresh",
+      "variant": "candidate"
+    }
+  ],
+  "diagnostics": [
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": true,
+      "wall_s": 13.087093667127192,
+      "sdk_log_level": null,
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "baseline-n1200-diagnostic-refresh",
+      "provider_trace": {
+        "topic_reads": 2400,
+        "config_completions": 2400,
+        "sdk_log_lines": 64847,
+        "provider_log_lines": 4932,
+        "trace_bytes": 30166761,
+        "topic_read_span_s": 8.230000019073486
+      },
+      "variant": "baseline",
+      "clusters": {
+        "first": {
+          "describe_configs_by_broker": {
+            "1": 383,
+            "2": 390,
+            "3": 427
+          },
+          "describe_configs_by_connection": {
+            "1": {
+              "192.168.117.2:9092-192.168.117.1:35870-12": 383
+            },
+            "2": {
+              "192.168.117.3:9092-192.168.117.1:41620-10": 390
+            },
+            "3": {
+              "192.168.117.4:9092-192.168.117.1:49770-12": 427
+            }
+          },
+          "topic_resources": 1200
+        },
+        "second": {
+          "describe_configs_by_broker": {
+            "1": 393,
+            "2": 379,
+            "3": 428
+          },
+          "describe_configs_by_connection": {
+            "1": {
+              "192.168.147.4:9092-192.168.147.1:46434-11": 393
+            },
+            "2": {
+              "192.168.147.3:9092-192.168.147.1:38156-11": 379
+            },
+            "3": {
+              "192.168.147.2:9092-192.168.147.1:33938-11": 428
+            }
+          },
+          "topic_resources": 1200
+        }
+      }
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": false,
+      "wall_s": 9.76620995788835,
+      "sdk_log_level": null,
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "baseline-n1200-diagnostic-no-refresh",
+      "provider_trace": {
+        "topic_reads": 0,
+        "config_completions": 0,
+        "sdk_log_lines": 47361,
+        "provider_log_lines": 4,
+        "trace_bytes": 21405913,
+        "topic_read_span_s": 0
+      },
+      "variant": "baseline",
+      "clusters": {
+        "first": {
+          "describe_configs_by_broker": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "describe_configs_by_connection": {
+            "1": {},
+            "2": {},
+            "3": {}
+          },
+          "topic_resources": 0
+        },
+        "second": {
+          "describe_configs_by_broker": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "describe_configs_by_connection": {
+            "1": {},
+            "2": {},
+            "3": {}
+          },
+          "topic_resources": 0
+        }
+      }
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": true,
+      "wall_s": 7.460319541860372,
+      "sdk_log_level": "WARN",
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "candidate-n1200-diagnostic-refresh",
+      "provider_trace": {
+        "topic_reads": 2400,
+        "config_completions": 2400,
+        "sdk_log_lines": 0,
+        "provider_log_lines": 4932,
+        "trace_bytes": 1044018,
+        "topic_read_span_s": 4.51800012588501
+      },
+      "variant": "candidate",
+      "clusters": {
+        "first": {
+          "describe_configs_by_broker": {
+            "1": 384,
+            "2": 385,
+            "3": 431
+          },
+          "describe_configs_by_connection": {
+            "1": {
+              "192.168.117.2:9092-192.168.117.1:58748-15": 384
+            },
+            "2": {
+              "192.168.117.3:9092-192.168.117.1:40398-12": 385
+            },
+            "3": {
+              "192.168.117.4:9092-192.168.117.1:44376-14": 431
+            }
+          },
+          "topic_resources": 1200
+        },
+        "second": {
+          "describe_configs_by_broker": {
+            "1": 400,
+            "2": 406,
+            "3": 394
+          },
+          "describe_configs_by_connection": {
+            "1": {
+              "192.168.147.4:9092-192.168.147.1:42198-15": 400
+            },
+            "2": {
+              "192.168.147.3:9092-192.168.147.1:53072-13": 406
+            },
+            "3": {
+              "192.168.147.2:9092-192.168.147.1:46122-13": 394
+            }
+          },
+          "topic_resources": 1200
+        }
+      }
+    },
+    {
+      "topics_per_cluster": 1200,
+      "resource_count": 2498,
+      "parallelism": 10,
+      "refresh": false,
+      "wall_s": 3.6787732080556452,
+      "sdk_log_level": "WARN",
+      "state_sha256": "0f54d0dfb02cc7a5ea5198e5c1ccbdbaaed4e6d99d7f4aa4edd0e59a9cf94f4f",
+      "artifact": "candidate-n1200-diagnostic-no-refresh",
+      "provider_trace": {
+        "topic_reads": 0,
+        "config_completions": 0,
+        "sdk_log_lines": 0,
+        "provider_log_lines": 4,
+        "trace_bytes": 9168,
+        "topic_read_span_s": 0
+      },
+      "variant": "candidate",
+      "clusters": {
+        "first": {
+          "describe_configs_by_broker": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "describe_configs_by_connection": {
+            "1": {},
+            "2": {},
+            "3": {}
+          },
+          "topic_resources": 0
+        },
+        "second": {
+          "describe_configs_by_broker": {
+            "1": 0,
+            "2": 0,
+            "3": 0
+          },
+          "describe_configs_by_connection": {
+            "1": {},
+            "2": {},
+            "3": {}
+          },
+          "topic_resources": 0
+        }
+      }
+    }
+  ],
+  "timing_instrumentation": "broker request logging at INFO; Terraform trace not requested",
+  "provider_profiling": true,
+  "host": {
+    "platform": "Darwin arm64",
+    "cpu_count": 10,
+    "load_average": [
+      82.69580078125,
+      131.37646484375,
+      109.68505859375
+    ]
+  },
+  "candidate_sha256": "438ff4e2c0f4db01a82246bb8fcad7ab1ac82f84839451ee8000672e40b9d4c0",
+  "candidate_build_info": "/private/tmp/kafka-696-sdk-warn-profile/candidate/mirror/registry.terraform.io/mongey/kafka/0.0.1/darwin_arm64/terraform-provider-kafka_v0.0.1: go1.27.4\n\tpath\tgithub.com/Mongey/terraform-provider-kafka/tools/benchmarks/profile-provider\n\tmod\tgithub.com/Mongey/terraform-provider-kafka\tv0.13.3-0.20261118114503-5a155a823174+dirty\t\n\tdep\tgithub.com/IBM/sarama\tv1.61.1\th1:I59MWPHQUWqJNdRpsDUcbeCriog8SxjQaPfHNWxidEg=\n\tdep\tgithub.com/agext/levenshtein\tv1.2.2\th1:0S/Yg6LYmFJ5stwQeRp6EeOcCbj7xiqQSdNelsXvaqE=\n\tdep\tgithub.com/apparentlymart/go-textseg/v15\tv15.0.0\th1:uYvfpb3DyLSCGWnctWKGj857c6ew1u1fNQOlOtuGxQY=\n\tdep\tgithub.com/aws/aws-msk-iam-sasl-signer-go\tv1.0.4\th1:2jAwFwA0Xgcx94dUId+K24yFabsKYDtAhCgyMit6OqE=\n\tdep\tgithub.com/aws/aws-sdk-go-v2\tv1.48.0\th1:tFU7EJVm7MfyaXLsXdYTZ0Vd6vwt9OljCyqq0gqk0Mc=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/config\tv1.29.14\th1:f+eEi/2cKCg9pqKBoAIwRGzVb70MRKqWX4dg1BDcSJM=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/credentials\tv1.21.0\th1:OViwhqeipkQzSHuO2eQDUCdLrI6r3nzGxFUyM8GqnCs=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/feature/ec2/imds\tv1.20.9\th1:oH1E0tjN0g+ZRusbX1dsuat4FJ0z05l8hWaycSbDuNc=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/internal/configsources\tv1.5.12\th1:W0yUUzKBA8SofGQ0yZafEUuZq9UxfvijRgdc6vcRQPA=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/internal/endpoints/v2\tv2.8.12\th1:lqSi8qvAnKC1vfosImdmOsuiJLr/jdybZX5299beB6Q=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/internal/ini\tv1.8.3\th1:bIqFDwgGXXN1Kpp99pDOdKMTTb5d2KyU5X/BZxjOkRo=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/internal/v4a\tv1.5.12\th1:uvX2yaL+aMjkmnrLPPlR/zwjoKFRMoNhhJfeGjfk6qc=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/service/internal/accept-encoding\tv1.13.25\th1:rKwkY3Z+fvt2W0msjdNs6uNewPmXzPayQ961oyuWhes=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/service/internal/presigned-url\tv1.14.12\th1:wzAqMZ2O4+ij9HQqIrk+P9PBGacE0wOTuWB7Mo97//I=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/service/sso\tv1.39.5\th1:ANAoa+qt3/9kXnvQVgUyxcTzhzZf4DqaBS+M2DQrELU=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/service/ssooidc\tv1.44.5\th1:uIOBLMhef4N16WguadoHKuBy9etdz+RKTeqzchXErAI=\n\tdep\tgithub.com/aws/aws-sdk-go-v2/service/sts\tv1.52.0\th1:IaBLmJWiIEtKkjXMgMbYGZk7WKXbYA8148wCMCXq9hU=\n\tdep\tgithub.com/aws/smithy-go\tv1.28.9\th1:zkZ058OpNX0iGTK24b+ZUEQSMc11CBA6oO7xtKZfzkY=\n\tdep\tgithub.com/davecgh/go-spew\tv1.1.2-0.20180830191138-d8f796af33cc\th1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=\n\tdep\tgithub.com/eapache/go-resiliency\tv1.7.0\th1:n3NRTnBn5N0Cbi/IeOHuQn9s2UwVUH7Ga0ZWcP+9JTA=\n\tdep\tgithub.com/fatih/color\tv1.16.0\th1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=\n\tdep\tgithub.com/golang/protobuf\tv1.5.4\th1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek=\n\tdep\tgithub.com/google/go-cmp\tv0.7.0\th1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=\n\tdep\tgithub.com/hashicorp/go-cty\tv1.5.0\th1:EkQ/v+dDNUqnuVpmS5fPqyY71NXVgT5gf32+57xY8g0=\n\tdep\tgithub.com/hashicorp/go-hclog\tv1.6.3\th1:Qr2kF+eVWjTiYmU7Y31tYlP1h0q/X3Nl3tPGdaB11/k=\n\tdep\tgithub.com/hashicorp/go-plugin\tv1.7.0\th1:YghfQH/0QmPNc/AZMTFE3ac8fipZyZECHdDPshfk+mA=\n\tdep\tgithub.com/hashicorp/go-uuid\tv1.0.4\th1:ZrN80XjMzpRYk+2FxMDy2A2zz0d5QjJ7GMFSkZLj12A=\n\tdep\tgithub.com/hashicorp/go-version\tv1.9.0\th1:CeOIz6k+LoN3qX9Z0tyQrPtiB1DFYRPfCIBtaXPSCnA=\n\tdep\tgithub.com/hashicorp/hcl/v2\tv2.24.0\th1:2QJdZ454DSsYGoaE6QheQZjtKZSUs9Nh2izTWiwQxvE=\n\tdep\tgithub.com/hashicorp/logutils\tv1.0.0\th1:dLEQVugN8vlakKOUE3ihGLTZJRB4j+M2cdTm/ORI65Y=\n\tdep\tgithub.com/hashicorp/terraform-plugin-go\tv0.31.0\th1:0Fz2r9DQ+kNNl6bx8HRxFd1TfMKUvnrOtvJPmp3Z0q8=\n\tdep\tgithub.com/hashicorp/terraform-plugin-log\tv0.10.0\th1:eu2kW6/QBVdN4P3Ju2WiB2W3ObjkAsyfBsL3Wh1fj3g=\n\tdep\tgithub.com/hashicorp/terraform-plugin-sdk/v2\tv2.40.1\th1:2yPUd7esMOpuTaG3y1iEla1iw+tla+3ZEkkBnmOAre4=\n\tdep\tgithub.com/hashicorp/terraform-registry-address\tv0.4.0\th1:S1yCGomj30Sao4l5BMPjTGZmCNzuv7/GDTDX99E9gTk=\n\tdep\tgithub.com/hashicorp/terraform-svchost\tv0.1.1\th1:EZZimZ1GxdqFRinZ1tpJwVxxt49xc/S52uzrw4x0jKQ=\n\tdep\tgithub.com/hashicorp/yamux\tv0.1.2\th1:XtB8kyFOyHXYVFnwT5C3+Bdo8gArse7j2AQ0DA0Uey8=\n\tdep\tgithub.com/jcmturner/aescts/v2\tv2.0.0\th1:9YKLH6ey7H4eDBXW8khjYslgyqG2xZikXP0EQFKrle8=\n\tdep\tgithub.com/jcmturner/dnsutils/v2\tv2.0.0\th1:lltnkeZGL0wILNvrNiVCR6Ro5PGU/SeBvVO/8c/iPbo=\n\tdep\tgithub.com/jcmturner/gofork\tv1.7.6\th1:QH0l3hzAU1tfT3rZCnW5zXl+orbkNMMRGJfdJjHVETg=\n\tdep\tgithub.com/jcmturner/gokrb5/v8\tv8.4.4\th1:x1Sv4HaTpepFkXbt2IkL29DXRf8sOfZXo8eRKh687T8=\n\tdep\tgithub.com/jcmturner/rpc/v2\tv2.0.3\th1:7FXXj8Ti1IaVFpSAziCZWNzbNuZmnvw/i6CqLNdWfZY=\n\tdep\tgithub.com/klauspost/compress\tv1.20.1\th1:T7kKElXUMXrUJ2E9QhQhxFtcK5rPyLdsGZvdbLMPdiQ=\n\tdep\tgithub.com/mattn/go-colorable\tv0.1.14\th1:9A9LHSqF/7dyVVX6g0U9cwm9pG3kP9gSzcuIPHPsaIE=\n\tdep\tgithub.com/mattn/go-isatty\tv0.0.20\th1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=\n\tdep\tgithub.com/mitchellh/copystructure\tv1.2.0\th1:vpKXTN4ewci03Vljg/q9QvCGUDttBOGBIa15WveJJGw=\n\tdep\tgithub.com/mitchellh/go-testing-interface\tv1.14.1\th1:jrgshOhYAUVNMAJiKbEu7EqAwgJJ2JqpQmpLJOu07cU=\n\tdep\tgithub.com/mitchellh/go-wordwrap\tv1.0.1\th1:TLuKupo69TCn6TQSyGxwI1EblZZEsQ0vMlAFQflz0v0=\n\tdep\tgithub.com/mitchellh/mapstructure\tv1.5.0\th1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=\n\tdep\tgithub.com/mitchellh/reflectwalk\tv1.0.2\th1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=\n\tdep\tgithub.com/oklog/run\tv1.1.0\th1:GEenZ1cK0+q0+wsJew9qUg/DyD8k3JzYsZAi5gYi2mA=\n\tdep\tgithub.com/pierrec/lz4/v4\tv4.1.31\th1:TI8ck6XSudzSzotzAmy0+kh/KpRHaVsKLPzS97gRyNg=\n\tdep\tgithub.com/rcrowley/go-metrics\tv0.0.0-20250401214520-65e299d6c5c9\th1:bsUq1dX0N8AOIL7EB/X911+m4EHsnWEHeJ0c+3TTBrg=\n\tdep\tgithub.com/vmihailenco/msgpack\tv4.0.4+incompatible\th1:dSLoQfGFAo3F6OoNhwUmLwVgaUXK79GlxNBwueZn0xI=\n\tdep\tgithub.com/vmihailenco/msgpack/v5\tv5.4.1\th1:cQriyiUvjTwOHg8QZaPihLWeRAAVoCpE00IUPn0Bjt8=\n\tdep\tgithub.com/vmihailenco/tagparser/v2\tv2.0.0\th1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAhO7/IwNM9g=\n\tdep\tgithub.com/xdg/scram\tv1.0.5\th1:TuS0RFmt5Is5qm9Tm2SoD89OPqe4IRiFtyFY4iwWXsw=\n\tdep\tgithub.com/xdg/stringprep\tv1.0.3\th1:cmL5Enob4W83ti/ZHuZLuKD/xqJfus4fVPwE+/BDm+4=\n\tdep\tgithub.com/zclconf/go-cty\tv1.18.1\th1:yEGE8M4iIZlyKQURZNb2SnEyZlZHUcBCnx6KF81KuwM=\n\tdep\tgolang.org/x/crypto\tv0.58.0\th1:COkYLr4k7nDI4r6QtMML2AfzeIswWHAJthLS6K/M/54=\n\tdep\tgolang.org/x/net\tv0.62.0\th1:18ELalfM5+XNRwzM2nYqXsZQ9ByS1uhj2O/U7+5jqRY=\n\tdep\tgolang.org/x/oauth2\tv0.38.0\th1:uW7XQbcu1eoiQS7uMJvLOjPMl04bTbmY1VeRPxvbspI=\n\tdep\tgolang.org/x/sys\tv0.49.0\th1:XbzkgYJHdqh/8m2Uu0W/dQv8nktxx4BFHp1M0gROTXA=\n\tdep\tgolang.org/x/text\tv0.43.0\th1:1QivrlhwAsnMOcqgOdl9my7s9OyZl8O5/UGUTJVXoWc=\n\tdep\tgoogle.golang.org/genproto/googleapis/rpc\tv0.0.0-20260526163538-3dc84a4a5aaa\th1:mZHHdPZl0dbGHCflZgAq/Q468DWVFcU2whhB2KAo8fk=\n\tdep\tgoogle.golang.org/grpc\tv1.83.2\th1:EManeRomTObA0BU7I8vXgg/78uE5MJ9M8B39EX2WscU=\n\tdep\tgoogle.golang.org/protobuf\tv1.36.11\th1:fV6ZwhNocDyBLK0dj+fg8ektcVegBBuEolpbTQyBNVE=\n\tbuild\t-buildmode=exe\n\tbuild\t-compiler=gc\n\tbuild\tCGO_ENABLED=1\n\tbuild\tCGO_CFLAGS=\n\tbuild\tCGO_CPPFLAGS=\n\tbuild\tCGO_CXXFLAGS=\n\tbuild\tCGO_LDFLAGS=\n\tbuild\tGOARCH=arm64\n\tbuild\tGOOS=darwin\n\tbuild\tGOARM64=v8.0\n\tbuild\tvcs=git\n\tbuild\tvcs.revision=5a155a82317476d12cb97469100fb66d2f2c00d1\n\tbuild\tvcs.time=2026-11-18T11:45:03Z\n\tbuild\tvcs.modified=true\n",
+  "candidate_sdk_log_level": "WARN",
+  "broker_response_delay_ms": 0,
+  "network_image": null,
+  "kafka_image": {
+    "Id": "sha256:50f14fea6ac78bda35a78a15d9e90a70929177cfcbd97689c7706b043edf3296",
+    "RepoDigests": [
+      "apache/kafka-native@sha256:8c671522f7f84d0fd20b1482a1d41fa4544eff02b4027673116d4fa74a508106"
+    ],
+    "Architecture": "arm64",
+    "Os": "linux"
+  },
+  "docker_server": "29.8.2 7.2.12-orbstack-00394-gbecdd6130068 aarch64",
+  "cleanup_errors": []
+}

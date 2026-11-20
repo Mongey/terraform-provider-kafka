@@ -1,0 +1,22 @@
+Pre-PR validation: 2026-11-20
+
+PASS env -u TF_ACC go test -race ./...
+PASS routing-only staged-index snapshot: go test -race ./...
+PASS golangci-lint run: 0 issues
+PASS python3 -m unittest discover -s tools/benchmarks -p 'test_*.py': 6 tests
+PASS DOCKER_CONTEXT=orbstack tools/benchmarks/run-real-kafka.sh -race -bench '^$' -count=1
+PASS real Terraform 1.17.1 baseline/candidate smoke: 218 resources, 4 ordinary/control plans, 4 diagnostic plans, identical state, no-op actions, complete wire coverage, zero config errors, cleanup_errors=[]
+PASS git diff --check and local documentation links
+
+No full MSK/IAM acceptance run; no performance claim from the smoke test.
+Historical performance and CPU measurements: 2026-11-18; see FINDINGS.md.
+Original checkout's pre-existing client.go/config.go/kafka_acls.go edits preserved.
+
+Logging rollback: 2026-11-20
+- Reverted the provider log-removal commit in full, including associated tests.
+- Kafka source exactly matches routing-only commit cd159ac.
+- Historical post-trim/SDK WARN measurements retained as experiments, not current-branch CPU claims.
+PASS rollback: env -u TF_ACC go test -race ./...
+PASS rollback: golangci-lint run (0 issues)
+PASS rollback: Python harness unit tests (6 tests)
+PASS rollback: git diff cd159ac --exit-code -- kafka; staged and unstaged whitespace checks

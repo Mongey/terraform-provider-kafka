@@ -1,0 +1,60 @@
+{
+  "baseline": {
+    "core": {
+      "sampled_cpu_s": 30.62,
+      "functions": {
+        "tfsdklog.SubsystemTrace": [],
+        "go-hclog.(*intLogger).log": [
+          "         0     0% 96.34%      0.01s 0.033%  github.com/hashicorp/go-hclog.(*intLogger).log"
+        ],
+        "go-plugin.(*Client).logStderr": [
+          "     0.01s 0.033% 26.68%      2.60s  8.49%  github.com/hashicorp/go-plugin.(*Client).logStderr"
+        ],
+        "kafka.(*Client).topicConfig": []
+      }
+    },
+    "provider": {
+      "sampled_cpu_s": 15.59,
+      "functions": {
+        "tfsdklog.SubsystemTrace": [
+          "         0     0% 53.69%      6.84s 43.87%  github.com/hashicorp/terraform-plugin-log/tfsdklog.SubsystemTrace"
+        ],
+        "go-hclog.(*intLogger).log": [
+          "         0     0% 53.69%      7.12s 45.67%  github.com/hashicorp/go-hclog.(*intLogger).log"
+        ],
+        "go-plugin.(*Client).logStderr": [],
+        "kafka.(*Client).topicConfig": [
+          "         0     0% 80.24%      0.28s  1.80%  github.com/Mongey/terraform-provider-kafka/kafka.(*Client).topicConfig"
+        ]
+      }
+    }
+  },
+  "candidate": {
+    "core": {
+      "sampled_cpu_s": 28.01,
+      "functions": {
+        "tfsdklog.SubsystemTrace": [],
+        "go-hclog.(*intLogger).log": [],
+        "go-plugin.(*Client).logStderr": [
+          "         0     0% 66.55%      0.53s  1.89%  github.com/hashicorp/go-plugin.(*Client).logStderr"
+        ],
+        "kafka.(*Client).topicConfig": []
+      }
+    },
+    "provider": {
+      "sampled_cpu_s": 11.95,
+      "functions": {
+        "tfsdklog.SubsystemTrace": [
+          "         0     0% 73.89%      0.16s  1.34%  github.com/hashicorp/terraform-plugin-log/tfsdklog.SubsystemTrace"
+        ],
+        "go-hclog.(*intLogger).log": [
+          "         0     0% 47.53%      1.17s  9.79%  github.com/hashicorp/go-hclog.(*intLogger).log"
+        ],
+        "go-plugin.(*Client).logStderr": [],
+        "kafka.(*Client).topicConfig": [
+          "         0     0% 63.68%      0.45s  3.77%  github.com/Mongey/terraform-provider-kafka/kafka.(*Client).topicConfig"
+        ]
+      }
+    }
+  }
+}

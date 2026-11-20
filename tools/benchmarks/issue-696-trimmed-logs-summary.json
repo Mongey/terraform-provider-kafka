@@ -1,0 +1,23 @@
+{
+  "baseline": {
+    "provider_log_lines": 101324,
+    "trace_bytes": 51555225,
+    "sdk_log_lines": 64847,
+    "median_plan_s": 4.3434486670885235,
+    "min_plan_s": 2.989126458996907,
+    "max_plan_s": 6.217844208003953,
+    "runs": 10
+  },
+  "candidate": {
+    "provider_log_lines": 4932,
+    "trace_bytes": 30166032,
+    "sdk_log_lines": 64847,
+    "median_plan_s": 4.215849166386761,
+    "min_plan_s": 3.7037099171429873,
+    "max_plan_s": 5.171741709113121,
+    "runs": 10
+  },
+  "provider_log_reduction_percent": 95.13244640953772,
+  "trace_byte_reduction_percent": 41.487924841759494,
+  "timing_verdict": "No demonstrated plan-time improvement; ranges overlap on busy shared host."
+}

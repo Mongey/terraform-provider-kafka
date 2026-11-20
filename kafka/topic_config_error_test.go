@@ -37,7 +37,7 @@ func TestTopicConfigResponse(t *testing.T) {
 			}
 			defer func() { _ = broker.Close() }()
 			client := &Client{client: configControllerClient{broker: broker}, kafkaConfig: cfg, config: &Config{}}
-			got, err := client.topicConfig("example")
+			got, err := client.topicConfig("example", true)
 			if tc.wantErr != nil {
 				if !errors.Is(err, tc.wantErr) || !strings.Contains(err.Error(), "access denied") {
 					t.Fatalf("expected authorization error with broker message, got %v", err)

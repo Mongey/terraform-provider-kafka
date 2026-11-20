@@ -569,7 +569,7 @@ func (client *Client) ReadTopic(name string, refreshMetadata bool) (Topic, error
 			log.Printf("[DEBUG] [%s] ReplicationFactor %d from Kafka", name, r)
 			topic.ReplicationFactor = int16(r)
 
-			configToSave, err := client.topicConfig(name)
+			configToSave, err := client.topicConfig(name, refreshMetadata)
 			if err != nil {
 				log.Printf("[ERROR] [%s] Could not get config for topic %s", name, err)
 				return topic, err
@@ -597,7 +597,7 @@ func (c *Client) versionForKey(apiKey, wantedMaxVersion int) int {
 }
 
 // topicConfig retrives the non-default config map for a topic
-func (c *Client) topicConfig(topic string) (map[string]*string, error) {
+func (c *Client) topicConfig(topic string, refreshMetadata bool) (map[string]*string, error) {
 	conf := map[string]*string{}
 	request := &sarama.DescribeConfigsRequest{
 		Version: c.getDescribeConfigAPIVersion(),
@@ -609,11 +609,6 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 		},
 	}
 
-	broker, err := c.client.Controller()
-	if err != nil {
-		return conf, err
-	}
-
 	if c.kafkaConfig.Version.IsAtLeast(sarama.V1_1_0_0) {
 		request.Version = 1
 	}
@@ -622,9 +617,27 @@ func (c *Client) topicConfig(topic string) (map[string]*string, error) {
 		request.Version = 2
 	}
 
-	cr, err := broker.DescribeConfigs(request)
-	if err != nil {
-		return conf, err
+	var cr *sarama.DescribeConfigsResponse
+	// Source-aware refreshes can use any broker; post-write reads need the controller.
+	if !refreshMetadata && request.Version > 0 && c.getDescribeConfigAPIVersion() > 0 {
+		if brokers := c.client.Brokers(); len(brokers) > 0 {
+			broker := brokers[rand.Intn(len(brokers))]
+			if err := broker.Open(c.kafkaConfig); err == nil || errors.Is(err, sarama.ErrAlreadyConnected) {
+				if response, err := broker.DescribeConfigs(request); err == nil {
+					cr = response
+				}
+			}
+		}
+	}
+	if cr == nil {
+		broker, err := c.client.Controller()
+		if err != nil {
+			return conf, err
+		}
+		cr, err = broker.DescribeConfigs(request)
+		if err != nil {
+			return conf, err
+		}
 	}
 
 	if len(cr.Resources) > 0 && cr.Resources[0].ErrorCode != 0 {

@@ -160,7 +160,7 @@ func TestTopicConfigLogsOmitValues(t *testing.T) {
 		}
 	}()
 	client := &Client{client: securityConfigClient{broker: broker}, kafkaConfig: cfg, config: &Config{}}
-	got, err := client.topicConfig("example")
+	got, err := client.topicConfig("example", true)
 	if err != nil || got["custom.config"] == nil || *got["custom.config"] != secret {
 		t.Fatalf("config retrieval changed: %v", err)
 	}

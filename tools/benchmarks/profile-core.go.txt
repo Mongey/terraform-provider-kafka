@@ -1,0 +1,49 @@
+// Copy into Terraform v1.17.1; add defer benchProfile()() at the start of realMain.
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime/pprof"
+	"syscall"
+	"time"
+)
+
+func benchProfile() func() {
+	dir := os.Getenv("BENCH_PROFILE_DIR")
+	if dir == "" {
+		return func() {}
+	}
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		panic(err)
+	}
+	prefix := filepath.Join(dir, fmt.Sprintf("core-%d", os.Getpid()))
+	file, err := os.Create(prefix + ".cpu")
+	if err != nil {
+		panic(err)
+	}
+	if err := pprof.StartCPUProfile(file); err != nil {
+		panic(err)
+	}
+	start := time.Now()
+	return func() {
+		end := time.Now()
+		var usage syscall.Rusage
+		if err := syscall.Getrusage(syscall.RUSAGE_SELF, &usage); err != nil {
+			panic(err)
+		}
+		data, err := json.Marshal(map[string]any{"start_ns": start.UnixNano(), "end_ns": end.UnixNano(), "user_s": float64(usage.Utime.Sec) + float64(usage.Utime.Usec)/1e6, "system_s": float64(usage.Stime.Sec) + float64(usage.Stime.Usec)/1e6})
+		if err != nil {
+			panic(err)
+		}
+		if err := os.WriteFile(prefix+".json", data, 0600); err != nil {
+			panic(err)
+		}
+		pprof.StopCPUProfile()
+		if err := file.Close(); err != nil {
+			panic(err)
+		}
+	}
+}
